@@ -28,7 +28,7 @@
 ## Common gotchas (开发中发现的坑)
 
 ## Agent Team Workflow
-（引用 harness-init skill 的 6-Stage 工作流）
+（引用 harness-init skill 的 8-Stage 工作流）
 
 ## Persistent Files
 | 文件 | 用途 | 更新时机 |
@@ -50,24 +50,36 @@
   "version": "0.1.0",
   "lastUpdated": "{ISO8601}",
   "currentRound": 0,
-  "currentPhase": "initialization",
-  "completedRounds": 0,
-  "summary": {
-    "totalCommits": 0, "totalPushes": 0,
-    "testsWritten": 0, "testsPassing": 0
-  },
-  "architectureDecisions": { "count": 0, "location": "CLAUDE.md" },
-  "rounds": [],
-  "processDebt": { "missingPlanDocs": 0, "missingCodexReviews": 0 },
+  "pendingRounds": [],
+  "completedRounds": [],
   "features": {},
   "knownIssues": [],
-  "remainingWork": {}
+  "summary": {
+    "totalCommits": 0,
+    "testsWritten": 0,
+    "testsPassing": 0
+  }
 }
 ```
 
-每轮结束追加到 `rounds[]`：
+每轮结束追加到 `completedRounds[]`：
 ```json
-{ "round": N, "commit": "{hash}", "title": "{summary}", "hadPlanDoc": true, "hadCodexReview": true }
+{
+  "id": 1,
+  "topic": "{功能描述}",
+  "scale": "S|M|L",
+  "stages": [2, 3, 4, 5, 8],
+  "commits": 3,
+  "filesChanged": 5,
+  "linesAdded": 120,
+  "duration": "12min",
+  "completedAt": "2026-04-11"
+}
+```
+
+XL 级拆轮时写入 `pendingRounds[]`：
+```json
+{ "topic": "{子任务描述}", "scale": "M", "dependsOn": null }
 ```
 
 ---
@@ -93,20 +105,43 @@
 
 ---
 
-## DESIGN.md 必须包含的章节（10 节）
+## DESIGN.md 章节（按项目类型选择）
 
-1. **Color Tokens** — 禁止硬编码 hex/oklch，用 CSS 变量或 Tailwind token
-2. **Typography** — 固定字号规模 + 字体栈
-3. **Spacing & Layout** — 4px 基准网格
-4. **Component Patterns** — Button / Card / Input / Nav 标准写法
-5. **Glass Effects** — 如需要，定义毛玻璃层级（card / input / showcase）
-6. **Animation Conventions** — CSS 环境动效 + framer-motion 交互动效
-7. **Gradient Text Utilities** — 如需要，定义渐变文字工具类
-8. **Responsive Breakpoints** — Mobile-first 断点
-9. **i18n Display Rules** — useTranslations / RTL / 日期格式化
-10. **Anti-Patterns (DO NOT)** — 至少 7 条禁止项
+### 有 UI 的项目（web-app / desktop-app）
 
-**关键**：DESIGN.md 必须在第一轮编码前完成。可用 `/design-systems` skill 按品牌风格生成。
+1. **Color Tokens** — 禁止硬编码色值，用设计 token
+2. **Typography** — 字号规模 + 字体栈
+3. **Spacing & Layout** — 基准网格
+4. **Component Patterns** — 核心组件标准写法
+5. **Effects** — 阴影/毛玻璃/渐变（如需要）
+6. **Animation** — 动效规范
+7. **Responsive** — 断点定义
+8. **i18n** — 国际化规则（如需要）
+9. **Anti-Patterns** — 禁止项
+
+### 纯后端 API 项目（api-server）
+
+1. **API 命名规范** — RESTful / GraphQL 约定
+2. **版本策略** — URL 版本 / Header 版本
+3. **错误码体系** — 错误格式、业务码定义
+4. **分页规范** — 分页参数、响应格式
+5. **认证规范** — Token 格式、刷新策略
+6. **Anti-Patterns** — 禁止项
+
+### CLI 工具（cli-tool）
+
+1. **输出格式** — 表格/JSON/纯文本切换
+2. **颜色规范** — 成功/警告/错误色
+3. **进度展示** — 进度条/spinner 规范
+4. **帮助文本** — --help 格式约定
+
+### 库/SDK（library）
+
+1. **公共 API 命名** — 导出函数/类/类型命名
+2. **错误处理** — 自定义错误类型
+3. **类型导出** — TypeScript/Python typing 规范
+
+**关键**：DESIGN.md 必须在第一轮编码前完成。UI 项目可用 `/design-systems` skill 按品牌风格生成。
 
 ---
 

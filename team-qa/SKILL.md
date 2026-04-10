@@ -1,8 +1,14 @@
 ---
 name: team-qa
-description: QA 测试工程师 Agent。设计并执行完整测试策略：单元测试覆盖率检查、集成测试、E2E 自动化测试（Playwright）、冒烟测试。输出测试报告，阻塞未修复的 P0 Bug。在 team-commander Phase 5 激活。
-version: 1.0.0
+description: QA 测试工程师 Agent。设计并执行完整测试策略：单元测试覆盖率检查、集成测试、E2E 自动化测试、冒烟测试。输出测试报告，阻塞未修复的 P0 Bug。在 team-commander Phase 5 激活。技术栈无关：测试命令和工具从 .harness-context.json 自动读取。本 skill 在 harness-workflow 的 Stage 6 中被调用。
+version: 2.0.0
 ---
+
+> **harness-workflow 兼容**：本 skill 在自治工作流中作为 Stage 6（QA 测试）执行。
+> 在 autonomous_mode 下，跳过所有人工暂停点，使用默认值决策。
+> STATE.json 使用 统一 schema（currentRound + completedRounds[]）。
+>
+> **旧 Phase 映射**：Phase 5（Testing）→ Stage 6。
 
 # Team QA — 测试工程师
 
@@ -43,18 +49,15 @@ Token 成本分配: 单元(30%) : 集成(40%) : E2E(30%)
 
 ### Step 2: 单元测试覆盖率检查
 
-运行测试并检查覆盖率：
+运行测试并检查覆盖率（使用 `.harness-context.json` 中 `context.testCommand` 指定的测试框架）：
 
 ```bash
-# Java
-mvn test jacoco:report
-# 查看报告: target/site/jacoco/index.html
-
-# Node.js
-npm run test:coverage
-
-# Python
-pytest --cov=src --cov-report=html
+# 从 context.testCommand 读取实际命令，例如：
+# Java:   mvn test jacoco:report
+# Node.js: npm run test:coverage
+# Python: pytest --cov=src --cov-report=html
+# Go:     go test ./... -coverprofile=coverage.out
+# Rust:   cargo tarpaulin --out Html
 ```
 
 **覆盖率要求**：
@@ -77,7 +80,7 @@ src/modules/order/OrderServiceImpl: 45% (要求 60%)
 
 ### Step 3: 集成测试（API 契约验证）
 
-针对 ARCHITECTURE.md Section 4 的每个接口，写 API 集成测试：
+针对 ARCHITECTURE.md 中定义的 API 契约（具体章节因项目而异，参考文档目录或 `context.apiContractSection`），为每个接口写 API 集成测试：
 
 ```java
 // Java Spring Boot 集成测试示例
@@ -133,14 +136,15 @@ class OrderApiTest {
 - ✅ 业务规则违反（具体错误码）
 - ✅ 资源不存在（404）
 
-### Step 4: E2E 测试（Playwright）
+### Step 4: E2E 测试（仅在 context.hasUI === true 时使用 E2E 测试）
 
-**重要**：为节省 Token，使用 JS 注入方式验证状态，避免大量截图。
+**重要**：为节省 Token，使用 JS 注入方式验证状态，避免大量截图。E2E 测试工具从 `.harness-context.json` 的 `context.e2eCommand` 读取（如 Playwright、Cypress、Selenium 等）。
 
 **核心用户旅程**（从 PRD 的用户故事提取 P0 场景）：
 
 ```javascript
-// playwright 测试示例（tests/e2e/）
+// E2E 测试示例（目录结构按照项目现有的测试目录结构组织，从 context.testDir 读取）
+// 以下为 Playwright 示例，实际工具由 context.e2eCommand 决定
 import { test, expect } from '@playwright/test'
 
 test.describe('核心用户旅程', () => {
@@ -206,11 +210,14 @@ test.describe('核心用户旅程', () => {
 
 ### Step 5: 冒烟测试
 
-快速验证主流程，新功能上线前必跑：
+快速验证主流程，新功能上线前必跑（测试命令从 `context.testCommand` 读取，tag 参数按框架差异调整）：
 
 ```bash
-# 运行冒烟测试（tagged 测试用例）
-npx playwright test --grep "@smoke"
+# 从 context.testCommand 读取实际命令，例如：
+# Playwright: npx playwright test --grep "@smoke"
+# Jest:       npx jest --testPathPattern="smoke"
+# pytest:     pytest -m smoke
+# Go:         go test ./... -run "Smoke"
 ```
 
 **冒烟测试标准**：
@@ -286,3 +293,5 @@ Date: <日期> | Tester: QA Agent
 - **P0 Bug 不修复不放行**：与开发协商后用 `Won't Fix` 的 P0 Bug 需要提升到指挥官决策
 - **不为覆盖率而写测试**：Mock 了所有依赖然后断言 mock 被调用，这不叫测试
 - **E2E 优先 JS 注入，而非截图**：除非是视觉回归测试，否则用 JS 断言比截图便宜 10 倍
+- **技术栈无关**：测试命令和工具从 `.harness-context.json` 自动读取，不硬编码具体框架
+- **本 skill 在 harness-workflow 的 Stage 6 中被调用**

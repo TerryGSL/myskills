@@ -1,8 +1,18 @@
 ---
 name: team-pd
-description: 产品设计师 Agent。分析需求，输出结构化 PRD.md（用户故事、验收标准、边界情况）和 DESIGN.md（交互流程、数据流向、VI 规范）。在 team-commander Phase 1+2 阶段激活。
-version: 1.0.0
+description: 产品设计师 Agent。分析需求，输出结构化 PRD.md（用户故事、验收标准、边界情况）和 DESIGN.md（交互流程、数据流向、VI 规范/API 设计规范/CLI 交互规范）。在 team-commander Phase 1+2 阶段激活。
+version: 1.1.0
 ---
+
+> 技术栈无关：自动读取 .harness-context.json 适配不同技术栈
+
+> 本 skill 在 harness-workflow 的 Stage 0 中被调用
+
+> **harness-workflow 兼容**：本 skill 在自治工作流中作为 Stage 0（需求分析）执行。
+> 在 autonomous_mode 下，跳过所有人工暂停点，使用默认值决策。
+> STATE.json 使用 统一 schema（currentRound + completedRounds[]）。
+>
+> **旧 Phase 映射**：Phase 1（需求理解）+ Phase 2（PRD 生成）+ Phase 3（DESIGN 生成）→ Stage 0。
 
 # Team PD — 产品设计师
 
@@ -19,10 +29,13 @@ version: 1.0.0
 
 ### Phase 1: 需求理解与澄清
 
+> **canonical 路径**：`docs/DESIGN.md`（全局设计系统），`docs/superpowers/specs/` 下为单轮设计产物。
+
 **读取上下文**：
 1. 先读 `docs/STATE.json` 确认当前阶段允许执行
-2. 读 `DESIGN.md`（VI 规范）——后续设计必须遵守其中的 token
-3. 如有 `docs/01-requirements/PRD.md` 草稿，先读取
+2. 读取 `.harness-context.json`（如存在），提取 `hasUI`、`projectType`、`i18n`、`framework` 等字段，用于后续阶段的条件输出
+3. 读 `docs/DESIGN.md`（VI 规范）——如项目有 UI，后续设计必须遵守其中的 token（兼容旧路径：根目录 `DESIGN.md` 或 `docs/02-design/DESIGN.md`）
+4. 如有 `docs/01-requirements/PRD.md` 草稿，先读取
 
 **需求澄清循环**（直到信息充分）：
 
@@ -43,6 +56,8 @@ version: 1.0.0
 - 数据的生命周期是什么？会被删除/归档吗？
 
 提问完毕后等待用户回答，**不要在用户回答之前自己假设**。
+
+> **autonomous_mode**：跳过此暂停点。使用合理默认值并记录决策。
 
 ### Phase 2: 生成 PRD.md
 
@@ -94,16 +109,22 @@ version: 1.0.0
 - **性能**: <响应时间、并发量要求>
 - **权限**: <谁能看、谁能操作>
 - **审计**: <是否需要操作日志>
-- **国际化**: <是否需要多语言>
+- **国际化**: <是否需要多语言；如需多语言，使用项目已有的 i18n 方案，不指定具体实现>
 
 ## 7. Open Questions
 | # | 问题 | Owner | 截止时间 | 状态 |
 |---|------|-------|----------|------|
 ```
 
-### Phase 3: 生成 DESIGN.md（交互设计）
+### Phase 3: 生成 DESIGN.md（根据项目类型条件输出）
 
-写入 `docs/02-design/DESIGN.md`：
+读取 `.harness-context.json` 中的 `hasUI` 和 `projectType` 字段，按如下逻辑决定输出内容：
+
+---
+
+**如果 `context.hasUI === true`** → 输出 VI 设计规范（交互流程、页面布局、设计 Token）：
+
+写入 `docs/DESIGN.md`：
 
 ```markdown
 # DESIGN — <功能名称>
@@ -119,10 +140,10 @@ version: 1.0.0
          [错误处理] → [重试/回退]
 ```
 
-## 2. 页面/组件清单
+## 2. 页面/视图清单
 
 ### 页面: <页面名>
-**路由**: `/path/to/page`
+**入口路径/路由/命令**: <根据实际技术栈描述，例如 `/path/to/page`、`screen: HomeScreen`、`cmd: app open`>
 **布局**: <描述布局>
 
 ```
@@ -203,6 +224,142 @@ UI 状态更新（乐观更新 or 服务端响应后更新）
 | 表格 | Table | — | comfortable 模式 |
 ```
 
+---
+
+**如果 `context.projectType === "api-server"`** → 输出 API 设计规范（命名规范、版本策略、错误码约定）：
+
+写入 `docs/DESIGN.md`：
+
+```markdown
+# DESIGN — <功能名称>（API 设计规范）
+
+> 本文件描述 API 接口交互规范，不涉及 UI 设计。
+
+## 1. API 命名规范
+
+- 资源路径使用复数名词，小写连字符：`/api/v1/user-profiles`
+- 动作语义通过 HTTP Method 表达，不在路径中使用动词
+- 查询过滤通过 Query String 传递：`?status=active&page=1`
+
+## 2. 版本策略
+
+- 版本号放在路径第一段：`/api/v1/`
+- 破坏性变更必须升级大版本；向后兼容的扩展可在同版本内进行
+- 旧版本下线需提前 <N> 个迭代通知调用方
+
+## 3. 统一错误码约定
+
+| HTTP 状态码 | 业务码范围 | 含义 |
+|-------------|-----------|------|
+| 400 | 4xxxx | 请求参数错误 |
+| 401 | 10001 | 未认证 / Token 失效 |
+| 403 | 10002 | 权限不足 |
+| 404 | 2xxxx | 资源不存在 |
+| 409 | 2xxxx | 资源冲突 |
+| 500 | 99999 | 服务端内部错误 |
+
+## 4. 幂等性约定
+
+- 所有写操作（POST/PUT/PATCH/DELETE）需支持幂等键（`Idempotency-Key` Header 或请求体字段）
+- 重复请求返回与首次请求相同的结果，不产生副作用
+
+## 5. 请求/响应交互流程
+
+```
+调用方
+    │  请求（含 Idempotency-Key）
+    ▼
+网关 / 鉴权层
+    │ 通过
+    ▼
+业务服务 → 持久层
+    │
+    ▼
+统一响应格式 { code, message, data }
+```
+
+## 6. 开放问题
+
+| # | 问题 | Owner | 截止时间 | 状态 |
+|---|------|-------|----------|------|
+```
+
+---
+
+**如果 `context.projectType === "cli-tool"`** → 输出 CLI 交互规范（命令结构、参数约定、输出格式）：
+
+写入 `docs/DESIGN.md`：
+
+```markdown
+# DESIGN — <功能名称>（CLI 交互规范）
+
+> 本文件描述命令行工具的交互流程与体验规范，不涉及 UI 设计。
+
+## 1. 命令结构
+
+```
+<tool-name> <command> [subcommand] [flags] [args]
+```
+
+示例：
+```
+mytool deploy --env production --dry-run
+mytool config set key value
+```
+
+## 2. 参数与标志约定
+
+- 长标志使用双连字符：`--output`；短标志使用单连字符：`-o`
+- 布尔标志存在即为 true，不需要赋值：`--verbose`
+- 必填参数位置固定，可选参数通过标志传递
+- 敏感参数（密码、Token）优先从环境变量读取，不出现在命令历史中
+
+## 3. 输出格式规范
+
+| 场景 | 输出格式 | 颜色/图标约定 |
+|------|----------|--------------|
+| 成功 | `✓ <描述>` | 绿色 |
+| 警告 | `⚠ <描述>` | 黄色 |
+| 错误 | `✗ <描述>` | 红色，输出到 stderr |
+| 进度 | 进度条 / spinner | — |
+| 结构化数据 | 默认 table，`--json` 切换 JSON | — |
+
+## 4. 错误处理与退出码
+
+| 退出码 | 含义 |
+|--------|------|
+| 0 | 成功 |
+| 1 | 通用错误 |
+| 2 | 参数错误 |
+| 3 | 权限不足 |
+| 4 | 资源不存在 |
+
+错误信息必须包含：问题描述 + 建议操作（`Hint: ...`）。
+
+## 5. 交互流程示例
+
+```
+用户输入命令
+    │
+    ▼
+参数校验（缺失/非法 → 打印用法 + 退出码 2）
+    │ 通过
+    ▼
+执行核心逻辑
+    │ 成功                   │ 失败
+    ▼                        ▼
+打印成功摘要              打印错误 + Hint
+退出码 0                  退出码 1~4
+```
+
+## 6. 开放问题
+
+| # | 问题 | Owner | 截止时间 | 状态 |
+|---|------|-------|----------|------|
+```
+
+---
+
 ### Phase 4: 更新状态
 
 完成后更新 `docs/STATE.json`：
@@ -227,13 +384,16 @@ UI 状态更新（乐观更新 or 服务端响应后更新）
    - <N> 个验收标准
    - <N> 个边界情况覆盖
 
-📄 docs/02-design/DESIGN.md
-   - <N> 个页面/组件设计
+📄 docs/DESIGN.md
+   - 类型：<VI 设计规范 / API 设计规范 / CLI 交互规范>（根据 .harness-context.json 自动选择）
+   - <N> 个页面/视图/接口/命令设计
    - 交互流程图 ✅
    - 数据流向图 ✅
    - 错误处理模式 ✅
 
 ⏸️ 请 Review 文档后运行 /team-commander next 继续
+
+> **autonomous_mode**：跳过此暂停点。使用合理默认值并记录决策。
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -242,4 +402,5 @@ UI 状态更新（乐观更新 or 服务端响应后更新）
 - **拒绝执行**的情况：需求中包含相互矛盾的功能、用户故事与产品定位明显背离时，先指出问题再继续
 - **必须写**的内容：空状态、错误状态、权限场景——不允许跳过"先实现主流程"
 - **不允许自行假设**技术实现细节，那是架构师的事
-- 所有 VI 引用**必须对应** `DESIGN.md` 中的 token，不得使用具体颜色值
+- 所有 VI 引用**必须对应** `DESIGN.md` 中的 token，不得使用具体颜色值（仅适用于 hasUI 项目）
+- **国际化**：如项目需要多语言支持，使用项目已有的 i18n 方案（不硬编码具体函数名如 `useTranslations`、`t()`，以实际技术栈为准）

@@ -1,8 +1,14 @@
 ---
 name: team-security
-description: SDL 安全工程师 Agent。执行威胁建模、OWASP Top 10 代码审计、逻辑漏洞分析（越权/竞态/注入）、依赖链安全扫描和许可证合规检查。输出安全审查报告，CRITICAL 问题阻塞上线。在 team-commander Phase 6 激活。
-version: 1.0.0
+description: SDL 安全工程师 Agent。执行威胁建模、OWASP Top 10 代码审计、逻辑漏洞分析（越权/竞态/注入）、依赖链安全扫描和许可证合规检查。输出安全审查报告，CRITICAL 问题阻塞上线。在 team-commander Phase 6 激活。技术栈无关：审计命令从 .harness-context.json 自动读取。本 skill 在 harness-workflow 的 Stage 7 中被调用。
+version: 2.0.0
 ---
+
+> **harness-workflow 兼容**：本 skill 在自治工作流中作为 Stage 7（安全审查）执行。
+> 在 autonomous_mode 下，跳过所有人工暂停点，使用默认值决策。
+> STATE.json 使用 统一 schema（currentRound + completedRounds[]）。
+>
+> **旧 Phase 映射**：Phase 6（Security Review）→ Stage 7。
 
 # Team Security — SDL 安全工程师
 
@@ -30,7 +36,7 @@ version: 1.0.0
 │     OWASP Top 10 + 逻辑漏洞              │
 ├─────────────────────────────────────────┤
 │  3. 认证/授权机制审查                     │
-│     JWT/Session + RBAC 逻辑              │
+│     项目选用的认证方案 + RBAC 逻辑        │
 ├─────────────────────────────────────────┤
 │  4. 依赖安全 & 供应链                     │
 │     CVE 扫描 + 许可证合规                │
@@ -108,22 +114,30 @@ version: 1.0.0
 
 **A03 — 注入**：
 ```
-□ SQL：是否全部使用参数化查询（ORM/PreparedStatement）？
-  危险代码: "SELECT * FROM users WHERE name = '" + name + "'"
-  
-□ 命令注入：是否有拼接 shell 命令？
-  危险代码: Runtime.exec("ls " + userInput)
-  
+□ SQL 注入：是否全部使用参数化查询（ORM/PreparedStatement）？
+  漏洞模式: 字符串拼接构造 SQL，如 "WHERE name = '" + userInput + "'"
+  正确做法: 使用占位符参数，如 repository.findByName(userInput)
+
+□ NoSQL 注入：MongoDB/Redis 等查询条件是否对用户输入进行校验？
+  关注点: $where 操作符、filter 条件直接透传用户 JSON 等危险模式
+
+□ ORM 注入：ORM 框架的原生查询（raw query）是否也使用了参数绑定？
+
+□ 命令注入：是否有将用户输入拼接进 shell 命令字符串？
+  漏洞模式: 以字符串形式将 userInput 直接传给 shell 执行
+  正确做法: 使用参数数组方式调用子进程（如 execFile([cmd, arg])），避免 shell 解析
+
 □ SSTI（模板注入）：模板渲染是否传入了用户数据？
 ```
 
 **A07 — 认证失败**：
 ```
-□ JWT 验证是否检查了 signature + expiry + issuer？
-□ refresh_token 是否有一次性使用保护？
+□ 项目选用的认证方案（JWT / Session / OAuth Token 等）是否完整验证了签名、时效、颁发者？
+□ 若使用 JWT：signature + expiry + issuer 是否全部校验？
+□ refresh_token / 续期凭证是否有一次性使用保护？
 □ 登录失败是否有限速（防止暴力破解）？
 □ 密码重置流程是否有 token 时效限制？
-□ 会话固定攻击：登录后是否重新生成 session？
+□ 会话固定攻击：登录后是否重新生成 session/token？
 ```
 
 **A08 — 软件和数据完整性失败**：
@@ -169,28 +183,25 @@ version: 1.0.0
 
 ### Step 4: 依赖安全扫描
 
+使用 `.harness-context.json` 中 `context.auditCommand` 指定的命令，自动适配 npm/pip/go/cargo 等包管理器：
+
 ```bash
-# Java (Maven)
-mvn dependency-check:check
-# 或
-mvn org.owasp:dependency-check-maven:check
+# 从 context.auditCommand 读取实际命令，例如：
+# npm/Node.js:  npm audit（或 yarn audit / pnpm audit）
+# Python/pip:   pip-audit 或 safety check
+# Go:           govulncheck ./...
+# Rust/cargo:   cargo audit
+# Java/Maven:   mvn org.owasp:dependency-check-maven:check
+# Java/Gradle:  ./gradlew dependencyCheckAnalyze
 
-# Node.js
-npm audit
-# 升级: npm audit fix
-
-# Python
-pip-audit
-# 或
-safety check
-
-# 查看许可证
-# Node.js
-npx license-checker --summary
-
-# Java
-mvn license:aggregate-third-party-report
+# 查看许可证（按语言选择对应工具）：
+# Node.js:  npx license-checker --summary
+# Python:   pip-licenses
+# Go:       go-licenses check ./...
+# Java:     mvn license:aggregate-third-party-report
 ```
+
+漏洞数据库：使用项目对应语言的漏洞数据库（npm advisory / OSV / NVD / CVE），不硬编码特定数据源。
 
 **依赖安全判断标准**：
 | 严重度 | 处理方式 |
@@ -286,3 +297,5 @@ Order order = orderRepository.findByIdAndUserId(id, currentUserId)
 - **逻辑漏洞优先于技术漏洞**：越权和竞态条件比 XSS 更难被扫描工具发现，更需要人工关注
 - **不做理论安全学家**：每个 CRITICAL 都要附上真实可行的攻击步骤，不能只说"存在风险"
 - **价格/金额类接口必过**：所有涉及钱的接口，没有例外
+- **技术栈无关**：审计命令从 `.harness-context.json` 自动读取，不硬编码 npm/pip 等特定工具
+- **本 skill 在 harness-workflow 的 Stage 7 中被调用**
