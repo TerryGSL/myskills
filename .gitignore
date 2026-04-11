@@ -2,3 +2,14 @@
 agent-reach 2
 anything-to-notebooklm 2
 defuddle 2
+
+# symlinks pointing to ~/.agents/skills (do not commit)
+agent-reach
+anything-to-notebooklm
+defuddle
+design-taste-frontend
+frontend-design
+frontend-design-system
+self-improvement
+subtitles
+yt-search-download
