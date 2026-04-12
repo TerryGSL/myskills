@@ -1,6 +1,9 @@
 # myskills
 
-个人 Claude Code Skills 集合，核心是 **Harness Workflow** —— 一套 8-Stage 自治开发工作流。
+个人 Claude Code Skills 集合，两大核心：
+
+- **Harness Workflow** —— 8-Stage 自治开发工作流（代码开发专用）
+- **Task Dispatcher** —— 通用任务调度器（所有任务类型，自动并行化）
 
 ## Harness Workflow 是什么
 
@@ -11,7 +14,17 @@
 - **任务自动分级**：S/M/L/XL 四档，XL 自动拆多轮串行执行
 - **实时心跳监控**：Round 完成自动输出报告
 
-## Harness Workflow 相关 Skill 清单
+## Skill 清单
+
+### Task Dispatcher（通用任务调度）
+
+| Skill | 角色 | 触发时机 |
+|-------|------|---------|
+| `task-dispatcher` | **通用任务编排器** — 自动评估并行化机会，派发 sub-agent | 每条用户消息 |
+
+核心原则：**默认并行，只在依赖强制时串行。** 不限于代码 — 适用于 research、ops、config、Q&A、debugging 及混合工作负载。与 harness-workflow 互补：task-dispatcher 做外层任务拆分，harness-workflow 做内层代码开发流程。
+
+### Harness Workflow（代码开发工作流）
 
 | Skill | 角色 | 工作流位置 |
 |-------|------|-----------|
@@ -49,8 +62,8 @@ Claude Code 会从 `~/.claude/skills/` 自动加载 Skill。把仓库里的 skil
 mkdir -p ~/.claude/skills
 
 # 链接 Harness Workflow 相关全部 skill
-for skill in harness-workflow team-init team-commander team-pd team-architect \
-             team-senior-dev team-junior-dev team-qa team-security; do
+for skill in harness-workflow task-dispatcher team-init team-commander team-pd \
+             team-architect team-senior-dev team-junior-dev team-qa team-security; do
   ln -sf ~/myskills/$skill ~/.claude/skills/$skill
 done
 ```
@@ -127,6 +140,7 @@ Stage 8  收尾        STATE.json + WALKTHROUGH + commit + push
 ## 仓库目录速览
 
 ```
+task-dispatcher/       # 通用任务调度器（并行化 + agent 协调）
 harness-workflow/      # 工作流主 skill + references + prompts
 team-init/             # 项目初始化
 team-commander/        # 调度入口
@@ -141,8 +155,8 @@ team-security/         # 安全 Agent
 ## 卸载
 
 ```bash
-for skill in harness-workflow team-init team-commander team-pd team-architect \
-             team-senior-dev team-junior-dev team-qa team-security; do
+for skill in harness-workflow task-dispatcher team-init team-commander team-pd \
+             team-architect team-senior-dev team-junior-dev team-qa team-security; do
   rm ~/.claude/skills/$skill
 done
 ```
