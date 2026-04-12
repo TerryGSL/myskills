@@ -58,6 +58,27 @@
 - 直接写 plan 并进入下一 Stage，不等用户审批
 - Plan 中的测试命令从 .harness-context.json 读取，不硬编码
 
+**⚠️ 强制：Stage 2 开始时 MUST 创建心跳**
+
+1. 创建 `.harness-status.json`（根目录，已在 .gitignore 中）：
+   ```json
+   {
+     "roundId": <N>,
+     "topic": "<round 主题>",
+     "scale": "<S|M|L|XL>",
+     "startedAt": "<ISO 8601>",
+     "cronJobId": "",
+     "currentStage": 2,
+     "stages": []
+   }
+   ```
+2. 调用 `CronCreate`（频率 5 分钟），将返回的 job ID 写入 `.harness-status.json` 的 `cronJobId` 字段
+3. Cron prompt 内容见 [monitoring.md](monitoring.md) 的 "心跳 Cron Prompt" 段
+
+**如果 PostToolUse hook（`heartbeat-check.sh`）输出了 "⚠️ HEARTBEAT MISSING" 警告，Claude MUST 在下一次回复中立即创建 `.harness-status.json` + `CronCreate`，然后才能继续其他工作。** 这条规则没有例外 — S 级也不跳过心跳。
+
+这是防 drift 的最后一道保险：即使 Claude 在 Stage 2 忘了创建心跳，hook 会在下一次 tool call 后自动提醒，规则又要求"看到提醒必须立刻处理"。
+
 ---
 
 ## Stage 3: 实现（senior-dev + junior-dev）

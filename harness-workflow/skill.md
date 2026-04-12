@@ -72,6 +72,7 @@ description: >
 | `session-checklist.sh` | SessionStart | 会话就绪确认 |
 | `session-init-prompt.txt` | SessionStart | **自动注入 harness-workflow 触发提示** |
 | Notification (inline) | Notification | macOS beep 通知 |
+| `heartbeat-check.sh` | PostToolUse(Bash\|Edit\|Write) | **强制心跳保障** — 检测 `.harness-status.json` 存在但无 `cronJobId` → 警告 Claude 立即 CronCreate |
 
 **Hook 模板和 settings.json 完整配置** → 见 [references/hooks.md](references/hooks.md)
 

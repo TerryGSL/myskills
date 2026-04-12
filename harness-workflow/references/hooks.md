@@ -23,6 +23,10 @@
     "Stop": [
       { "hooks": [{ "type": "command", "command": "node \"~/.claude/plugins/codex/scripts/stop-review-gate-hook.mjs\"", "timeout": 900 }] }
     ],
+    "PostToolUse": [
+      { "matcher": "Edit|Write", "hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/post-edit-reminder.sh" }] },
+      { "matcher": "Bash|Edit|Write", "hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/heartbeat-check.sh", "timeout": 5 }] }
+    ],
     "Notification": [
       { "matcher": "", "hooks": [{ "type": "command", "command": "osascript -e 'beep'" }] }
     ],
