@@ -109,6 +109,8 @@ Sub-agent **没有**本次对话的任何上下文。必须包含：
 - **单一原子任务** → 直接做
 - 任务**紧密耦合**（每步需要上一步输出） → 串行
 - 子任务预估 **< 10 秒** → agent 开销不值得
+- **单行修复** → agent 启动 + 上下文注入的时间远超直接改，inline 搞定
+- **耗时 < 10 秒的任务** → agent setup overhead（15-30 秒）超过任务本身，得不偿失
 
 ---
 
@@ -211,3 +213,86 @@ Sub-agent **没有**本次对话的任何上下文。必须包含：
 - **返回后**：验证 agent 产出是否符合预期，不盲信
 - **冲突检测**：如果多个 agent 改了相关代码，主 agent 做最终整合审查
 - **失败处理**：agent 失败 → 主 agent 接手该子任务，不重试超过 1 次
+
+---
+
+## Agent Prompt 模板
+
+Every agent dispatch MUST follow this template structure:
+
+```
+## Context
+{1-2 sentences: what project, what round, what's the overall goal}
+
+## Your task
+{specific files to modify/create, with exact paths}
+{for each file: what to change, with line numbers if known}
+
+## Constraints
+- You handle ONLY these files: {list}
+- Do NOT touch: {excluded files/dirs}
+- Match existing code style (read CLAUDE.md if unsure)
+
+## Acceptance criteria
+{for each fix: how to verify it worked}
+- After all changes: run `npx tsc --noEmit` — must pass with 0 errors
+- If tsc fails: fix the error yourself, re-verify, max 3 attempts
+- If still failing after 3 attempts: revert changes with `git checkout -- {files}` and report the error
+
+## Return format
+Report in under 200 words:
+1. Files modified (path + what changed)
+2. tsc result (pass/fail)
+3. Any issues encountered
+```
+
+---
+
+## 验收标准协议
+
+After ALL dispatched agents return:
+1. **Merge check**: `git diff --stat` to confirm no unexpected files changed
+2. **Type check**: `npx tsc --noEmit`
+3. **Test suite**: `pnpm test` (or project's test command)
+4. **Conflict scan**: if 2+ agents modified adjacent lines in overlapping files, manually review the merge
+5. **Only commit after all 4 checks pass**
+
+---
+
+## 回退协议
+
+If an agent's changes break the build:
+1. Identify which agent's changes caused the break (from the git diff)
+2. `git checkout -- {broken files}` to revert just that agent
+3. Re-dispatch the agent with a more detailed prompt including the error message
+4. Do NOT re-dispatch all agents — only the one that failed
+
+---
+
+## 批次划分原则
+
+When dispatching multiple agents:
+- **Max 1 agent per file** — never let two agents edit the same file
+- **Locale files exception**: one agent can handle ALL locale files (they're independent per locale)
+- **If a task needs 10+ file changes**: split into sub-batches by directory
+- **Agent count vs. overhead**: for <10 second tasks, don't spawn an agent — do it inline. Agent overhead is ~15-30 seconds for setup.
+
+---
+
+## 进度汇报模板
+
+After dispatching agents, immediately tell the user:
+
+```
+| Agent | 负责文件 | 任务 | 状态 |
+|-------|---------|------|------|
+| {descriptive name} | {files} | {what it does} | 🔄 运行中 |
+```
+
+As each agent completes, update inline:
+- "✅ {agent name} 完成：{1-line summary}"
+
+When ALL complete:
+- Full verification results (tsc + test)
+- Commit message preview
+- Any issues found
