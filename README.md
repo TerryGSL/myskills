@@ -1,9 +1,12 @@
 # myskills
 
-个人 Claude Code Skills 集合，两大核心：
+个人 Claude Code Skills 集合，三大核心：
 
 - **Harness Workflow** —— 8-Stage 自治开发工作流（代码开发专用）
 - **Task Dispatcher** —— 通用任务调度器（所有任务类型，自动并行化）
+- **辅助工具** —— `office-hours`（需求诊断教练）、`investigate`（结构化调试方法论）
+
+依赖 [gstack](https://github.com/garrytan/gstack) AI Skills 框架（作为 git submodule 集成）。
 
 ## Harness Workflow 是什么
 
@@ -38,6 +41,13 @@
 | `team-qa` | QA 测试工程师 Agent | Stage 6 |
 | `team-security` | SDL 安全工程师 Agent | Stage 7 |
 
+### 辅助工具
+
+| Skill | 用途 |
+|-------|------|
+| `office-hours` | 需求诊断教练 — 在动手开发前用结构化提问验证需求真实性，可作为 Stage 0 前置输入 |
+| `investigate` | 结构化调试方法论 — 四阶段调试（根因调查→模式分析→假设验证→实现修复），3 次假设失败自动升级 |
+
 ## 安装使用
 
 ### 前置依赖
@@ -51,8 +61,13 @@
 ### 第一步：克隆仓库
 
 ```bash
-git clone git@github.com:TerryGSL/myskills.git ~/myskills
+git clone --recurse-submodules git@github.com:TerryGSL/myskills.git ~/myskills
 ```
+
+> `--recurse-submodules` 会自动拉取 gstack 依赖。如果已经克隆但没拉 submodule，补跑：
+> ```bash
+> cd ~/myskills && git submodule update --init --recursive
+> ```
 
 ### 第二步：把 Skill 接入 Claude Code
 
@@ -61,11 +76,15 @@ Claude Code 会从 `~/.claude/skills/` 自动加载 Skill。把仓库里的 skil
 ```bash
 mkdir -p ~/.claude/skills
 
-# 链接 Harness Workflow 相关全部 skill
+# 链接全部 skill
 for skill in harness-workflow task-dispatcher team-init team-commander team-pd \
-             team-architect team-senior-dev team-junior-dev team-qa team-security; do
+             team-architect team-senior-dev team-junior-dev team-qa team-security \
+             office-hours investigate; do
   ln -sf ~/myskills/$skill ~/.claude/skills/$skill
 done
+
+# 链接 gstack skills（AI 工具链）
+ln -sf ~/myskills/gstack/skills/* ~/.claude/skills/
 ```
 
 > 也可以用 `cp -r` 复制过去，但用 `ln -s` 后续 `git pull` 就能直接更新。
@@ -150,13 +169,19 @@ team-senior-dev/       # 资深开发 Agent
 team-junior-dev/       # 初级开发 Agent
 team-qa/               # QA Agent
 team-security/         # 安全 Agent
+office-hours/          # 需求诊断教练（Stage 0 前置）
+investigate/           # 结构化调试方法论
+gstack/                # gstack AI Skills 框架（git submodule）
 ```
 
 ## 卸载
 
 ```bash
 for skill in harness-workflow task-dispatcher team-init team-commander team-pd \
-             team-architect team-senior-dev team-junior-dev team-qa team-security; do
+             team-architect team-senior-dev team-junior-dev team-qa team-security \
+             office-hours investigate; do
   rm ~/.claude/skills/$skill
 done
+# 如果也链接了 gstack skills，一并清理
+rm ~/.claude/skills/gstack-* 2>/dev/null
 ```
