@@ -13,6 +13,8 @@ version: 1.1.0
 > STATE.json 使用 统一 schema（currentRound + completedRounds[]）。
 >
 > **旧 Phase 映射**：Phase 1（需求理解）+ Phase 2（PRD 生成）+ Phase 3（DESIGN 生成）→ Stage 0。
+>
+> **行为协议**：遵守 [protocols.md](../harness-workflow/references/protocols.md)（反谄媚 + 完成状态 + 升级协议 + 经验沉淀）。
 
 # Team PD — 产品设计师
 

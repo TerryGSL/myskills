@@ -50,6 +50,8 @@
   "version": "0.1.0",
   "lastUpdated": "{ISO8601}",
   "currentRound": 0,
+  "stageOutcome": null,
+  "escalations": [],
   "pendingRounds": [],
   "completedRounds": [],
   "features": {},
@@ -61,6 +63,10 @@
   }
 }
 ```
+
+**新增字段说明**（所有可选，向后兼容）：
+- `stageOutcome`：当前 Stage 的完成状态（`完成` / `完成_有顾虑` / `阻塞` / `需要上下文` / `null`）
+- `escalations`：升级历史记录，每条含 `{ "stage": N, "reason": "...", "attempts": 3, "resolution": "..." }`
 
 每轮结束追加到 `completedRounds[]`：
 ```json

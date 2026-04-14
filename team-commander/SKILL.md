@@ -12,6 +12,8 @@ version: 2.0.0
 > 在 autonomous_mode 下，跳过所有人工暂停点，使用默认值决策。
 > STATE.json 使用 统一 schema（currentRound + completedRounds[]）。
 >
+> **行为协议**：遵守 [protocols.md](../harness-workflow/references/protocols.md)（反谄媚 + 完成状态 + 升级协议 + 经验沉淀）。
+>
 > **Stage 映射表**（旧 Phase → 新 Stage）：
 > | 旧 Phase | 新 Stage | 负责 skill |
 > |----------|----------|------------|

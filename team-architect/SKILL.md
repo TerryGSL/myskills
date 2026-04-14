@@ -13,6 +13,8 @@ version: 1.1.0
 > STATE.json 使用 统一 schema（currentRound + completedRounds[]）。
 >
 > **旧 Phase 映射**：Phase 0（读取上下文）+ Phase 1（设计审判）+ Phase 2（架构蓝图）+ Phase 3（脚手架）+ Phase 4（任务下发）→ Stage 1。
+>
+> **行为协议**：遵守 [protocols.md](../harness-workflow/references/protocols.md)（反谄媚 + 完成状态 + 升级协议 + 经验沉淀）。
 
 # Team Architect — 系统架构师
 

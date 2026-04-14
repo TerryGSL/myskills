@@ -118,7 +118,15 @@
 **自治行为**：
 - 不通过 → 自动修复（同一实现 subagent 或新 subagent）
 - 修复后重新审查
-- 最多 2 轮修复，仍不通过 → 记录到 knownIssues 并继续
+- 最多 3 轮修复（遵循升级协议），仍不通过 → 记录到 knownIssues 并继续
+
+**对抗性独立验证**（融合自 gstack spec review loop）：
+Spec Review 通过后，追加派遣一个**对抗性审查 subagent**（独立上下文，看不到之前的审查过程）：
+- 审查指令：「找出这个实现中的设计缺陷、遗漏的边界情况、和与需求不一致的地方。你的目标是找问题，不是确认通过。」
+- 5 个维度：完整性 / 一致性 / 清晰度 / 范围 / 可行性
+- 输出质量评分（1-10）。得分 < 7 → 发现列入上方同一个修复循环（共享 3 轮预算，不额外增加轮次）
+- subagent 失败或超时 → 跳过，不阻塞流程
+- 注意：对抗性审查是**只读信号**，其发现合并到主修复流程中，不开启独立的修复循环
 
 ---
 
@@ -135,11 +143,16 @@
 
 **输出**：Critical / Important / Minor 问题列表
 
-**自治行为**：
-- Critical → 自动修复，修复后重新审查（最多 3 轮）
-- Important → 评估后修复或 defer 到 knownIssues
-- Minor → 选择性采纳
-- 连续 3 轮 Critical 修不好 → 升级给用户
+**自治行为（融合 gstack auto-fix + ASK 批处理）**：
+
+问题分两类处理：
+- **机械问题**（格式、命名、死代码、import 顺序、类型标注）→ 自动修复，不询问
+- **非机械问题**（架构、逻辑、设计缺陷）→ 分级处理：
+  - Critical → 自动修复，修复后重新审查（最多 3 轮，遵循升级协议）
+  - Important → autonomous_mode 下自动采纳；否则批量呈现给用户一次决策
+  - Minor → 跳过，不修
+
+3 轮 Critical 修不好 → 升级给用户
 
 ---
 
@@ -195,7 +208,9 @@
 4. **claude-mem** — 写本轮 observation
 5. **CronDelete** — 无条件删除心跳 cron job
 6. **删除 .harness-status.json** — 清理临时状态文件
-7. **git commit + push**
+7. **git commit**（仅 commit，**不自动 push**）
+   - ⚠️ push 必须经过用户确认。完成 commit 后用 AskUserQuestion 询问：「Round N 已 commit，是否推送到远程？」
+   - 用户同意后才执行 `git push`，否则仅保留本地 commit
 8. **检查 pendingRounds** — 有则自动启动下一轮，无则输出最终报告
 
 ### 最终报告格式
@@ -232,7 +247,7 @@
 - [ ] claude-mem observation 已写入
 - [ ] CronDelete 已执行
 - [ ] .harness-status.json 已删除
-- [ ] git commit + push 完成
+- [ ] git commit 完成（push 需用户确认）
 ```
 
 **任何一项未通过，Round 未完成。不要开始下一轮。**

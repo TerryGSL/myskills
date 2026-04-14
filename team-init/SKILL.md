@@ -9,6 +9,8 @@ version: 2.0.0
 > **harness-workflow 兼容**：本 skill 在自治工作流中作为 Stage -1（预初始化）执行，为 Stage 0–8 准备目录结构和状态文件。
 > 在 autonomous_mode 下，跳过所有人工暂停点，使用默认值决策。
 > STATE.json 使用 统一 schema（currentRound + completedRounds[]）。
+>
+> **行为协议**：遵守 [protocols.md](../harness-workflow/references/protocols.md)（反谄媚 + 完成状态 + 升级协议 + 经验沉淀）。
 
 在当前工作目录下初始化 Agent Team 所需的完整项目结构。这是所有 team-* 技能的前置步骤。
 

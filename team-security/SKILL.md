@@ -9,6 +9,8 @@ version: 2.0.0
 > STATE.json 使用 统一 schema（currentRound + completedRounds[]）。
 >
 > **旧 Phase 映射**：Phase 6（Security Review）→ Stage 7。
+>
+> **行为协议**：遵守 [protocols.md](../harness-workflow/references/protocols.md)（反谄媚 + 完成状态 + 升级协议 + 经验沉淀）。
 
 # Team Security — SDL 安全工程师
 
@@ -22,6 +24,7 @@ version: 2.0.0
 /team-security code-audit         # 仅代码安全审计
 /team-security deps               # 仅依赖/供应链安全
 /team-security report             # 查看当前安全报告
+/team-security --comprehensive    # 全面审查（降低置信度门槛，报告更多发现）
 ```
 
 ## 审查范围
@@ -81,6 +84,35 @@ version: 2.0.0
 - 文件上传/下载
 - 批量操作接口
 - 状态机流转（能否绕过某些状态直接到终态）
+
+### 置信度门控与误报排除（融合自 gstack /cso）
+
+**置信度评分**：每个发现必须附加 1-10 的置信度评分。
+
+| 置信度 | 处理 |
+|--------|------|
+| 9-10 | 已验证，必须报告 |
+| 7-8 | 高置信度，报告 |
+| 5-6 | 中等，仅 `--comprehensive` 模式报告，附加「待确认」标记 |
+| 3-4 | 低置信度，仅 `--comprehensive` 模式报告 |
+| 1-2 | 不报告 |
+
+**默认模式**：只报告置信度 >= 7 的发现（减少噪音）。
+**`--comprehensive` 模式**：报告 >= 3 的所有发现（全面审查时使用）。
+
+**误报排除规则**（以下场景直接跳过，不报告）：
+1. 测试文件中的硬编码密码/Token（`test/`, `__tests__/`, `*_test.go`, `*_test.py`）
+2. 文档和示例代码中的占位密钥（`docs/`, `examples/`, `README`）
+3. 开发环境 Docker 配置中的默认密码（`docker-compose.dev.yml`）
+4. localhost / 127.0.0.1 引用
+5. CVSS < 4.0 且无已知 PoC 的依赖 CVE
+6. 已在 `.gitignore` 中排除的文件
+7. 注释中的示例代码
+8. CI/CD 配置中引用环境变量的占位符（`${{ secrets.* }}`）
+
+**攻击场景必填**：每个发现必须包含具体的攻击步骤。「这个模式不安全」不算发现，必须说清楚攻击者怎么利用。
+
+**变体分析**：发现一个漏洞后，用 Grep 搜索整个代码库中相同模式的所有实例。报告所有变体，不仅仅是第一个。
 
 ### Step 3: 代码安全审计
 
@@ -228,10 +260,10 @@ Date: <日期> | Reviewer: Security Agent
 总体安全评级: 🔴 HIGH RISK / 🟡 MEDIUM RISK / 🟢 LOW RISK
 
 ## 发现问题汇总
-| 编号 | 类型 | 严重级别 | 位置 | 状态 |
-|------|------|----------|------|------|
-| SEC-001 | 水平越权 | CRITICAL | OrderController.java:45 | Open |
-| SEC-002 | 密码 MD5 存储 | CRITICAL | UserService.java:67 | Open |
+| 编号 | 类型 | 严重级别 | 置信度 | 位置 | 变体数 | 状态 |
+|------|------|----------|--------|------|--------|------|
+| SEC-001 | 水平越权 | CRITICAL | 10/10 | OrderController.java:45 | 3 | Open |
+| SEC-002 | 密码 MD5 存储 | CRITICAL | 9/10 | UserService.java:67 | 1 | Open |
 
 ## CRITICAL 问题详情（必须修复后才能上线）
 

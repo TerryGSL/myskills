@@ -9,6 +9,8 @@ version: 1.1.0
 > STATE.json 使用 统一 schema（currentRound + completedRounds[]）。
 >
 > **旧 Phase 映射**：Phase 4（Implementation）中的 CRUD/业务模块部分 → Stage 3。
+>
+> **行为协议**：遵守 [protocols.md](../harness-workflow/references/protocols.md)（反谄媚 + 完成状态 + 升级协议 + 经验沉淀）。
 
 # Team Junior Dev — 初级开发工程师（小登）
 

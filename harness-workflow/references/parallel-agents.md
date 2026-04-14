@@ -102,7 +102,7 @@ tmux new-window -t dev -n impl-b
    - 写/改 STATE.json
    - 写/改 WALKTHROUGH.md
    - 写/改 CLAUDE.md
-   - git push
+   - git push（⚠️ 仅在用户确认后执行）
    
 2. Implementer 终端可以：
    - 读 plan doc / CLAUDE.md / DESIGN.md

@@ -212,7 +212,7 @@ Skill 被调用时自动检测 `docs/STATE.json`：
  │   └→ 漏洞自动修复                                     │
  │ Stage 8  收尾        Coordinator                      │
  │   └→ STATE.json + WALKTHROUGH + CLAUDE.md + mem       │
- │   └→ CronDelete + git push + 最终报告                 │
+ │   └→ CronDelete + git commit + 最终报告（push 需用户确认）│
  └──────────────────────────────────────────────────────┘
 ```
 
@@ -264,7 +264,7 @@ Round N Stage 8 完成 → 检查 pendingRounds
 - [ ] claude-mem observation 已写入
 - [ ] CronDelete 已执行（如有心跳）
 - [ ] .harness-status.json 已删除
-- [ ] git commit + push 完成
+- [ ] git commit 完成（push 需用户确认）
 ```
 
 ---
