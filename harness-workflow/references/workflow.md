@@ -88,7 +88,7 @@
 **执行方式**：调用 `superpowers:subagent-driven-development`，按 plan 派发子 agent。
 
 **模型分配**：
-- 1-2 文件的机械任务（CRUD、配置、简单函数）→ Sonnet（junior-dev 角色）
+- 1-2 文件的机械任务（CRUD、配置、简单函数）→ Opus（junior-dev 角色）
 - 多文件集成、架构相关、核心模块 → Opus（senior-dev 角色）
 
 **输入**：Plan 文档中的 Task 列表
@@ -109,7 +109,7 @@
 
 **何时做**：永不跳过。
 
-**执行方式**：派发 spec-reviewer subagent（Sonnet）。
+**执行方式**：派发 spec-reviewer subagent（Opus）。
 
 **输入**：Plan 需求 + 实际代码 diff
 
@@ -160,7 +160,7 @@ Spec Review 通过后，追加派遣一个**对抗性审查 subagent**（独立�
 
 **何时做**：M/L/XL 级。S 级且无逻辑变更时跳过。
 
-**执行方式**：调用 team-qa skill（Sonnet）。
+**执行方式**：调用 team-qa skill（Opus）。
 
 **输入**：变更文件列表 + 现有测试 + .harness-context.json 中的 testCommand
 
@@ -181,7 +181,7 @@ Spec Review 通过后，追加派遣一个**对抗性审查 subagent**（独立�
 
 **跳过条件**：S/M 级；L 级但不涉及认证/权限/用户输入/数据删除。
 
-**执行方式**：调用 team-security skill（Sonnet）。
+**执行方式**：调用 team-security skill（Opus）。
 
 **输入**：代码 diff + .harness-context.json 中的 auditCommand
 

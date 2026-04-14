@@ -14,7 +14,7 @@
 │  │ Implementer A│  │ Implementer B│  │ Implementer C│  │
 │  │  (subagent)  │  │  (subagent)  │  │  (terminal)  │  │
 │  │  Task 1,3    │  │  Task 2,4    │  │  Task 5      │  │
-│  │  Sonnet 可   │  │  Sonnet 可   │  │  Opus/Sonnet │  │
+│  │  Opus   │  │  Opus   │  │  Opus │  │
 │  └──────────────┘  └──────────────┘  └──────────────┘  │
 │         │                 │                 │           │
 │         └────────┬────────┘                 │           │
@@ -91,8 +91,8 @@ tmux new-window -t dev -n impl-a
 tmux new-window -t dev -n impl-b
 
 # 在 coordinator 窗口: 主 Claude，负责规划和收尾
-# 在 impl-a 窗口: claude --model sonnet，负责 Task 1-3
-# 在 impl-b 窗口: claude --model sonnet，负责 Task 4-6
+# 在 impl-a 窗口: claude --model opus，负责 Task 1-3
+# 在 impl-b 窗口: claude --model opus，负责 Task 4-6
 ```
 
 ### 多终端协作规则

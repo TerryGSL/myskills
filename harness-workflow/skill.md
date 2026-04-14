@@ -194,21 +194,21 @@ Skill 被调用时自动检测 `docs/STATE.json`：
 ```
  Round N
  ┌──────────────────────────────────────────────────────┐
- │ Stage 0  需求分析    team-pd (Sonnet)                │
+ │ Stage 0  需求分析    team-pd (Opus)                  │
  │   └→ 输出需求摘要，更新 STATE.json                    │
  │ Stage 1  架构审查    team-architect (Opus)            │
  │   └→ 输出 ADR 或 "无需变更"                           │
  │ Stage 2  规划        superpowers:writing-plans (Opus) │
  │   └→ 输出 docs/superpowers/plans/round-N.md          │
- │ Stage 3  实现        subagent-driven (Opus/Sonnet)    │
+ │ Stage 3  实现        subagent-driven (Opus)           │
  │   └→ 写代码 + 测试 + commit                          │
- │ Stage 4  Spec 审查   spec-reviewer (Sonnet)           │
+ │ Stage 4  Spec 审查   spec-reviewer (Opus)             │
  │   └→ 不通过自动修复（最多 2 轮）                       │
  │ Stage 5  质量审查    codex + code-reviewer             │
  │   └→ Critical 自动修复（最多 3 轮）                    │
- │ Stage 6  QA 测试     team-qa (Sonnet)                 │
+ │ Stage 6  QA 测试     team-qa (Opus)                   │
  │   └→ P0 bug 自动修复                                  │
- │ Stage 7  安全审查    team-security (Sonnet)            │
+ │ Stage 7  安全审查    team-security (Opus)              │
  │   └→ 漏洞自动修复                                     │
  │ Stage 8  收尾        Coordinator                      │
  │   └→ STATE.json + WALKTHROUGH + CLAUDE.md + mem       │

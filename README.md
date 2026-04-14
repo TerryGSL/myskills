@@ -34,7 +34,7 @@
 | `team-pd` | 产品设计师 Agent，输出 PRD/DESIGN | Stage 0 |
 | `team-architect` | 系统架构师 Agent（Torvalds 风格） | Stage 1 |
 | `team-senior-dev` | 资深开发（Opus，核心模块） | Stage 3 |
-| `team-junior-dev` | 初级开发（Sonnet，CRUD 业务） | Stage 3 |
+| `team-junior-dev` | 初级开发（Opus，CRUD 业务） | Stage 3 |
 | `team-qa` | QA 测试工程师 Agent | Stage 6 |
 | `team-security` | SDL 安全工程师 Agent | Stage 7 |
 
@@ -124,7 +124,7 @@ AI：[自动判断为 M 级任务] → 自动执行 Stage 0 → 1 → 2 → 3 �
 ## 8-Stage 工作流
 
 ```
-Stage 0  需求分析    team-pd            (Sonnet)
+Stage 0  需求分析    team-pd            (Opus)
 Stage 1  架构审查    team-architect     (Opus)
 Stage 2  规划        superpowers:writing-plans
 Stage 3  实现        senior-dev / junior-dev 并行
