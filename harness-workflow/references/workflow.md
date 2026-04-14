@@ -208,9 +208,10 @@ Spec Review 通过后，追加派遣一个**对抗性审查 subagent**（独立�
 4. **claude-mem** — 写本轮 observation
 5. **CronDelete** — 无条件删除心跳 cron job
 6. **删除 .harness-status.json** — 清理临时状态文件
-7. **git commit**（仅 commit，**不自动 push**）
-   - ⚠️ push 必须经过用户确认。完成 commit 后用 AskUserQuestion 询问：「Round N 已 commit，是否推送到远程？」
-   - 用户同意后才执行 `git push`，否则仅保留本地 commit
+7. **git commit**（仅 commit，**绝不自动 push**）
+   - ⚠️ **不主动询问是否 push**，不用 AskUserQuestion 问推送
+   - 只在最终报告中提示「已 commit，等你说 push 时再推送」
+   - 只有当用户主动说「推送」「push」「推到远程」时才执行 `git push`
 8. **检查 pendingRounds** — 有则自动启动下一轮，无则输出最终报告
 
 ### 最终报告格式
