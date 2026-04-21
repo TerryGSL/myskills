@@ -116,7 +116,7 @@ owned_paths:                         # required — harness 可读写
   - "docs/memory/cases/harness_*.md"
   - "docs/memory/decisions/harness_*.md"
   - "docs/memory/constraints/harness_*.md"
-  - "docs/memory/archive/**"
+  - "docs/memory/archive/harness_*.md"
 
 forbidden_paths:                     # required — 绝对黑名单，胜过 owned_paths
   - "docs/memory/private/**"
@@ -315,7 +315,24 @@ Stage 3 agent 修改任何文件前 MUST:
 
 ### 执法点（Stage 3 "Memory check" 怎么真正落地）
 
-上面的"硬门"不能靠子 agent 自律。实际执法三步：
+上面的"硬门"不能靠子 agent 自律。实际执法四步（含实施后漂移扫描）。
+
+**前置状态（Stage 2 结束时捕获）**：
+
+Stage 2（规划）产出 plan 后、Stage 3 开始前，coordinator **必须**把当前 git HEAD 写入 `.harness-status.json.baseSha`：
+
+```json
+{
+  "roundId": N,
+  "baseSha": "<git rev-parse HEAD 的输出>",
+  "baseCapturedAt": "<ISO>",
+  "memoryCheck": { ... }
+}
+```
+
+- `baseSha` 用于第 4 步的 `git diff --name-only <base-sha>..HEAD` 确定"本轮实际改动"
+- 字段缺失 → Stage 4 入口门 BLOCKED（不能盲跑 diff 扫描）
+- 一轮内 `baseSha` 只写一次，不随 Stage 3 的中间 commit 刷新
 
 **1. Coordinator 预查**（harness 主 agent 在 dispatch Stage 3 subagent 前）
 
@@ -502,11 +519,48 @@ review_target:
    4. if BLOCKED: escalate
 ```
 
+### `harness_reviewer_scorecard.yml` Schema
+
+Scorecard 是一个独立 YAML 文件，不是 log。固定 schema：
+
+```yaml
+schema_version: "1.0.0"
+
+totals:
+  total_reviews: 0
+  pass_count: 0
+  fail_count: 0
+  blocked_count: 0
+
+reviews:                              # append-only，每次调 strict-reviewer 追加一条
+  - review_id: "r-2026-04-22-001"     # 单调递增 or UUID
+    stage: "qa"                       # qa | security | spec | quality
+    timestamp: "2026-04-22T10:30:00+08:00"
+    changed_files: ["src/auth/session.ts", ...]
+    verdict: "PASS"                   # PASS | FAIL | BLOCKED
+    findings_count: 0
+    linked_error_case: null           # "cases/harness_xxxx.md#id" | null
+
+false_pass_incidents:                 # 反向修正事件
+  - incident_id: "fpi-2026-05-01-001"
+    original_review_id: "r-2026-04-22-001"      # 被推翻的 PASS
+    bug_case: "cases/harness_2026-05-01_refresh_race.md#race-session-2026-05-01"
+    detected_at: "2026-05-01T14:00:00+08:00"
+    action_taken: "opened case + scorecard delta + retrained reviewer prompt example"
+```
+
+**追加规则**：
+- `reviews` 严格 append-only，不改老条目（包括 verdict 纠错也只加 `false_pass_incidents`，不改原 review）
+- `totals` 每次 append 同步更新
+- 文件超过 500 条 reviews → 归档到 `docs/memory/archive/harness_reviewer_scorecard_<year>.yml` + 本文件保留最新 100 条
+
 ### False-Pass Correction 闭环
 
-- Scorecard 存 `docs/memory/harness_reviewer_scorecard.yml`
-- 每次 review 追加 `scorecard_delta`
-- 后续某 bug 推翻前 PASS 审稿 → Stage 8 或 `--maintain` 写事件到 scorecard，若满足 `errors_collection.min_criteria` → 在 `cases/` 新开 error case
+- Caller（Stage 6/7 coordinator）每次 review 追加一条到 `reviews[]`，同步更新 `totals`
+- 后续某 bug 推翻前 PASS 审稿：
+  1. 在 `cases/` 新开 error case（满足 `errors_collection.min_criteria` 时）
+  2. 在 scorecard 追加一条 `false_pass_incidents` 指向原 review + 新 case
+  3. `--maintain` 会定期扫 `false_pass_incidents`，把高频 false-pass 模式作为 reviewer prompt 的反向训练例子
 
 ---
 
