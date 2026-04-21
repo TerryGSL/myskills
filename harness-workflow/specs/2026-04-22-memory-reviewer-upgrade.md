@@ -188,8 +188,12 @@ Migration steps 声明式写在 `references/memory-migrations.md`。每次 major
 
 ### 硬约束
 
-- `forbidden_paths` 必填，不能为空 — 防止 `owned_paths: ["docs/memory/**"]` 误伤用户手写 memory
-- Contract load 时若 `forbidden_paths` 为空且 `owned_paths` 含通配符 → 报错拒绝加载
+- `forbidden_paths` 必填，不能为空 — 防止用户配置遗漏黑名单
+- **禁止 broad unscoped 模式**：`owned_paths` 里任何**不带 `harness_` 前缀或非显式文件**的通配（如 `docs/memory/**`、`docs/memory/*.md`、`**/*.yml`）直接 **BLOCKED**，**无关** `forbidden_paths` 是否有条目。允许的模式：
+  - 具体文件（`docs/memory/MEMORY.md`）
+  - `harness_` 前缀通配（`docs/memory/*/harness_*.md`、`docs/memory/archive/harness_*.yml`）
+  - 显式 `harness/` 子目录（`docs/memory/archive/harness/**`）
+- **逃生门**：若项目确实需要 broad ownership（极少见），必须在 contract 里显式设 `allow_broad_owned_paths: true`，harness 会在第一次加载时要求用户交互确认（autonomous_mode 下拒绝加载）
 
 ---
 
@@ -288,7 +292,7 @@ next_time_signal:                    # 未来 runtime 查询的 grep 关键词
 - `superseded_by` 必须 `relative/path.md#id`，禁止自由文本
 - body heading `## Negative Patterns` **必须存在**（内容可为"（无）"） — 这是案例库相对原则库的核心价值。不作为 frontmatter key，避免 schema 与 heading 二义
 - `next_time_signal` 是 runtime 查询的匹配源
-- `freshness.last_used` 在**每次 case 被 Stage 3 precheck 匹配或 post-diff 扫描命中时**自动刷新为 `date` (UTC)。归档政策（`archive_policy.archive_after_days_unused`）以此字段为依据 — 从来没被用过的 case 才会在 180 天后进 archive，用过的不会被误归档
+- `freshness.last_used` **仅对 harness-owned case（`harness_*` 前缀）自动刷新**。runtime 匹配到用户手写 case（无 `harness_` 前缀）时，使用事实记录到 `.harness-status.json.memoryCheck.userCaseHits` 内存里，**不回写到用户文件**（维持用户文件 read-only 契约）。归档政策只对 harness-owned case 生效 — 用户 case 的归档完全由用户自己决定
 
 ---
 
@@ -640,6 +644,32 @@ false_pass_incidents:                 # 反向修正事件
    - 已有 case.applies_to.paths = `src/auth/**`
    - 修改 `src/auth/session.ts`
    - 验证：Stage 8 把 case.freshness.state 改为 `suspect`
+
+7. **baseSha 机制**：
+   - Stage 2 结束时 `.harness-status.json.baseSha` 被写入当前 git HEAD
+   - Stage 3 中间多次 commit
+   - Stage 4 入口：`git diff --name-only <baseSha>..HEAD` 正确列出本轮全部变更
+   - 验证：baseSha 缺失时 Stage 4 BLOCKED 且报错要求重置
+
+8. **实施后漂移扫描**：
+   - plan 声明 `changed_files: ["src/auth/session.ts"]`
+   - Stage 3 subagent 意外地也改了 `src/middleware.ts`
+   - 验证：Stage 4 入口扫描发现 `middleware.ts` 不在 `queriedFiles`，为它补跑 ERRORS query；若匹配 strong → 生成 remediation task；若 weak → 追加 matches + 记 knownIssues
+
+9. **用户 case read-only 保护**：
+   - 用户手写 `docs/memory/cases/my_insight.md`（无 `harness_` 前缀）
+   - Stage 3 precheck 匹配到该 case
+   - 验证：`.harness-status.json.memoryCheck.userCaseHits` 记录一条；`my_insight.md` 文件 **未被修改**（mtime 不变）
+
+10. **broad owned_paths 拒绝**：
+    - 手动把 `.harness-memory.yml` 改成 `owned_paths: ["docs/memory/**"]`
+    - 跑 `/harness-workflow --maintain`
+    - 验证：contract load BLOCKED，错误消息指出需要用 `harness_*` 前缀或设 `allow_broad_owned_paths: true`
+
+11. **Scorecard append-only + 归档**：
+    - 人为往 `harness_reviewer_scorecard.yml` 追加到 501 条 reviews
+    - 下一次 review
+    - 验证：`archive/harness_reviewer_scorecard_2026.yml` 生成，本文件保留最新 100 条；老条目 verdict 从未被改
 
 ### 回归检查
 
