@@ -113,7 +113,9 @@ owned_paths:                         # required — harness 可读写
   - "docs/memory/MEMORY.md"
   - "docs/memory/ERRORS.md"
   - "docs/memory/harness_*.md"
-  - "docs/memory/errors/harness_*.md"
+  - "docs/memory/cases/harness_*.md"
+  - "docs/memory/decisions/harness_*.md"
+  - "docs/memory/constraints/harness_*.md"
   - "docs/memory/archive/**"
 
 forbidden_paths:                     # required — 绝对黑名单，胜过 owned_paths
@@ -123,7 +125,7 @@ forbidden_paths:                     # required — 绝对黑名单，胜过 own
 suspect_rules:                       # optional, default []
   - id: "auth-session"
     memory_paths:
-      - "docs/memory/errors/harness_2026-04-15_safari_cookie.md"
+      - "docs/memory/cases/harness_2026-04-15_safari_cookie.md"
     applies_to:
       paths: ["src/auth/**", "middleware.ts", "app/api/auth/**"]
       symbols: ["refreshSession", "setSessionCookie"]
@@ -280,7 +282,7 @@ next_time_signal:                    # 未来 runtime 查询的 grep 关键词
 
 **硬规则**：
 - `superseded_by` 必须 `relative/path.md#id`，禁止自由文本
-- `negative_patterns` 章节**必须存在**（可以为空列表） — 这是案例库相对原则库的核心价值
+- body heading `## Negative Patterns` **必须存在**（内容可为"（无）"） — 这是案例库相对原则库的核心价值。不作为 frontmatter key，避免 schema 与 heading 二义
 - `next_time_signal` 是 runtime 查询的匹配源
 
 ---
@@ -310,6 +312,49 @@ Stage 3 agent 修改任何文件前 MUST:
 ```
 
 **硬门**：没输出 "Memory check" 行的话，Stage 3 不能进入编码。
+
+### 执法点（Stage 3 "Memory check" 怎么真正落地）
+
+上面的"硬门"不能靠子 agent 自律。实际执法三步：
+
+**1. Coordinator 预查**（harness 主 agent 在 dispatch Stage 3 subagent 前）
+
+- 从 Stage 2 产出的 plan 解析**本轮变更文件清单**（plan 必须声明 `changed_files: [...]`）
+- 对每个文件，按上面的查询规则扫 `docs/memory/ERRORS.md` + `cases/*.md`
+- 把匹配结果结构化写入 `.harness-status.json.memoryCheck`：
+  ```json
+  {
+    "queriedAt": "<ISO>",
+    "matches": [
+      { "file": "src/auth/session.ts", "case_id": "...", "relevance": "strong",
+        "action": "verify cookie SameSite before editing session refresh" }
+    ]
+  }
+  ```
+- 若无任何匹配，写 `{ "matches": [] }`
+
+**2. Task prompt 注入**（每个 Stage 3 subagent 的 task prompt 自动 prepend）
+
+```
+# Memory Context（由 coordinator 预查）
+以下 ERRORS 案例与本 task 相关：
+- <case-id> — <reason> → 编码前请 <action>
+
+（或 "No relevant ERRORS cases found."）
+
+你必须在输出中 echo 一行 "Memory check:" 块，证明你已消化上述上下文。
+```
+
+**3. Post-check（Stage 3 subagent 输出后）**
+
+- Coordinator 扫 subagent 的 output
+- 缺失 "Memory check:" 行 → Stage 3 该 task 视为 BLOCKED，发回重做一次；二次缺失 → 升级给用户
+- 有 "Memory check:" 行但 action 明显没做（grep output 找实施证据） → 记入 knownIssues 不阻塞
+
+**为什么这三步必要**：
+- `.harness-status.json.memoryCheck` 是**机器可验证的 sentinel**，不是靠 agent 嘴上说
+- task prompt 注入保证 agent 能看见上下文（而不是需要它主动查）
+- Post-check 把"是否消化"作为可测事件
 
 ### Suspect Rule 文法
 
@@ -390,6 +435,47 @@ analyses to pass cleanly.
 If coverage is incomplete, verdict is BLOCKED — not PASS.
 ```
 
+### Invocation Protocol（调用方必读）
+
+`strict-reviewer` 是**独立 skill**，不是 prompt include 或 inline role。调用者（Stage 4/5/6/7 的 coordinator，或手动用户）按如下协议：
+
+**步骤**：
+
+1. **构造 review_target**（上面 Input 段的 YAML schema），写入会话上下文中 AI 可见的文本块
+2. **调用方式**：AI 用 Skill tool 调用 `strict-reviewer`，参数是步骤 1 的 YAML 字符串（作为 `args` 传入）
+3. **期待返回**：YAML-shaped output（上面 Output 段的 schema）。必须在 AI 文本回复中可解析
+4. **Caller 解析 verdict**：
+   - `PASS` → 继续下一 Stage
+   - `FAIL` → 触发该 Stage 的自动修复循环（Stage 4 最多 3 轮 / Stage 5 最多 3 轮 / Stage 6/7 按 P0 bug 规则）
+   - `BLOCKED` → **必须上报用户**（表示 coverage 不足或 input 不完整，不是 review 本身的"fail"，是系统错误）
+5. **Scorecard 持久化**：`strict-reviewer` 本身 stateless — 它只返回 `scorecard_delta`。**Caller 负责把 delta append 到 `docs/memory/harness_reviewer_scorecard.yml`**
+
+**异常处理**：
+- 非 YAML / schema 不合法的输出 → caller 重试 1 次（同一个 review_target）
+- 二次失败 → `verdict: BLOCKED`，上报用户
+- Skill 不存在 / 调用失败 → Stage 降级为传统 reviewer prompt（qa-prompt / security-prompt 旧版），但 knownIssues 记一条"strict-reviewer unavailable"
+
+**调用示例**（Stage 6 QA coordinator 伪代码）：
+
+```
+review_target:
+  changed_files: [...from git diff]
+  diff_summary: "...from git log"
+  stage: "qa"
+  claims_to_verify: [...from plan test checklist]
+  memory_cases: [...from .harness-status.json.memoryCheck]
+  prior_verdict: null
+
+→ Skill(skill="strict-reviewer", args=<serialized review_target>)
+← "verdict: FAIL\nreasons: [...]\nfindings: [...]\nscorecard_delta: {...}"
+
+→ Coordinator:
+   1. parse verdict
+   2. if FAIL: apply findings.reproduction as failing tests, patch code, re-invoke
+   3. if PASS: append scorecard_delta to harness_reviewer_scorecard.yml
+   4. if BLOCKED: escalate
+```
+
 ### False-Pass Correction 闭环
 
 - Scorecard 存 `docs/memory/harness_reviewer_scorecard.yml`
@@ -425,11 +511,11 @@ If coverage is incomplete, verdict is BLOCKED — not PASS.
 | `harness-workflow/references/maintenance.md` | `--maintain` 增加 contract audit / conflicts review / suspect 检测 |
 | `harness-workflow/prompts/qa-prompt.md` | 替换为 strict-reviewer 调用 + QA 域上下文 |
 | `harness-workflow/prompts/security-prompt.md` | 替换为 strict-reviewer 调用 + Security 域上下文 |
+| `team-commander/SKILL.md` | Step 6 重命名为 "Session Health Check"：6.1 context pressure（保留）+ 6.2 persistent memory drift（新增：检查 `.harness-memory.yml` contract suspect 状态 + audits 漂移）|
 
 ### 不动
 
 - `team-init/SKILL.md`
-- `team-commander/SKILL.md`（Round 1 已改 Session Health Check，保留）
 - `team-pd/SKILL.md`
 - `team-architect/SKILL.md`
 - `team-senior-dev/SKILL.md`
@@ -486,21 +572,31 @@ cat templates/project-memory/.harness-memory.yml.template | \
 
 ---
 
-## Open Questions（待实施阶段确认）
+## Resolved Decisions
 
-1. **`.harness-memory.yml` 版本检查在哪触发？**
-   - 选项 A：harness-workflow skill 每次激活时检查
-   - 选项 B：只在 `--init/--adopt/--maintain` 检查
-   - 倾向 B（性能 + 减少干扰）
+1. **`.harness-memory.yml` 版本检查时机 — 两阶段**
 
-2. **strict-reviewer 依赖哪些 harness 状态？**
-   - 需要吗？或完全 stateless（只读 input，写 output，scorecard 由 caller 写入磁盘）
-   - 倾向 stateless
+   - **活跃时（每次 harness-workflow skill 被调用）**：只读检查 schema_version
+     - 过老 / 过新 / malformed → **只读模式**，不拒绝 skill 运行，但禁止 memory 写操作
+     - 目的：不挡路，但防止盲写
+   - **写操作前（`--init` / `--adopt` / `--maintain` / Stage 8 memory 刷新）**：严格检查
+     - malformed → BLOCKED，不写任何 memory
+     - major 不匹配 → 先运行 migration（如有），否则 BLOCKED
 
-3. **`docs/memory/cases/` 文件名**是否必须 `harness_` 前缀？
-   - 若是：保持一致
-   - 若否：用户也能手写 case 文件
-   - 倾向**必须前缀**，用户手写 case 放 `constraints/` 或 `decisions/`
+2. **strict-reviewer 完全 stateless**
+
+   - 只读 input（review_target），返回 output（含 scorecard_delta）
+   - **不**持有任何跨调用状态
+   - **不**读写磁盘
+   - Scorecard 由 caller（Stage 6/7 coordinator）负责 append 到 `docs/memory/harness_reviewer_scorecard.yml`
+   - 理由：stateless 让 strict-reviewer 可被任何上下文复用（harness 外也能用），且易测试
+
+3. **`docs/memory/cases/` 文件命名**
+
+   - **harness 自动生成的 case**：必须 `harness_YYYY-MM-DD_<slug>.md` 前缀
+   - **用户手写 case**：允许无 `harness_` 前缀放在 `cases/`，但 harness 视为 **read-only**（不更新其 freshness、不归档、不覆盖）
+   - 用户手写的长期知识（非 bug case 型）更适合放 `decisions/` 或 `constraints/`（无 `harness_` 前缀的用户文件 harness 只读）
+   - 同目录并存不冲突，命名空间分开
 
 ---
 
