@@ -325,36 +325,52 @@ Stage 3 agent 修改任何文件前 MUST:
   ```json
   {
     "queriedAt": "<ISO>",
+    "queriedFiles": ["src/auth/session.ts", "middleware.ts"],
     "matches": [
       { "file": "src/auth/session.ts", "case_id": "...", "relevance": "strong",
         "action": "verify cookie SameSite before editing session refresh" }
     ]
   }
   ```
-- 若无任何匹配，写 `{ "matches": [] }`
+- 若无任何匹配，写 `{ "queriedFiles": [...], "matches": [] }`
 
 **2. Task prompt 注入**（每个 Stage 3 subagent 的 task prompt 自动 prepend）
 
 ```
 # Memory Context（由 coordinator 预查）
 以下 ERRORS 案例与本 task 相关：
-- <case-id> — <reason> → 编码前请 <action>
+- <case-id> — <reason> / relevance=<strong|weak> → 编码前请 <action>
 
 （或 "No relevant ERRORS cases found."）
 
-你必须在输出中 echo 一行 "Memory check:" 块，证明你已消化上述上下文。
+你必须在输出中 echo 一行 "Memory check:" 块，证明你已消化上述上下文，
+并对 strong relevance 的 action 给出实施证据（file:line 或 test:case）。
 ```
 
-**3. Post-check（Stage 3 subagent 输出后）**
+**3. Post-check（Stage 3 subagent 输出后，按 relevance 分级）**
 
-- Coordinator 扫 subagent 的 output
 - 缺失 "Memory check:" 行 → Stage 3 该 task 视为 BLOCKED，发回重做一次；二次缺失 → 升级给用户
-- 有 "Memory check:" 行但 action 明显没做（grep output 找实施证据） → 记入 knownIssues 不阻塞
+- 有 "Memory check:" 行，但 **strong relevance 的 action 无实施证据**（grep 不到 file:line / test:case）
+  → **BLOCKED**，发回重做一次；二次仍无证据 → 升级给用户
+- 有 "Memory check:" 行，**weak relevance 的 action** 无实施证据 → 记入 knownIssues 不阻塞
 
-**为什么这三步必要**：
-- `.harness-status.json.memoryCheck` 是**机器可验证的 sentinel**，不是靠 agent 嘴上说
-- task prompt 注入保证 agent 能看见上下文（而不是需要它主动查）
-- Post-check 把"是否消化"作为可测事件
+**4. 实施后 diff 扫描**（Stage 3 全部 task 完成、Stage 4 开始前）
+
+这一步防止 subagent 动了 plan 没预见到的文件（`changed_files` 漂移）：
+
+- 拿实际 diff：`git diff --name-only <base-sha>..HEAD`
+- 对比 `.harness-status.json.memoryCheck.queriedFiles`
+- **新增的（实际改但未 precheck 查过的）文件** → 重跑 ERRORS query
+  - 匹配到 **strong** → 生成 remediation task 回 Stage 3 处理；或请求用户决策是否继续
+  - 匹配到 **weak** → 追加到 `.harness-status.json.memoryCheck.matches` + 记 knownIssues，Stage 4 可继续
+  - 无匹配 → 无影响
+- Stage 4 入口门：`.harness-status.json.memoryCheck.queriedFiles` 必须包含最终 diff 里所有改动的文件；否则 BLOCKED
+
+**为什么这四步必要**：
+- 第 1 步 `.harness-status.json.memoryCheck` 是**机器可验证的 sentinel**，不是靠 agent 嘴上说
+- 第 2 步 task prompt 注入保证 agent 能看见上下文（而不是需要它主动查）
+- 第 3 步 Post-check 按 relevance 分级 — strong 必做、weak 可记 — 防止硬阻塞误伤与无声忽略两种极端
+- 第 4 步实施后扫描补上"plan 预见不到的实际改动"这个黑洞，闭环覆盖
 
 ### Suspect Rule 文法
 
@@ -453,7 +469,17 @@ If coverage is incomplete, verdict is BLOCKED — not PASS.
 **异常处理**：
 - 非 YAML / schema 不合法的输出 → caller 重试 1 次（同一个 review_target）
 - 二次失败 → `verdict: BLOCKED`，上报用户
-- Skill 不存在 / 调用失败 → Stage 降级为传统 reviewer prompt（qa-prompt / security-prompt 旧版），但 knownIssues 记一条"strict-reviewer unavailable"
+
+**strict-reviewer 不可用的处理（关键 — 不得绕过硬门）**：
+
+| 场景 | 动作 |
+|------|------|
+| **harness 模式**（docs/STATE.json 存在）| `verdict: BLOCKED`，停止 Stage 并上报用户。**禁止自动降级到传统 prompt** — 否则硬门形同虚设 |
+| 用户明确一次性同意降级 | 仅当次 Stage 使用传统 prompt + knownIssues 记 "degraded review: strict-reviewer unavailable" |
+| `autonomous_mode`（用户预设无人值守） | 仍然 `BLOCKED`，等待用户回来。autonomous 不等于绕过安全网 |
+| **独立调用**（非 harness，用户手动 `/qa`) | 可降级到传统 prompt，knownIssues 仅作提示 |
+
+设计理由：strict-reviewer 在的时候审得严，strict-reviewer 没了就变温柔——这是系统最脆弱的时候还把防线撤了，违反 default-FAIL 根本原则。harness 模式下**硬阻塞**比"继续凑合"安全得多。
 
 **调用示例**（Stage 6 QA coordinator 伪代码）：
 
