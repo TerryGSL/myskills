@@ -110,13 +110,16 @@ project:
   root_fingerprint: "package.json:name=acme-dashboard"
 
 owned_paths:                         # required — harness 可读写
-  - "docs/memory/MEMORY.md"
-  - "docs/memory/ERRORS.md"
-  - "docs/memory/harness_*.md"
+  - "docs/memory/.harness-memory.yml"            # contract 本身
+  - "docs/memory/harness_reviewer_scorecard.yml" # scorecard
+  - "docs/memory/MEMORY.md"                      # 人类导航索引（HTML marker 块内）
+  - "docs/memory/ERRORS.md"                      # 错误案例总索引（HTML marker 块内）
+  - "docs/memory/harness_*.md"                   # harness 托管的根级 md
   - "docs/memory/cases/harness_*.md"
   - "docs/memory/decisions/harness_*.md"
   - "docs/memory/constraints/harness_*.md"
-  - "docs/memory/archive/harness_*.md"
+  - "docs/memory/archive/harness_*.md"           # 归档的 md（superseded cases 等）
+  - "docs/memory/archive/harness_*.yml"          # 归档的 yml（scorecard rollover 等）
 
 forbidden_paths:                     # required — 绝对黑名单，胜过 owned_paths
   - "docs/memory/private/**"
@@ -253,6 +256,7 @@ criteria_met:                        # 至少 2 项（contract errors_collection
 freshness:
   state: active
   last_verified: 2026-04-22
+  last_used: 2026-04-22               # 最近一次被 runtime query 匹配/注入的日期，archive 政策依据
   suspect_since: null
 superseded_by: null                  # 若被取代：relative/path.md#case-id
 next_time_signal:                    # 未来 runtime 查询的 grep 关键词
@@ -284,6 +288,7 @@ next_time_signal:                    # 未来 runtime 查询的 grep 关键词
 - `superseded_by` 必须 `relative/path.md#id`，禁止自由文本
 - body heading `## Negative Patterns` **必须存在**（内容可为"（无）"） — 这是案例库相对原则库的核心价值。不作为 frontmatter key，避免 schema 与 heading 二义
 - `next_time_signal` 是 runtime 查询的匹配源
+- `freshness.last_used` 在**每次 case 被 Stage 3 precheck 匹配或 post-diff 扫描命中时**自动刷新为 `date` (UTC)。归档政策（`archive_policy.archive_after_days_unused`）以此字段为依据 — 从来没被用过的 case 才会在 180 天后进 archive，用过的不会被误归档
 
 ---
 
