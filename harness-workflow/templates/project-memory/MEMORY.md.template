@@ -1,0 +1,44 @@
+# MEMORY.md
+
+> Project long-term memory index. Shared between humans (free writing) and harness
+> automation (inside `<!-- harness-memory:start -->` blocks only).
+>
+> **Rules for humans**: write anywhere OUTSIDE harness-memory blocks. harness will not
+> touch your entries.
+>
+> **Rules for harness**: write ONLY inside your own `<!-- harness-memory:start id="..." -->`
+> blocks. If you edit a user block, log to `.harness-memory.yml audits.conflicts` and stop.
+>
+> Spec reference: `harness-workflow/specs/2026-04-22-memory-reviewer-upgrade.md`
+
+## {{project_name}}
+
+{{project_description}}
+
+## Project Stack
+
+<!-- harness-memory:start id="project-stack" schema="1.0.0" -->
+- [Project Stack](harness_project_stack.md) — {{tech_stack_oneliner}}
+- [Workflow](harness_workflow.md) — This project uses harness-workflow (8-Stage autonomous)
+<!-- harness-memory:end id="project-stack" -->
+
+## Team Preferences
+
+<!-- users write freely below this line; harness will never touch it -->
+
+<!-- e.g.:
+- Commit messages use Conventional Commits, no emoji
+- Prefer pnpm over npm
+-->
+
+## Recent Architecture Decisions
+
+<!-- harness-memory:start id="recent-decisions" schema="1.0.0" -->
+<!-- harness will append links to docs/memory/decisions/harness_*.md here as they accrue -->
+<!-- harness-memory:end id="recent-decisions" -->
+
+## Known Constraints
+
+<!-- harness-memory:start id="constraints" schema="1.0.0" -->
+<!-- harness will append links to docs/memory/constraints/harness_*.md here as they accrue -->
+<!-- harness-memory:end id="constraints" -->
