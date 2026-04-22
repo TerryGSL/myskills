@@ -1,0 +1,39 @@
+# ERRORS.md
+
+> Error case library — each real bug that crossed the `errors_collection.min_criteria`
+> threshold gets a dated file in `cases/`, indexed here.
+>
+> Purpose: future sessions grep this + `cases/*` by path/symbol/keyword before touching
+> risky modules. A real scar beats a thousand principles.
+>
+> Spec reference: `harness-workflow/specs/2026-04-22-memory-reviewer-upgrade.md`
+
+## Index
+
+<!-- harness-errors:start id="error-index" schema="1.0.0" -->
+<!-- harness appends one line per case: - [<case-id>](cases/harness_<date>_<slug>.md) — <one-line summary> -->
+<!-- harness-errors:end id="error-index" -->
+
+## Writing a new case (for humans)
+
+If you want to log a case manually (no `harness_` prefix), create it as
+`cases/<your-slug>.md`. harness will grep-match it but never edit it.
+
+Minimum threshold (for harness auto-collection): case must meet at least 2 of:
+- Diagnosis took over 30 minutes
+- Crossed module boundaries
+- Recurred at least once
+- Platform / browser / provider-specific
+- Visible to end users or production
+- Invalidated a prior assumption
+
+## Reading cases (for agents)
+
+Before editing code under `src/`, grep this file + `cases/*.md` by:
+- Changed file path and module name
+- Exported symbols you're about to modify
+- Error messages from stack traces
+- Browser / dependency names
+
+Match types: `applies_to.paths` glob = strong; two weak signals = weak.
+Output a `Memory check:` line in your response citing matches.
