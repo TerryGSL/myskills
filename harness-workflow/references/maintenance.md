@@ -81,3 +81,36 @@ MEMORY.md 索引每行 <150 字符：
 ```markdown
 - [Title](file.md) — one-line hook
 ```
+
+---
+
+## `--maintain` memory audit (new in v1.0.0)
+
+Every `--maintain` invocation runs contract-level drift checks on the target project's `docs/memory/`:
+
+### 1. Contract validation
+- Load `.harness-memory.yml`
+- Fail closed if malformed → `BLOCKED`, report to user
+- Validate hard constraints (forbidden_paths non-empty, no broad unscoped owned_paths, schema_version compatible)
+
+### 2. HTML marker conflicts review
+- For each `MEMORY.md` / `ERRORS.md` file, find `<!-- harness-memory:start -->` / `<!-- harness-errors:start -->` blocks
+- If any block contents differ from harness's last known state (stored in `audits.conflicts`), surface to user
+- User chooses: keep edit (remove from conflicts) or revert to harness version
+
+### 3. Suspect detection
+- For every `suspect_rules[]` in contract:
+  - Compute `git diff --name-only HEAD~30..HEAD` (last 30 commits as "recent change window")
+  - If any `applies_to` fires, mark referenced cases `freshness.state: suspect`
+
+### 4. Archive sweep
+- Scan `docs/memory/cases/harness_*.md`
+- If `freshness.last_used` older than `archive_policy.archive_after_days_unused` (default 180) → move to `archive/`
+
+### 5. Scorecard rotation
+- If `docs/memory/harness_reviewer_scorecard.yml` has > 500 reviews → rotate older entries to `archive/harness_reviewer_scorecard_<year>.yml`
+
+### 6. Audit timestamp update
+- Update `audits.last_full_audit` / `audits.last_error_audit` / `audits.last_reviewer_score_audit` in `.harness-memory.yml` per the subtask that ran
+
+Full runtime details → `references/memory.md` §5.3.
