@@ -136,20 +136,64 @@ WALKTHROUGH.md 如在根目录 → 移动到 `docs/`。
 
 ---
 
-## Phase 3: 记忆与审查
+## Phase 3: 项目记忆契约初始化
 
-1. `/codex:setup` — 验证 Codex CLI 就绪
-2. 写入 claude-mem 首条 observation（项目初始化记录）
-3. 创建 auto memory 索引（`MEMORY.md` + 项目/反馈 memory 文件）
+> 走 `--init` 或 `--adopt` 时执行。`--maintain` 不重跑（只做漂移检查）。
 
-**Auto Memory vs. Claude-mem 的区别和选择标准** → 见 [references/memory.md](references/memory.md)
+1. **生成 `.harness-memory.yml`**（contract 锚点）
+
+   从 `templates/project-memory/.harness-memory.yml.template` 渲染，填充：
+   - `project.name` (from `package.json.name` / `go.mod` / `pyproject.toml`)
+   - `project.type` (from `.harness-context.json.projectType`)
+   - `project.root_fingerprint` (格式：`package.json:name=<value>` 或同类锚点)
+
+   写入 `docs/memory/.harness-memory.yml`。
+
+2. **生成 `docs/memory/` 骨架**
+
+   从 `templates/project-memory/` 复制：
+   - `MEMORY.md.template` → `docs/memory/MEMORY.md`（渲染 `{{project_name}}` / `{{project_description}}` / `{{tech_stack_oneliner}}`）
+   - `ERRORS.md.template` → `docs/memory/ERRORS.md`
+   - 四个子目录 `cases/` / `decisions/` / `constraints/` / `archive/` + 各自 `README.md`
+
+3. **初始化 scorecard**（`docs/memory/harness_reviewer_scorecard.yml`）
+
+   ```yaml
+   schema_version: "1.0.0"
+   totals:
+     total_reviews: 0
+     pass_count: 0
+     fail_count: 0
+     blocked_count: 0
+   reviews: []
+   false_pass_incidents: []
+   ```
+
+4. **`--adopt` 合并保护**：如目标项目已有 `docs/memory/`，只创建缺失文件，**绝不覆盖用户文件**，MEMORY.md / ERRORS.md 里只添加缺失 `harness-memory:start` / `harness-errors:start` 标记块。
+
+5. **契约验证**
+
+   - `forbidden_paths` 非空
+   - `owned_paths` 无 broad unscoped 模式
+   - YAML parse 无异常
+
+   任一失败 → BLOCKED，停止 `--init`，要求用户确认。
+
+6. **其他**（保持 v0 行为）
+
+   - `/codex:setup` — 验证 Codex CLI 就绪
+   - 写入 claude-mem 首条 observation（项目初始化记录）
+
+**完整 runtime 规范** → 见 [references/memory.md](references/memory.md)
+**Schema 迁移策略** → 见 [references/memory-migrations.md](references/memory-migrations.md)
+**Reviewer 调用协议** → 见 [references/reviewer-integration.md](references/reviewer-integration.md)
 
 ---
 
 ## Phase 4: 验证与提交
 
 ```bash
-ls CLAUDE.md docs/STATE.json docs/DESIGN.md docs/WALKTHROUGH.md
+ls CLAUDE.md docs/STATE.json docs/DESIGN.md docs/WALKTHROUGH.md docs/memory/.harness-memory.yml
 echo ".harness-status.json" >> .gitignore
 echo ".harness-context.json" >> .gitignore
 git add CLAUDE.md docs/ .gitignore
@@ -262,6 +306,11 @@ Round N Stage 8 完成 → 检查 pendingRounds
 - [ ] WALKTHROUGH.md 已追加
 - [ ] CLAUDE.md 已更新（如有 ADR）
 - [ ] claude-mem observation 已写入
+- [ ] `.harness-memory.yml` contract 通过验证（forbidden_paths 非空 + 无 broad 模式）
+- [ ] `harness_project_stack.md` 反映当前技术栈（Stage 8 刷新）
+- [ ] Scorecard 追加了本轮所有 review 条目（无遗漏）
+- [ ] 本轮新 case（若 errors_collection 阈值达成）已写入 `docs/memory/cases/harness_<date>_<slug>.md`
+- [ ] `MEMORY.md` 索引 marker 块内已追加新决策 / 案例链接
 - [ ] CronDelete 已执行（如有心跳）
 - [ ] .harness-status.json 已删除
 - [ ] git commit 完成（push 需用户确认）
