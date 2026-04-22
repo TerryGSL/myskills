@@ -79,6 +79,30 @@
 
 这是防 drift 的最后一道保险：即使 Claude 在 Stage 2 忘了创建心跳，hook 会在下一次 tool call 后自动提醒，规则又要求"看到提醒必须立刻处理"。
 
+### Stage 2 memory hooks
+
+**1. Capture baseSha (mandatory, BEFORE dispatching Stage 3)**
+
+Before Stage 3 subagent dispatch, coordinator MUST:
+
+```bash
+BASE_SHA=$(git rev-parse HEAD)
+# Write to .harness-status.json.baseSha
+python3 -c "
+import json
+s = json.load(open('.harness-status.json'))
+s['baseSha'] = '$BASE_SHA'
+s['baseCapturedAt'] = '$(date -u +%Y-%m-%dT%H:%M:%SZ)'
+json.dump(s, open('.harness-status.json','w'), indent=2)
+"
+```
+
+This SHA is used by Stage 4 post-diff scan to detect plan-vs-actual file drift. If `.harness-status.json.baseSha` is missing when Stage 4 starts → BLOCKED.
+
+**2. Emit decision records (if plan involves architectural choice)**
+
+If Stage 2 plan contains `## Architecture Decisions` or equivalent, write one file per decision to `docs/memory/decisions/harness_<YYYY-MM-DD>_<slug>.md`. Stage 8 will index them in `MEMORY.md`.
+
 ---
 
 ## Stage 3: 实现（senior-dev + junior-dev）
@@ -102,6 +126,57 @@
 **自治行为**：
 - 按 plan 顺序执行，不请求用户确认
 - 遇到问题先尝试自己解决，解决不了用 NEEDS_CONTEXT 上报
+
+### Stage 3 ERRORS.md enforcement (four-step)
+
+See `references/memory.md` §4.2 for full specification. Summary:
+
+**Step 1 — Coordinator precheck** (BEFORE dispatching each Stage 3 subagent task):
+
+For each file in plan's `changed_files`, grep `docs/memory/ERRORS.md` + `docs/memory/cases/*.md` by:
+- Full path
+- Module name
+- Basename
+- Exported symbols
+
+Write results to `.harness-status.json.memoryCheck`:
+
+```json
+{
+  "queriedAt": "<ISO>",
+  "queriedFiles": ["src/auth/session.ts", "middleware.ts"],
+  "matches": [
+    { "file": "src/auth/session.ts", "case_id": "...", "relevance": "strong",
+      "action": "verify cookie SameSite before editing session refresh" }
+  ]
+}
+```
+
+**Step 2 — Inject into subagent task prompt**:
+
+Each Stage 3 subagent task prompt prepended with a Memory Context block citing relevant cases and requiring the subagent to echo a "Memory check:" line with implementation evidence for strong-relevance actions.
+
+**Step 3 — Post-check by relevance**:
+
+- Missing "Memory check:" line → BLOCKED, retry once; second miss → escalate
+- Has line but STRONG relevance action has no evidence → BLOCKED, retry once
+- Has line but WEAK relevance action has no evidence → knownIssue, do not block
+
+**Step 4 — Post-implementation diff scan** (Stage 3 completes → Stage 4 starts):
+
+```bash
+BASE_SHA=$(jq -r .baseSha .harness-status.json)
+git diff --name-only $BASE_SHA..HEAD > /tmp/actual-diff.txt
+jq -r '.memoryCheck.queriedFiles[]' .harness-status.json > /tmp/queried.txt
+comm -23 <(sort /tmp/actual-diff.txt) <(sort /tmp/queried.txt)
+```
+
+For each unchecked file: re-run ERRORS query.
+- Strong match → remediation task OR escalate
+- Weak match → append to matches, log knownIssue
+- No match → no action
+
+Stage 4 entrance gate: queriedFiles must cover all files in actual diff. Else BLOCKED.
 
 ---
 
@@ -127,6 +202,23 @@ Spec Review 通过后，追加派遣一个**对抗性审查 subagent**（独立�
 - 输出质量评分（1-10）。得分 < 7 → 发现列入上方同一个修复循环（共享 3 轮预算，不额外增加轮次）
 - subagent 失败或超时 → 跳过，不阻塞流程
 - 注意：对抗性审查是**只读信号**，其发现合并到主修复流程中，不开启独立的修复循环
+
+### Stage 4 reviewer invocation
+
+Stage 4 = spec review. Coordinator constructs `review_target` per `references/reviewer-integration.md`:
+
+- `stage: "spec"`
+- `claims_to_verify`: acceptance criteria from plan
+- `memory_cases`: from `.harness-status.json.memoryCheck.matches`
+- `changed_files`: from `git diff --name-only <baseSha>..HEAD`
+
+Invoke:
+
+```
+Skill(skill="strict-reviewer", args=<review_target YAML>)
+```
+
+Route verdict per `reviewer-integration.md` §4. Append scorecard_delta per §5.
 
 ---
 
@@ -154,6 +246,10 @@ Spec Review 通过后，追加派遣一个**对抗性审查 subagent**（独立�
 
 3 轮 Critical 修不好 → 升级给用户
 
+### Stage 5 reviewer invocation
+
+Same pattern as Stage 4 but `stage: "quality"`. Parallel: invoke codex cross-model review as additional check. Findings combined.
+
 ---
 
 ## Stage 6: QA 测试（team-qa）
@@ -172,6 +268,23 @@ Spec Review 通过后，追加派遣一个**对抗性审查 subagent**（独立�
 - 只有检测到前端 UI 时才写 E2E 测试
 
 **Prompt 模板** → 见 [../prompts/qa-prompt.md](../prompts/qa-prompt.md)
+
+### Stage 6 QA via strict-reviewer
+
+Stage 6 coordinator calls strict-reviewer (not legacy qa-prompt):
+
+- `stage: "qa"`
+- `claims_to_verify`: PRD acceptance criteria + plan test checklist
+- `memory_cases`: from .harness-status.json.memoryCheck.matches
+- `changed_files`: from git diff --name-only <baseSha>..HEAD
+
+Route by verdict. For FAIL:
+- Build failing test from each `findings[].reproduction`
+- Patch code
+- Re-invoke strict-reviewer with same target + `prior_verdict`
+- Max 3 rounds, then escalate
+
+Legacy `prompts/qa-prompt.md` kept as domain-context hint (fed into claims_to_verify), no longer top-level prompt.
 
 ---
 
@@ -192,6 +305,10 @@ Spec Review 通过后，追加派遣一个**对抗性审查 subagent**（独立�
 - 依赖审计命令从 .harness-context.json 读取
 
 **Prompt 模板** → 见 [../prompts/security-prompt.md](../prompts/security-prompt.md)
+
+### Stage 7 Security via strict-reviewer
+
+Same pattern as Stage 6 but `stage: "security"`. Claims are OWASP-style concrete threat statements, not generic "security".
 
 ---
 
@@ -277,6 +394,20 @@ Spec Review 通过后，追加派遣一个**对抗性审查 subagent**（独立�
 ```
 
 **任何一项未通过，Round 未完成。不要开始下一轮。**
+
+### Stage 8 memory refresh
+
+Before git commit of the round:
+
+1. **Refresh harness_project_stack.md**: regenerate from current `.harness-context.json`
+2. **Index new decisions**: scan `docs/memory/decisions/harness_*.md` files newer than previous round, add links inside `MEMORY.md` marker block `id="recent-decisions"`
+3. **Index new cases**: scan `docs/memory/cases/harness_*.md` files newer than previous round, add index entries inside `ERRORS.md` marker block `id="error-index"`
+4. **Update freshness.last_used** on harness-owned cases that were matched during this round (from `.harness-status.json.memoryCheck.matches`)
+5. **Check suspect rules**: for each `suspect_rules[]` entry, if its `applies_to` matched this round's changes, mark referenced cases `freshness.state: suspect` + `suspect_since: <ISO>`
+6. **Archive policy check**: scan all harness-owned cases, if `freshness.last_used` older than `archive_policy.archive_after_days_unused` → move to `docs/memory/archive/harness_<date>_<slug>.md` + update `status: archived`
+7. **Scorecard rotation**: if `reviews[]` length > 500, move older to `archive/harness_reviewer_scorecard_<year>.yml`, keep latest 100
+
+After this, proceed with git commit.
 
 ---
 
