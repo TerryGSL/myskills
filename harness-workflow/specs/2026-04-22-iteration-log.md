@@ -234,3 +234,32 @@ Codex session ID: `019db09f-b8d4-7b63-920b-ed126e207144`（保存在 `.context/c
 | Round 9 | spec 终审 6（PASS）| high | 2427816 | ~3 min |
 
 累计 ~10M tokens 的 codex 协作，换来一份 726 行可实施 spec + 两条持久行为规则。
+
+---
+
+## 实施完成（本 commit 系列）
+
+Plan: `harness-workflow/plans/2026-04-22-memory-reviewer-implementation.md`
+
+按 18 个 task 顺序实施（Phase A-E），新建 11 文件 + 修改 7 文件，累计 ~15 commits。
+
+### 关键验证通过
+
+- ✅ `.harness-memory.yml.template` YAML 渲染无异常（用 ruby -ryaml）
+- ✅ strict-reviewer SKILL.md frontmatter 合法（name + description 344 chars），已 symlink 到 `~/.claude/skills/strict-reviewer`
+- ✅ 11 个 spec 场景全部映射到实现点（见 plan Task 16 Step 6 checklist）
+- ✅ 所有 references/*.md 交叉引用在实际实现中可定位（broken 2 条均为文档示例或明示的 future-work forward ref）
+- ✅ 无 TBD / TODO / FIXME 残留
+
+### 重要选择
+
+- **Phase A 前 5 task** 由主 agent 直接执行而非派 subagent（文件内容全在 plan 里、纯机械操作、subagent overhead 反大于任务本身）
+- **Task 6 (memory.md) 和 Task 11 (workflow.md)** 派 sonnet subagent，因为涉及从 spec 大段整合/插入
+- **Task 8 (strict-reviewer SKILL.md)** 派 sonnet subagent 因涉及 frontmatter + 多 section + symlink
+- 其他中小 task 主 agent 直接做
+
+### 下一步
+
+- 跟踪 false-pass incidents（运行一个真实 round 后观察 scorecard）
+- 若 spec `§Open Questions`(已全部 Resolved) 后续有新发现 → 新 spec 补充
+- PR/push 到远程主分支
