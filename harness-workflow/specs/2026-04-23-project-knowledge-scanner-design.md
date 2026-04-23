@@ -320,16 +320,22 @@ Codex 以只读模式跨模型审查：
 - **硬上限 8 条** — 超出则丢 low-impact
 - 写入 `docs/harness/knowledge/TODO.md`
 
-### Phase 5: User Batch Answer → Finalize
+### Phase 5: User Batch Answer → Evidence-Backed Finalize
 
 1. ⏸ **HALT**。提示用户看 TODO.md
 2. 用户在每条 `Your answer:` 后填答案
 3. 用户跑 `/harness-workflow --apply-knowledge-answers`
-4. Coordinator 读 TODO 答案 → merge 进相应 manifest（升级为 high confidence）
-5. 生成最终 INDEX.md（含 snapshot_id + routing rules）
+4. Coordinator 读 TODO 答案，**分支处理**（evidence-first 契约不可破）：
+   - 每条用户答案 → 写入对应 `<domain>/gaps.md` 的 `resolved_by_user` 块（保留用户原话作"override 声明"）
+   - 立即跑 **micro-rescan**：按该答案指引的 convention，用 rg/symbol 搜 2 个支持该 convention 的 file:line 示例
+   - **若找到 ≥ 2 正例** 或 **1 正 + 1 反** → 该规则升级为 high confidence，进 manifest.md，evidence.md 补充 anchor + examples
+   - **若找不到足够 evidence** → 规则保留在 gaps.md 作为 `explicit user override`，**不进 manifest**；Stage -0.5 注入时标注"用户声明约定（未核实）"并降低权重
+5. 生成最终 INDEX.md（含 snapshot_id + routing rules + user-override 声明清单）
 6. 删除所有 `*-draft.md` 临时文件
 7. 追加 CLAUDE.md 触发契约块（幂等）
 8. `git commit`（用户授权前 **不 auto push**）
+
+**为什么不直接把用户答案升成 high confidence**：evidence-first 契约要求 manifest 每条 rule 有 file:line 支撑。用户答案 ≠ 代码证据。若代码里不存在符合答案的实例，这说明约定只存在于用户脑中 —— 这种信息写入 manifest 会让 reviewer 错误 FAIL 代码。用 gaps.md + user-override 的形式保留信息但不污染 manifest。
 
 ### 失败 / 降级
 
@@ -376,17 +382,48 @@ Codex 以只读模式跨模型审查：
 
 4. 加载每个命中 manifest.md（**只读 manifest，不读 evidence**）
 
-5. 写入 `.harness-status.json`：
+5. 写入 `.harness-status.json`（结构化，**不用 free-form string**）：
 
 ```json
 {
   "knowledgeCheck": {
     "snapshot_id": "scan-...",
-    "relevant_knowledge_files": ["docs/harness/knowledge/.../manifest.md", ...],
-    "knowledge_requirements": ["use Result<T>", "Repository uses JdbcTemplate", ...]
+    "relevant_knowledge_files": ["docs/memory/... or docs/harness/knowledge/...", ...],
+    "knowledge_requirements": [
+      {
+        "rule_id": "internal-components/rule-1",
+        "manifest_file": "docs/harness/knowledge/internal-components/manifest.md",
+        "applies_to": ["src/main/java/com/acme/core/service/**"],
+        "requirement_text": "业务层 service 必须返回 Result<T>，禁止抛 BusinessException",
+        "violation_test": "must_use_wrapper",
+        "wrapper_type": "Result"
+      },
+      {
+        "rule_id": "exception-and-error-contracts/rule-3",
+        "manifest_file": "docs/harness/knowledge/exception-and-error-contracts/manifest.md",
+        "applies_to": ["src/main/java/**"],
+        "requirement_text": "不得直接 throw RuntimeException 裸类型",
+        "violation_test": "must_not_throw_raw_exception",
+        "exception_types": ["RuntimeException", "Exception"]
+      }
+    ]
   }
 }
 ```
+
+**`violation_test` 取值枚举**（可扩展）：
+
+| 值 | 含义 | 配套字段 |
+|---|---|---|
+| `must_use_wrapper` | 必须返回某 wrapper 类型 | `wrapper_type: <class>` |
+| `must_call_component` | 必须通过某组件调用 | `component: <package.Class>` |
+| `must_not_throw_raw_exception` | 禁止抛某些裸异常 | `exception_types: [<class>]` |
+| `must_use_package` | 必须导入/调用某 package | `package: <prefix>` |
+| `must_not_use_pattern` | 禁止某代码模式（regex 或 AST 签名）| `pattern: <regex>` |
+| `must_annotate_with` | 必须带某注解 | `annotation: <class>` |
+| `free_form_review` | 无法机器检查，交 LLM 判断 | `requirement_text` 即描述 |
+
+`free_form_review` 是保底，但 scanner/manifest 生成时应尽量匹配到前 6 种结构化类型。
 
 6. 注入到 Stage 2 / Stage 3 subagent 的 task prompt 前置
 
@@ -491,11 +528,18 @@ To disable: set `harness-knowledge: disabled` below this block.
    - `last_full_scan > 90 天` → warn 建议 `--rescan`
    - `> 180 天` → mark `INDEX.status: stale`，Stage -0.5 注入时加 warning
 
-8. **Knowledge drift detection**（轻量 rescan）
-   - 对每个 manifest applies_to glob，采样 3 个文件做一致性检查
-   - 违反率 > 30% → manifest `status: drifted`
-   - drifted manifest 不被 Stage -0.5 注入，本轮记 knownIssue
-   - 聚合到 TODO.md：用户决定更新 manifest 还是修代码
+8. **Knowledge drift detection**（occurrence-based，非文件级采样）
+   - 对每个 manifest 的每条 Rule：
+     - 用该 Rule 的 `violation_test` + `applies_to` glob，在对应代码里采**最多 10 个 matched occurrences**（例如：所有 service 方法、所有抛异常点、所有 SDK 调用点）
+     - 对每个 occurrence 评分：`compliant` / `noncompliant` / `not_applicable`
+     - 计算违反率 = `noncompliant / (compliant + noncompliant)`
+   - Drift 触发条件（**同时满足**）：
+     - 违反率 > **0.3**
+     - `sample_size = compliant + noncompliant >= 5`（少于 5 个样本不下结论，避免小样本噪声）
+   - 命中 → 该 Rule 的 manifest `status: drifted`，drifted rule 清单写入 `gaps.md`
+   - `violation_test: free_form_review` 的 Rule 无法机器采样 → 降级为人工抽查提示（TODO.md 追加）
+   - drifted manifest 不被 Stage -0.5 注入其被污染的 Rule，本轮记 knownIssue
+   - 聚合到 TODO.md：用户决定"更新 manifest（跑 partial-rescan）"还是"修代码遵循 manifest"
 
 9. **Evidence file:line 有效性**
    - 验证每个 evidence 里的 file:line 仍存在（git blame 判行号漂移）
@@ -521,7 +565,10 @@ To disable: set `harness-knowledge: disabled` below this block.
 
 Partial rescan 快速路径：
 - 只激活指定 domain 的 scanner
-- Scout 沿用上次结果，不重跑
+- Scout **必须局部重跑 boundary 探测**（不能纯复用上次 scout）：
+  - 重新识别该 domain 的 applies_to glob 是否变化（包/目录重命名、边界移动）
+  - 若发现 boundary 变化 → 同步更新 INDEX.md 的 Domain Map；旧 boundary 下的 manifest 做一致性检查（若仍有 evidence 留下，否则归档 manifest 到 `superseded_by`）
+- 若 scout 发现**新增 domain**（之前未激活的，现在有激活信号）→ partial-rescan 提示用户改跑 `--rescan` full 模式
 - Codex Contradiction Pass 仍跑（防新 manifest 与旧冲突）
 - TODO 聚合上限 ≤ 3 条
 
