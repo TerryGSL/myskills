@@ -382,13 +382,30 @@ Codex 以只读模式跨模型审查：
 
 4. 加载每个命中 manifest.md（**只读 manifest，不读 evidence**）
 
+4a. **加载相关 user overrides**（新）：
+   - 从 INDEX.md 的 `user-overrides` 列表读被命中 domain 的 override 条目
+   - 对每个命中 domain，读 `<domain>/gaps.md` 里 `resolved_by_user` 块
+   - 把每条 override 打包为 `{gap_id, domain, override_text, weight: "advisory"}`
+   - **不进 `knowledge_requirements`**（reviewer 不以此作为 FAIL 依据）
+   - 注入到下面步骤 5 的 `user_overrides` 字段
+
 5. 写入 `.harness-status.json`（结构化，**不用 free-form string**）：
+
+**路径严格限制**：`relevant_knowledge_files` 只允许 `docs/harness/knowledge/**/manifest.md`。Memory（`docs/memory/`）走 Stage 3 的 ERRORS 单独通道（见 memory.md），**不混入** knowledge 注入，防止 caller 用错 corpus 还过 schema。
 
 ```json
 {
   "knowledgeCheck": {
     "snapshot_id": "scan-...",
-    "relevant_knowledge_files": ["docs/memory/... or docs/harness/knowledge/...", ...],
+    "relevant_knowledge_files": ["docs/harness/knowledge/internal-components/manifest.md", ...],
+    "user_overrides": [
+      {
+        "gap_id": "internal-components/gap-2",
+        "domain": "internal-components",
+        "override_text": "新 service 使用 constructor injection（用户声明，未在代码里找到 high-confidence 证据）",
+        "weight": "advisory"
+      }
+    ],
     "knowledge_requirements": [
       {
         "rule_id": "internal-components/rule-1",
@@ -421,9 +438,17 @@ Codex 以只读模式跨模型审查：
 | `must_use_package` | 必须导入/调用某 package | `package: <prefix>` |
 | `must_not_use_pattern` | 禁止某代码模式（regex 或 AST 签名）| `pattern: <regex>` |
 | `must_annotate_with` | 必须带某注解 | `annotation: <class>` |
-| `free_form_review` | 无法机器检查，交 LLM 判断 | `requirement_text` 即描述 |
+| `free_form_review` | 无法机器检查，交 LLM 判断 | `requirement_text` + `manual_review_reason` + `expiry_after_days` |
 
 `free_form_review` 是保底，但 scanner/manifest 生成时应尽量匹配到前 6 种结构化类型。
+
+**`free_form_review` 额外约束**（防止"永久主观 rule 不可驳"）：
+- 必须带 `manual_review_reason`（为何无法结构化的解释，一句话）
+- 必须带 `expiry_after_days`（默认 90 天）
+- `--maintain` 检查 `free_form_review` rule 的 `last_verified`：
+  - 若 `now - last_verified > expiry_after_days` → 该 Rule 在 Stage -0.5 注入时**降级**为 `weight: warning`（与 user_overrides 同等），**不再触发 reviewer FAIL**
+  - 除非被 `/harness-workflow --partial-rescan <domain>` 重新采证据或用户手动 bump `last_verified`
+- 这样任何"能 FAIL 但无法机器校验"的 rule 都有明确退出机制
 
 6. 注入到 Stage 2 / Stage 3 subagent 的 task prompt 前置
 
@@ -434,18 +459,28 @@ Stage 2/3 每个 subagent prompt 自动 prepend：
 ```
 # Project Knowledge Context（由 Stage -0.5 预查，本任务相关）
 
+## Binding Rules（来自 manifest，违反 → reviewer FAIL）
+
 以下 manifest 来自 docs/harness/knowledge/：
 
-## <domain>/manifest.md
+### <domain>/manifest.md
 <manifest 全文>
+
+## Advisory Context（来自 user overrides 和过期 free_form_review rule，非强制）
+
+以下是用户声明的约定或已过期的主观规则，**尽量遵循但 reviewer 不会以此为 FAIL 依据**：
+
+- [<gap_id>] <override_text>
+- [<expired-rule-id>] <requirement_text>（last_verified 已过期）
 
 ---
 
 **硬契约**：
-1. 你写的代码必须遵循以上 manifest 的每条 Rule
-2. 若 Rule 与需求冲突 → 停下上报，不要自行决定违反
-3. 输出中 echo 一行 "Knowledge check:" 证明你已消化
-4. 对每条相关 Rule，给出遵循证据（file:line 或 test:case）
+1. Binding Rules 必须严格遵循，违反 → reviewer FAIL
+2. Advisory Context 作为风格参考，尽量遵循但非强制
+3. 若 Binding Rule 与需求冲突 → 停下上报，不要自行决定违反
+4. 输出中 echo 一行 "Knowledge check:" 证明你已消化
+5. 对每条 Binding Rule，给出遵循证据（file:line 或 test:case）
 ```
 
 ### Stage 4 入口门
