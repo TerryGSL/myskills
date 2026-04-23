@@ -954,3 +954,33 @@ Implementation scope 预估：
 - 🆕 新建 ~ 21 文件（scanner 规范 + prompts + 15 个模板文件 + 2 个 reference）
 - ✏️ 修改 ~ 6 文件（skill.md / workflow.md / reviewer-integration.md / maintenance.md / memory.md / strict-reviewer SKILL.md）
 - 复杂度：比上次 memory/reviewer 实施略大（scanner 是新工作流，需要 pipeline 编排）
+
+---
+
+## Known Spec Gaps（Round 11 codex review 发现但未修，留 implementation 阶段处理）
+
+按 default-FAIL review bias，codex 在 Round 11 识别出以下 3 条**字段透传类问题**。11 轮迭代后决定不再刷 spec，交给 writing-plans / implementation 阶段补上：
+
+### Gap 1 [high]: review_target 缺 retrieval_outcome
+
+strict-reviewer 第 4 硬门的 verdict 表依赖 `retrieval_outcome` 的三种值（success / coordinator_miss / all_candidates_filtered）做路由，但 `review_target` schema 里没有这个字段。
+
+**修法（implementation 时做）**：`review_target` schema 扩展加 `retrieval_outcome: string` 字段；coordinator 构造 review_target 时从 `.harness-status.json.knowledgeCheck.retrieval_outcome` 复制过去。
+
+### Gap 2 [medium]: known_issues 没从 Stage -0.5 流到 strict-reviewer
+
+Spec 声明 `known_issues` 贯穿 Stage 3/4/review，但 `review_target` 没有该字段，reviewer 看不到 drifted/superseded/filtered 的 warning。
+
+**修法**：`review_target` 加 `known_issues: [{source, id, domain, reason}]` 字段；coordinator 从 knowledgeCheck 复制；reviewer Step 5 Knowledge Compliance Check 读它作为 diagnostic（不影响 verdict，但写入 scorecard 供 audit）。
+
+### Gap 3 [medium]: Late Recovery 未重算新状态字段
+
+Late Recovery 目前只更新 `relevant_knowledge_files` / `knowledge_requirements` / `advisory_knowledge`，没说要重算 Round 10 新加的 `retrieval_outcome` / `filtered_candidates` / `known_issues`。
+
+**修法**：Late Recovery step 5 说明完整重跑 Stage -0.5 的状态派生，所有 5 个字段（原 3 个 + 新 3 个）都 refresh。
+
+### 这 3 条为什么不在 spec 里修
+
+Round 1-5 的修复改动了**核心架构**（high-severity），价值大。Round 6-11 的修复（每轮 3 条）越来越是字段一致性的 polish，边际收益递减。连续 8 轮 FAIL 后 pattern 清晰：每次修 3 条就暴露 3 条新的字段/措辞层漏洞。
+
+决定：**接受 spec 现状交 writing-plans**。这 3 条在 implementation 阶段自然会被 writer/reviewer 发现（写 strict-reviewer 时自然会意识到 review_target 缺字段）。不再于 spec 层死磕。
