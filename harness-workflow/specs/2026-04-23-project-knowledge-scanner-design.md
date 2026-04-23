@@ -371,7 +371,7 @@ Codex 以只读模式跨模型审查：
 4. Coordinator 读 TODO 答案，**分支处理**（evidence-first 契约不可破）：
    - 每条用户答案 → 写入对应 `<domain>/gaps.md` 的 `resolved_by_user` 块（保留用户原话作"override 声明"）
    - 立即跑 **micro-rescan**：按该答案指引的 convention，用 rg/symbol 搜 2 个支持该 convention 的 file:line 示例
-   - **若找到 ≥ 2 正例** 或 **1 正 + 1 反** → 该规则升级为 high confidence，进 manifest.md；**新 rule 的 frontmatter 必须声明 `supersedes_gap_id: <此次用户答案的 gap_id>`**（stable ID 关联）；evidence.md 补充 anchor + examples；**按 ID 精确清理旧的 user override**：
+   - **若找到 ≥ 2 正例** 或 **1 正 + 1 反** → 该规则升级为 high confidence，进 manifest.md；**新 rule 的 inline metadata fields（在 rule block 内）必须声明 `**Supersedes Gap ID**: <此次用户答案的 gap_id>`**（不是 YAML frontmatter，是 rule block 内的 `**Field**:` 行）；evidence.md 补充 anchor + examples；**按 ID 精确清理旧的 user override**：
      - 把 `<domain>/gaps.md` 里 gap_id 精确匹配的 `resolved_by_user` 块标记为 `superseded_by_rule: <new_rule_id>`（保留历史但标注已被取代）
      - 从 INDEX.md `## User Overrides` 表按 gap_id 精确移除对应行
      - 禁止基于 text similarity 删除 — 防止误伤
@@ -426,7 +426,7 @@ Codex 以只读模式跨模型审查：
 
 1. 检查 `docs/harness/knowledge/INDEX.md` 存在性
    - 不存在 → 跳过 Stage -0.5（项目未接入 knowledge，走普通 harness 模式）
-   - 存在 → 继续（INDEX.status 的 `active | stale | drifted` 不影响是否跳过，只影响注入时加 warning 与否；**disable 只通过 CLAUDE.md 表达**，已在 Step 0 处理）
+   - 存在 → 继续（INDEX.status 的 `active | stale | drifted` **都不跳过** Stage -0.5；三者区别只在注入时的 warning level 和哪些 manifest/rule 进入 `knowledge_requirements`。详见生命周期状态机）；**disable 只通过 CLAUDE.md 表达**，已在 Step 0 处理
 
 2. 读 INDEX.md 的 Retrieval Routing Rules 段
 
@@ -612,7 +612,8 @@ Verdict 决定规则扩展：
 | 条件 | verdict |
 |---|---|
 | 任一 knowledge_requirement 被违反 | FAIL |
-| INDEX 存在但 `relevant_knowledge_files` 为空 | BLOCKED |
+| INDEX 存在但 `relevant_knowledge_files` 为空，**且原因是 coordinator 未填写**（未跑 Stage -0.5） | BLOCKED |
+| INDEX 存在但 `relevant_knowledge_files` 为空，**且原因是所有 candidate manifest 都 drifted / superseded 被系统过滤** | 不 BLOCK；记 knownIssue；warn "所有相关 manifest 过时/被取代，建议跑 `/harness-workflow --partial-rescan <domain>` 或 `--rescan`"，允许本轮继续（无 knowledge binding，但不死锁）|
 | 其他 | 按原规则 |
 
 ### CLAUDE.md 触发契约（scanner 完成后自动追加）
@@ -703,7 +704,7 @@ Partial rescan 快速路径：
 - Codex Contradiction Pass 仍跑（防新 manifest 与旧冲突）
 - TODO 聚合上限 ≤ 3 条
 - **User Override cleanup**（stable ID 精确匹配，禁止 fuzzy text similarity）：
-  - 每条新升级的 high-confidence rule，其 frontmatter 必须声明 `supersedes_gap_id: <gap-N>` 或 `supersedes_rule_id: <old-rule-N>` — 这是**显式来源关联**
+  - 每条新升级的 high-confidence rule，其 rule block 的 inline metadata fields 必须声明 `**Supersedes Gap ID**: <gap-N>` 或 `**Supersedes Rule ID**: <old-rule-N>`（inline 行，不是 YAML frontmatter）— 这是**显式来源关联**
   - Cleanup 逻辑只按**显式 ID 匹配**进行：
     - 若 rule 声明 `supersedes_gap_id: X` → 标记 `<domain>/gaps.md#X` 为 `superseded_by_rule: <new-rule-id>` + 从 INDEX `## User Overrides` 移除 gap_id=X 的行
     - 若 rule 声明 `supersedes_rule_id: Y` → 从 INDEX `## Expired Free-Form Rules` 移除 rule_id=Y 的行 + 在对应 manifest 里保留旧 rule 但标 `status: superseded`
@@ -728,9 +729,9 @@ reviewer 发现"代码违反 manifest Rule" → 产 finding，**不自动更新 
 
 ```
 INDEX.status (scanner 写入，不含 disabled):
-  active    → Stage -0.5 正常注入
-  stale     → last_full_scan > 180 天，注入但加 warning
-  drifted   → 某 manifest 与代码严重不一致，注入时跳过该 manifest
+  active    → Stage -0.5 正常注入所有 eligible manifest
+  stale     → last_full_scan > 180 天，retrieval 照常跑，注入时加 "knowledge is stale" warning
+  drifted   → 至少一个 manifest 或大量 rule 已漂移，retrieval 照常跑，注入时加 "some manifests drifted, run --partial-rescan" warning；**drifted 的单个 rule 按 Rule Status 处理（不进 binding 也不进 advisory）**；drifted 的 manifest 级 status 仅作警告不导致 skip
 
 effective_index_status (Stage -0.5 运行时计算，读 CLAUDE.md):
   active | stale | drifted  → 同 INDEX.status
