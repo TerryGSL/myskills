@@ -455,7 +455,12 @@ Codex 以只读模式跨模型审查：
     "snapshot_id": "scan-...",
     "retrieval_outcome": "success",      // success | coordinator_miss | all_candidates_filtered
     "filtered_candidates": [              // 仅在 all_candidates_filtered 时填，解释为什么 empty
-      {"manifest": "docs/harness/knowledge/i18n-and-text-boundaries/manifest.md", "reason": "manifest.status: drifted"}
+      {"manifest": "docs/harness/knowledge/i18n-and-text-boundaries/manifest.md", "reason": "all rules non-renderable (expired/drifted/superseded)"}
+    ],
+    "known_issues": [                     // 由 Stage -0.5 render pipeline + Late Recovery 填，贯穿 Stage 3/4/review
+      {"source": "drifted_rule", "id": "internal-components/rule-5", "domain": "internal-components", "reason": "violation rate 40%"},
+      {"source": "superseded_rule", "id": "exception-and-error-contracts/rule-2", "domain": "exception-and-error-contracts", "reason": "superseded_by rule-7"},
+      {"source": "filtered_manifest", "id": "docs/harness/knowledge/i18n/manifest.md", "domain": "i18n", "reason": "no renderable active rules"}
     ],
     "relevant_knowledge_files": ["docs/harness/knowledge/internal-components/manifest.md", ...],
     "advisory_knowledge": [
@@ -612,7 +617,7 @@ for each entry in INDEX `## User Overrides` (过滤到命中 domain):
 4. 更新 `.harness-status.json.knowledgeCheck`（保留原 snapshot_id；补充 requirements + advisory_knowledge）
 5. **若 recovery 新增的 manifest 含 `knowledge_requirements`**（注意：只含 `Status: active` 的 rule；expired rule 已被 Stage -0.5 排除并转为 advisory）：
    - 不直接进 reviewer
-   - 先 dispatch 一个 remediation task 到 Stage 3：让 subagent 读新 manifest（含 binding rules + Advisory Context），检查当前实现是否违反 binding rules，若违反则修
+   - 先 dispatch 一个 remediation task 到 Stage 3：**使用同一 render pipeline**，**只注入 rendered Binding Rules + Advisory Context 给 subagent**，**禁止把 raw manifest text 传过去**；让 subagent 按 rendered views 检查当前实现是否违反 binding rules，若违反则修
    - remediation 完成 → 重进 Stage 4 入口门（走完整检查）
 6. **若 recovery 后仍 BLOCK**（例如 recovery 本身执行失败 / 新 manifest 文件缺失）→ **升级用户**
 7. recovery 只跑 **1 次**，避免循环。第二次 late BLOCK 直接升级用户
@@ -645,7 +650,7 @@ Verdict 决定规则扩展：
 |---|---|
 | 任一 knowledge_requirement 被违反 | FAIL |
 | INDEX 存在但 `relevant_knowledge_files = []` AND `retrieval_outcome = "coordinator_miss"` | BLOCKED |
-| INDEX 存在但 `relevant_knowledge_files = []` AND `retrieval_outcome = "all_candidates_filtered"`（`filtered_candidates` 列出具体被滤 manifest + 原因）| 不 BLOCK；记 knownIssue；warn "所有相关 manifest 过时/被取代，建议跑 `/harness-workflow --partial-rescan <domain>` 或 `--rescan`"，允许本轮继续（无 knowledge binding，但不死锁）|
+| INDEX 存在但 `relevant_knowledge_files = []` AND `retrieval_outcome = "all_candidates_filtered"` | 不 BLOCK；记 known_issue；warn "所有相关 manifest 都不含可渲染的 active rule（整文件 superseded_by，或所有 rule 都 expired/drifted/superseded），建议 `--partial-rescan`"，允许本轮继续 |
 | `retrieval_outcome = "success"` 但 `relevant_knowledge_files = []`（任务 changed_files 的所有路径都不命中任何 Domain Map routing rule）| 不 BLOCK（本任务无相关 knowledge，正常情况）|
 | 其他 | 按原规则 |
 
