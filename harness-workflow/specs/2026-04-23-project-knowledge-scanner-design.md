@@ -206,13 +206,20 @@ status: active | partial | drifted | superseded_by:<file>
 **适用**: <path glob>
 **Evidence**: evidence.md#<anchor>
 **Confidence**: high
+**Status**: active | expired      # active = reviewer 可 FAIL；expired = 仅作 advisory，reviewer 不 FAIL
+**violation_test**: <enum>        # 见 Activation 段枚举；仅 active + structured 的参与 binding 检查
 ```
 
 **硬格式约束**：
 - 每条 Rule 必须有 `Evidence:` 指向 evidence.md anchor
 - 每条 Rule 必须 `Confidence: high`（medium / low 不出现在 manifest）
+- 每条 Rule 必须有 `Status`（默认 `active`；由 `--maintain` 可改为 `expired`）
 - Rule 描述 ≤ 3 段
 - manifest 超 140 行 → scanner 必须挤掉 low-impact 规则
+
+**Rule Status 运行时影响**：
+- `Status: active` → Stage -0.5 把它加入 `knowledge_requirements`（binding，违反 = FAIL）
+- `Status: expired` → Stage -0.5 **跳过**它加入 `knowledge_requirements`，而是把它镜像进 `advisory_knowledge`（non-binding advisory）；同时 INDEX 的 `## Expired Free-Form Rules` 表应该已有对应条目
 
 ### `<domain>/evidence.md`（≤ 220 行，audit 用）
 
@@ -525,13 +532,14 @@ Stage 2/3 每个 subagent prompt 自动 prepend：
 
 1. coordinator 用**实际 git diff**（`git diff --name-only <baseSha>..HEAD`）重跑 Stage -0.5 的路径匹配部分（不重跑 scout）
 2. 生成更新的 `relevant_knowledge_files` + `knowledge_requirements`（可能新增 N 个 manifest）
-3. 更新 `.harness-status.json.knowledgeCheck`（保留原 snapshot_id，只补充 requirements）
-4. **若 recovery 新增的 manifest 含 `knowledge_requirements`**：
+3. **对每个新加入的 domain，再跑 Stage -0.5 步骤 4a**（读 INDEX 的 `## User Overrides` + `## Expired Free-Form Rules` 表 + 对应 `gaps.md`）→ append 条目到 `advisory_knowledge`
+4. 更新 `.harness-status.json.knowledgeCheck`（保留原 snapshot_id；补充 requirements + advisory_knowledge）
+5. **若 recovery 新增的 manifest 含 `knowledge_requirements`**（注意：只含 `Status: active` 的 rule；expired rule 已被 Stage -0.5 排除并转为 advisory）：
    - 不直接进 reviewer
-   - 先 dispatch 一个 remediation task 到 Stage 3：让 subagent 读新 manifest，检查当前实现是否违反，若违反则修
+   - 先 dispatch 一个 remediation task 到 Stage 3：让 subagent 读新 manifest（含 binding rules + Advisory Context），检查当前实现是否违反 binding rules，若违反则修
    - remediation 完成 → 重进 Stage 4 入口门（走完整检查）
-5. **若 recovery 后仍 BLOCK**（例如 recovery 本身执行失败 / 新 manifest 文件缺失）→ **升级用户**
-6. recovery 只跑 **1 次**，避免循环。第二次 late BLOCK 直接升级用户
+6. **若 recovery 后仍 BLOCK**（例如 recovery 本身执行失败 / 新 manifest 文件缺失）→ **升级用户**
+7. recovery 只跑 **1 次**，避免循环。第二次 late BLOCK 直接升级用户
 
 Recovery 是"retrieval 漏召回"的自动修复。本质上承认 keyword-based pre-retrieval 有局限，真正的 ground truth 是 diff，所以最后用 diff 兜底。
 
@@ -747,10 +755,17 @@ evidence.status:
    - 删掉 .harness-status.json.knowledgeCheck 后进 Stage 4
    - 验证：Stage 4 入口 BLOCKED，上报用户
 
-6. **User TODO batch answer**：
-   - TODO.md 含 3 条问题，用户填答案
+6a. **User TODO batch answer — 有 evidence 支持的答案（应升级进 manifest）**：
+   - TODO.md 含一条问题，用户回答："Service 应使用 constructor injection"
+   - 代码里确实有 ≥2 个 service 使用 constructor injection（micro-rescan 能采到 evidence）
    - 跑 `/harness-workflow --apply-knowledge-answers`
-   - 验证：答案升级进 manifest，snapshot_id bump，TODO.md 清空
+   - 验证：答案升级为 high confidence，进 `<domain>/manifest.md` + `evidence.md` 补 anchor + file:line；snapshot_id bump；TODO.md 相应条目清空
+
+6b. **User TODO batch answer — 无 evidence 支持的答案（应留 gaps.md，不进 manifest）**：
+   - TODO.md 含一条问题，用户回答："新 service 应统一使用 Spring constructor injection"
+   - 代码里实际没有 ≥2 个 service 遵循此约定（micro-rescan 找不到足够证据）
+   - 跑 `/harness-workflow --apply-knowledge-answers`
+   - 验证：答案 **不进 manifest**；写入 `<domain>/gaps.md#gap-N` 作 `resolved_by_user` 块；INDEX.md 的 `## User Overrides` 表新增一行；TODO.md 相应条目清空；下次 Stage -0.5 注入时作 Advisory Context（非 FAIL 依据）
 
 7. **Drift detection**：
    - manifest 说 "use A"，但代码里 40% 文件用 B
