@@ -1,84 +1,84 @@
-# Profile-Based Dispatch Redesign — Design Spec
+# 基于 Profile 的派发重构 — 设计文档
 
-- **Date**: 2026-04-24
-- **Status**: Approved-pending-user-review
-- **Author**: Claude (Opus 4.7) + codex (3 adversarial rounds, converged)
-- **Supersedes**: current monolithic `harness-workflow/skill.md` (363 LoC) internal S/M/L/XL branching
-
----
-
-## Problem
-
-The current entry-point for code tasks is a monolithic `harness-workflow` skill that:
-
-1. Tries to cover every dev scenario (init, adopt, maintain, S/M/L/XL size gating, 8-Stage pipeline, memory contract, drift detection, hooks) in one 363-line file
-2. Gets injected at session start, diluting model attention as the conversation grows
-3. Cannot represent distinct **project scenarios** (personal vs company) with different default behaviors
-4. Conflates three orthogonal concerns: which skill pack applies, which workflow variant to run, how aggressive the autonomy should be
-5. Forces the same 8-Stage flow onto trivial single-line fixes, overkilling simple work
-
-The adjacent `task-dispatcher` (298 LoC) does outer parallel/serial decomposition well but hands every code task wholesale to `harness-workflow`, with no inner dispatch.
-
-## Goals
-
-- Entry-point skill shrinks to ~80 LoC of routing logic only
-- Scenarios dispatch cleanly to different skill packs (harness personal, company, future third-party)
-- Trivial tasks skip ceremony automatically (deterministic, not LLM-guessed)
-- Company compliance policies (e.g., never auto-push) cannot be bypassed by flags
-- Architecture supports unknown future skill packs via a documented contract
-- Framework stays simple and fast — no added layers without value
-
-## Non-Goals
-
-- Does NOT replace `task-dispatcher` (outer message-level splitter stays)
-- Does NOT implement the company skill pack itself (a stub reserves the slot; actual pack developed separately)
-- Does NOT try to semantically classify task types via LLM judgment
-- Does NOT persist aggression mode across turns, CWDs, or sessions
+- **日期**：2026-04-24
+- **状态**：已批准，待用户最终 review
+- **作者**：Claude（Opus 4.7）+ codex（3 轮对抗审查收敛）
+- **取代**：当前单体 `harness-workflow/skill.md`（363 行）内部 S/M/L/XL 分支
 
 ---
 
-## Architecture
+## 问题
 
-### Two-layer dispatch
+当前代码任务入口是单体 `harness-workflow` skill，它的问题：
+
+1. 试图在一个 363 行文件里覆盖所有开发场景（init、adopt、maintain、S/M/L/XL 规模分档、8-Stage 流水线、memory 契约、漂移检测、hooks）
+2. SessionStart 时注入，对话越长注意力越稀释
+3. 无法表达不同**项目场景**（个人 vs 公司）的默认行为差异
+4. 混淆三个正交关切：哪个 skill pack 生效、跑哪个 workflow 变体、自治等级多激进
+5. 对"改一行字"和"做一个子系统"用同一套 8-Stage 流程，小任务过度工程
+
+相邻的 `task-dispatcher`（298 行）外层并行/串行分解做得好，但把所有代码任务整个甩给 `harness-workflow`，内层不再分诊。
+
+## 目标
+
+- 入口 skill 瘦身到 ~80 行纯路由逻辑
+- 场景能清晰派发到不同 skill pack（harness 个人、公司、未来第三方）
+- 琐碎任务自动跳过 ceremony（靠确定性规则，不靠 LLM 猜）
+- 公司合规策略（如绝不自动 push）**不可被 flag 绕过**
+- 架构支持未来未知的 skill pack 挂载（靠文档化契约）
+- 框架保持简单高速 — 多一层没价值的 abstraction 不加
+
+## 非目标
+
+- **不**替换 `task-dispatcher`（外层消息级分解继续由它做）
+- **不**实现公司 skill pack 本身（只预留 stub；实际 pack 你另起流程打磨）
+- **不**尝试用 LLM 语义判断任务类型
+- **不**跨 turn / 跨 CWD / 跨 session 持久化 aggression mode
+
+---
+
+## 架构
+
+### 两层派发
 
 ```
-user message
+用户消息
   ↓
-task-dispatcher              (unchanged — outer parallel/serial split)
-  ↓ (per code subtask)
-profile-entry                (new — ONE Skill load; internal routing logic only)
+task-dispatcher              (不变 — 外层并行/串行分解)
+  ↓ (每个代码子任务)
+profile-entry                (新增 — 单次 Skill load；内部路由)
   │
-  │ 1. Read .harness-profile marker (primary signal)
-  │ 2. If missing → run registered matchers (fallback), disclose result
-  │ 3. Structural fast-path check (deterministic, git-diff based)
-  │ 4. Resolve precedence contract
-  │ 5. Load exactly ONE leaf sub-skill
+  │ 1. 读 .harness-profile marker（主信号）
+  │ 2. 无 marker → 跑 fallback matchers（公开结果）
+  │ 3. 结构性 fast-path 检查（确定性，基于 git diff）
+  │ 4. 解析 precedence 契约
+  │ 5. 加载**恰好一个** leaf sub-skill
   ↓
 leaf sub-skill               (harness-quick | harness-bugfix | harness-feature | harness-refactor)
   ↓
-execution with aggression mode applied
+应用 aggression mode 执行
 ```
 
-**Why two layers, not four**: `profile-entry` performs all routing internally as plain text logic. Only after resolving which leaf sub-skill applies does it invoke `Skill(...)`. This keeps the "classification" cost under one Skill tool invocation while still presenting clean separation.
+**为什么是两层不是四层**：`profile-entry` 内部路由全是纯文本逻辑，不多开 Skill 调用。只有解析出最终 leaf sub-skill 后才 `Skill(...)` 一次。既保持分层清晰，又把"分诊开销"压在一次 Skill tool 调用之内。
 
-### Three orthogonal axes
+### 三个正交维度
 
-| Axis | Decides | How resolved |
+| 维度 | 决定什么 | 如何解析 |
 |----|----|----|
-| **Profile** | Which skill pack owns execution (`harness` / `company` / `default` / future packs) | `.harness-profile` marker → fallback matchers → `default` |
-| **Task type** | Which workflow variant within the profile (`quick` / `bugfix` / `feature` / `refactor`) | Structural fast-path → explicit flag (`/quick` `/fix` `/refactor`) → default `feature` |
-| **Aggression mode** | How autonomous the execution is (`conservative` / `standard` / `aggressive`) | Hard-floor > invocation flag (`/yolo` `/safe`) > profile default > built-in conservative |
+| **Profile** | 哪套 skill pack 负责执行（`harness` / `company` / `default` / 未来 pack） | `.harness-profile` marker → fallback matchers → `default` |
+| **Task type** | profile 内部走哪个 workflow 变体（`quick` / `bugfix` / `feature` / `refactor`） | 结构性 fast-path → 显式 flag（`/quick` `/fix` `/refactor`） → profile 默认 `feature` |
+| **Aggression mode** | 执行时有多自治（`conservative` / `standard` / `aggressive`） | hard-floor > 调用 flag（`/yolo` `/safe`） > profile 默认 > 内置 conservative |
 
-### Precedence contract (single rule)
+### Precedence 契约（单一规则）
 
 ```
-profile hard-floor policy
-  > per-invocation flag
-  > profile config default
-  > built-in conservative default
+profile hard-floor 策略
+  > 每次调用 flag
+  > profile 配置默认值
+  > 内置 conservative 默认值
 ```
 
-**Hard-floor > flag** is deliberate. Company profile's `auto_push=false` is a compliance floor; `/yolo` in a company repo must NOT bypass it. When the floor overrides a flag, `profile-entry` MUST emit:
+**hard-floor > flag** 是刻意的。公司 profile 的 `auto_push=false` 是合规硬底；公司 repo 里 `/yolo` **不能**绕过。当底板压住 flag 时，`profile-entry` **必须**输出：
 
 ```
 Requested: /yolo
@@ -86,52 +86,52 @@ Effective: company-safe (profile policy: auto_push=false, destructive_ops=false)
 Reason: company profile hard-floor
 ```
 
-No silent overrides.
+**绝不**静默降级。
 
-### Structural fast-path (determinism replaces LLM guessing)
+### 结构性 fast-path（用确定性替代 LLM 猜）
 
-Before considering explicit flags or defaults, run a deterministic check:
+在考虑显式 flag 或默认值之前，先跑一次确定性检查：
 
 ```
-if no explicit task-type flag AND
-   git diff --stat shows 1 file changed AND
-   diff size < 10 lines AND
-   no new file created AND
-   target file matches fast-path allowlist
-then silently route to harness-quick
-else honor flag, else default to harness-feature
+if 用户消息无任务类型 flag AND
+   git diff --stat 仅 1 文件改动 AND
+   diff 大小 < 10 行 AND
+   无新文件创建 AND
+   目标文件命中 fast-path allowlist
+then 沉默路由到 harness-quick
+else 尊重 flag，否则默认 harness-feature
 ```
 
-**Fast-path allowlist** (detection mechanics in `references/fast-path.md`):
-- Extension in `{.md, .txt, .json, .yml, .yaml}` OR
-- Target is source file AND diff does NOT modify: exported symbols, function signatures, type definitions, SQL schema, migration files, `package.json` / `go.mod` / `pyproject.toml` / `Cargo.toml` dependency sections
+**Fast-path allowlist**（检测细节见 `references/fast-path.md`）：
+- 扩展名在 `{.md, .txt, .json, .yml, .yaml}` OR
+- 目标是源码文件 AND diff 不触碰：exported 符号、函数签名、类型定义、SQL schema、migration 文件、`package.json`/`go.mod`/`pyproject.toml`/`Cargo.toml` 的依赖段
 
-Detection uses `git diff -U0` plus simple regex rules per language (no AST). False negatives (missing a valid fast-path case) degrade gracefully to feature-path; false positives (routing a structural change to quick-path) are the risk, mitigated by keeping allowlist narrow and list documented.
+检测用 `git diff -U0` 配合按语言的简单正则（**不**做 AST 解析）。误判成本：漏判（该 fast-path 没 fast-path）会降级到 feature-path（安全）；误判（结构变更漏进 quick-path）是风险，靠 allowlist 保守 + 文档化缓解。
 
-This solves "user forgets `/quick` on trivial edits and gets heavy-path overkill" without semantic classification flakiness.
+这样解决了"用户忘了 `/quick`，小编辑也走重路径"的问题，同时不引入 LLM 分类的不稳定性。
 
-### Detection and marker validation
+### 探测与 marker 校验
 
-**Primary**: `.harness-profile` file at repo root, contents = profile name.
+**主信号**：`.harness-profile` 文件放在 repo 根目录，内容为 profile 名。
 
-**Validation rules** (all must pass or emit warning):
-1. Profile name must exist in registry (`~/.claude/profiles/<name>.yml`)
-2. Profile's own fallback matcher rules must also match current repo (cross-check; catches stale markers after repo copy/rename)
+**校验规则**（全部通过或发警告）：
+1. profile 名必须存在于 registry（`~/.claude/profiles/<name>.yml`）
+2. profile 自己的 fallback matcher 规则也必须匹配当前 repo（交叉校验；捕获 repo 复制/改名后的过期 marker）
 
-On mismatch:
+不一致时：
 ```
-⚠ marker says 'harness' but repo doesn't match harness detection rules
-  (current path: /Users/twelve/work/acme-corp/svc-x)
-  best fallback match: 'company-acme'
-  Continue with marker 'harness' or switch to 'company-acme'?
+⚠ marker 写的是 'harness'，但 repo 不匹配 harness 的探测规则
+  （当前路径：/Users/twelve/work/acme-corp/svc-x）
+  最佳 fallback 匹配：'company-acme'
+  继续用 marker 'harness' 还是切到 'company-acme'？
 ```
 
-**Fallback matchers** when no marker:
-- Matchers have explicit integer `priority` (higher wins)
-- Ties broken by specificity (longer path glob beats shorter; git-remote match beats path-only)
-- Still-tied → hard error, user must create `.harness-profile`
+**Fallback matchers**（无 marker 时启用）：
+- matchers 有显式整数 `priority`（高优先级胜）
+- 同优先级 → 按具体度决胜（长的 path glob 胜短的；git_remote_regex 胜 path-only）
+- 仍并列 → 硬报错，强制用户创建 `.harness-profile`
 
-**Auto-match disclosure**: when fallback resolves a profile (no explicit marker), `profile-entry` announces in the first response line:
+**自动匹配公告**：fallback 解析出 profile（无显式 marker）时，`profile-entry` 在首轮响应第一行必须公开：
 ```
 Detected profile: harness-personal (matched: path_glob ~/Music/myskills/**, priority 10)
 Override: /profile <name>
@@ -139,62 +139,62 @@ Override: /profile <name>
 
 ### Aggression mode
 
-Per-invocation flags only. No session persistence. No CWD-surviving state.
+**只支持每次调用 flag，不跨 turn 持久化**。
 
-| Flag | Effect |
+| Flag | 效果 |
 |----|----|
-| `/yolo` | Request aggressive mode (subject to hard-floor) |
-| `/safe` | Request conservative mode |
-| `/quick` `/fix` `/refactor` | Task-type override + implies standard mode |
+| `/yolo` | 请求 aggressive 模式（受 hard-floor 约束） |
+| `/safe` | 请求 conservative 模式 |
+| `/quick` `/fix` `/refactor` | 任务类型 override + 隐含 standard 模式 |
 
-Profile config sets default mode per profile. Company profile hardcodes `hard_floor: [auto_push, force_push, destructive_ops]` — these specific settings cannot be lifted by flag.
+profile 配置给每个 profile 设默认 mode。公司 profile 写死 `hard_floor: [auto_push, force_push, destructive_ops]` — 这些项**任何 flag 都无法解禁**。
 
-**Mode echo discipline**: echo current mode only on these transitions:
-- Profile detection (first turn of session/conversation in that profile)
-- Flag override resolution
-- Fast-path auto-downshift
-- Hard-floor conflict
+**Mode echo 节制**：只在以下转换时输出当前 mode：
+- profile 探测（session / 对话首次进入该 profile）
+- flag override 解析
+- fast-path 自动降档
+- hard-floor 冲突
 
-After a transition announcement, subsequent turns stay silent unless another transition occurs.
+转换公告后续 turn 保持沉默，直到下一次转换。
 
 ---
 
-## File structure
+## 文件结构
 
 ```
-myskills/                                     (repo root)
-├── task-dispatcher/                          (unchanged)
-│   └── skill.md                              298 LoC
-├── profile-entry/                            (NEW — entry point)
-│   ├── skill.md                              ~80 LoC routing logic
+myskills/                                     (repo 根)
+├── task-dispatcher/                          (不变)
+│   └── skill.md                              298 行
+├── profile-entry/                            (新增 — 入口)
+│   ├── skill.md                              ~80 行路由逻辑
 │   └── references/
-│       ├── profiles.md                       profile registry schema + matcher rules
-│       ├── precedence.md                     precedence contract reference
-│       ├── fast-path.md                      structural fast-path criteria
-│       └── task-type-contract.md             cross-pack sub-skill contract
-├── harness-common/                           (NEW — extracted from current harness-workflow)
-│   ├── skill.md                              ~80 LoC
+│       ├── profiles.md                       profile registry schema + matcher 规则
+│       ├── precedence.md                     precedence 契约参考
+│       ├── fast-path.md                      结构性 fast-path allowlist
+│       └── task-type-contract.md             跨 pack sub-skill 契约
+├── harness-common/                           (新增 — 从当前 harness-workflow 抽出)
+│   ├── skill.md                              ~80 行
 │   └── references/
-│       ├── memory-contract.md                (moved from harness-workflow/references)
-│       ├── project-detection.md              (moved)
-│       └── phase-init.md                     (extracted from current Phase 1-4)
-├── harness-quick/                            (NEW)
-│   └── skill.md                              ~50 LoC
-├── harness-bugfix/                           (NEW)
-│   └── skill.md                              ~80 LoC
-├── harness-feature/                          (NEW — inherits current 8-Stage body)
-│   ├── skill.md                              ~150 LoC
-│   └── prompts/                              (moved from harness-workflow/prompts)
-├── harness-refactor/                         (NEW)
-│   └── skill.md                              ~100 LoC
-├── harness-workflow/                         (RESHAPED — now a profile entry stub)
-│   └── skill.md                              ~80 LoC — declares `harness` profile and forwards to profile-entry
-└── (unchanged: investigate/, office-hours/, strict-reviewer/, team-*/)
+│       ├── memory-contract.md                (从 harness-workflow/references 移入)
+│       ├── project-detection.md              (移入)
+│       └── phase-init.md                     (从当前 Phase 1-4 抽出)
+├── harness-quick/                            (新增)
+│   └── skill.md                              ~50 行
+├── harness-bugfix/                           (新增)
+│   └── skill.md                              ~80 行
+├── harness-feature/                          (新增 — 继承当前 8-Stage 主体)
+│   ├── skill.md                              ~150 行
+│   └── prompts/                              (从 harness-workflow/prompts 移入)
+├── harness-refactor/                         (新增)
+│   └── skill.md                              ~100 行
+├── harness-workflow/                         (重塑 — 变成 profile 入口 stub)
+│   └── skill.md                              ~80 行 — 声明 harness profile，转发给 profile-entry
+└── (不变：investigate/、office-hours/、strict-reviewer/、team-*/)
 
-~/.claude/profiles/                           (user-level registry)
+~/.claude/profiles/                           (用户级 registry)
 ├── default.yml                               always-match fallback, priority=0
-├── harness.yml                               personal projects profile
-└── company.yml.template                      STUB: schema + placeholder sub-skill paths, user fills later
+├── harness.yml                               个人项目 profile
+└── company.yml.template                      STUB：schema + placeholder sub-skill 路径，你之后填
 ```
 
 ### Profile YAML schema
@@ -202,7 +202,7 @@ myskills/                                     (repo root)
 ```yaml
 # ~/.claude/profiles/harness.yml
 name: harness
-description: Personal projects — Next.js / Go / Python
+description: 个人项目 — Next.js / Go / Python
 
 detection:
   priority: 10
@@ -214,7 +214,7 @@ detection:
     - type: git_remote_regex
       pattern: "github.com:TerryGSL/.*"
 
-entry_skill: profile-entry   # always — profile entry fans out from here
+entry_skill: profile-entry   # 恒定 — profile 入口从这里分发
 
 task_types:
   quick: harness-quick
@@ -224,21 +224,21 @@ task_types:
 
 default_mode: standard
 
-hard_floor: []               # personal profile has no compliance floor
+hard_floor: []               # 个人 profile 无合规硬底
 ```
 
 ```yaml
 # ~/.claude/profiles/company.yml.template (STUB)
-name: company-<fill-in>
-description: Company projects — strict review required
+name: company-<填写>
+description: 公司项目 — 严格审查，绝不自动 push
 
 detection:
   priority: 20
   matchers:
     - type: path_glob
-      pattern: "<your company repos path>"
+      pattern: "<你公司 repo 路径>"
     - type: git_remote_regex
-      pattern: "<your company git host regex>"
+      pattern: "<你公司 git 主机正则>"
 
 entry_skill: profile-entry
 
@@ -251,129 +251,129 @@ task_types:
 default_mode: conservative
 
 hard_floor:
-  - auto_push           # never auto-push, always require human review
+  - auto_push           # 永不自动 push，必须人工审查
   - force_push
   - destructive_ops
   - auto_merge
 ```
 
-### Cross-pack task-type contract
+### 跨 pack 任务类型契约
 
-Documented in `profile-entry/references/task-type-contract.md`. Any skill pack implementing alternative task-type skills must:
+详见 `profile-entry/references/task-type-contract.md`。任何实现替代任务类型 skill 的 skill pack 必须：
 
-1. **Honor hard_floor**: never execute listed operations, regardless of request
-2. **Observe mode echo conventions**: announce on required transitions, silent otherwise
-3. **Accept standardized inputs**: current CWD, subtask description, resolved mode, optional `.harness-context.json`
-4. **Produce standardized outputs**: commit(s) on the branch, mode-respecting side effects, final summary
+1. **严守 hard_floor**：列表里的操作永远不执行，无论请求是谁发的
+2. **遵守 mode echo 约定**：在规定转换点输出，其余 turn 沉默
+3. **接受标准输入**：当前 CWD、子任务描述、解析后的 mode、可选 `.harness-context.json`
+4. **产出标准输出**：分支上的 commit、遵守 mode 的副作用、最终 summary
 
-Contract validation via `harness-pack-test` script (lives at `myskills/tools/harness-pack-test`, written in Bash + Node depending on fixture needs):
+契约校验通过 `harness-pack-test` 脚本（位于 `myskills/tools/harness-pack-test`，Bash + Node 混合实现）：
 ```bash
 ./tools/harness-pack-test ~/.claude/profiles/company.yml
-# runs fixture inputs, asserts contract compliance, exits non-zero on violation
+# 跑 fixture 输入，校验契约合规，违规时非零退出
 ```
 
 ---
 
-## Component responsibilities
+## 组件职责
 
 ### `profile-entry`
 
-**Reads**: `.harness-profile`, `~/.claude/profiles/*.yml`, git state for fast-path
+**读取**：`.harness-profile`、`~/.claude/profiles/*.yml`、fast-path 检查用的 git 状态
 
-**Logic** (in order):
-1. Marker lookup + validation (warn on stale/mismatch)
-2. If no marker → run matchers by priority, pick highest, disclose
-3. Structural fast-path check
-4. Resolve task type: fast-path result → explicit flag → profile default (`feature`)
-5. Resolve mode: hard-floor > flag > profile default > conservative
-6. Emit mode/detection announcements if triggered
-7. Invoke `Skill(<leaf_sub_skill>)` with resolved parameters
+**逻辑**（按序）：
+1. marker 查找 + 校验（陈旧/不匹配时警告）
+2. 无 marker → 按优先级跑 matchers，选最高，公开结果
+3. 结构性 fast-path 检查
+4. 解析任务类型：fast-path 结果 → 显式 flag → profile 默认（`feature`）
+5. 解析 mode：hard-floor > flag > profile 默认 > conservative
+6. 有转换则输出 mode/探测公告
+7. 调用 `Skill(<leaf_sub_skill>)`，把解析出的参数带上
 
-**Must NOT**: perform any code modification itself, perform semantic LLM classification, persist state across turns.
+**绝不做**：自己改代码、跑 LLM 语义分类、跨 turn 持久化状态。
 
 ### `harness-common`
 
-Shared infrastructure referenced by all `harness-*` sub-skills:
-- Phase 1 (global infra setup — one-time)
-- Phase 2 (project config + `.harness-context.json` detection)
-- Phase 3 (memory contract init)
-- Phase 4 (validation + initial commit)
-- Drift detection + `--maintain` mode
+所有 `harness-*` 子 skill 共享的基础设施：
+- Phase 1（全局基础设施 — 一次性）
+- Phase 2（项目配置 + `.harness-context.json` 探测）
+- Phase 3（memory 契约初始化）
+- Phase 4（校验 + 初始 commit）
+- 漂移检测 + `--maintain` 模式
 
-Sub-skills reference this via `see references/harness-common/<topic>.md` rather than duplicating.
+子 skill 通过 `见 references/harness-common/<topic>.md` 引用，而不是复制一遍。
 
 ### `harness-quick`
 
-1-line / 1-file / no-ceremony path. Just edit + commit. No PRD, no architect, no plan doc. Memory observation still written.
+1 行 / 1 文件 / 无 ceremony 路径。直接改 + commit。无 PRD、无架构、无 plan doc。memory observation 照常写。
 
 ### `harness-bugfix`
 
-- Step 1: investigate (invokes `investigate` skill)
-- Step 2: reproduce
-- Step 3: fix
-- Step 4: add regression test
-- Step 5: commit + memory observation
+- Step 1：investigate（调用 `investigate` skill）
+- Step 2：复现
+- Step 3：修
+- Step 4：加回归测试
+- Step 5：commit + memory observation
 
 ### `harness-feature`
 
-Current 8-Stage body minus Phase init (moved to `harness-common`):
-- Stage 0 PD → Stage 1 architect → Stage 2 plan → Stage 3 impl → Stage 4 spec-review → Stage 5 quality → Stage 6 QA → Stage 7 security → Stage 8 wrap
+当前 8-Stage 主体减去 Phase init（已下放到 `harness-common`）：
+- Stage 0 PD → Stage 1 架构 → Stage 2 规划 → Stage 3 实现 → Stage 4 spec review → Stage 5 质量 → Stage 6 QA → Stage 7 安全 → Stage 8 收尾
 
 ### `harness-refactor`
 
-- Baseline capture (tests passing, behavior snapshot)
-- Incremental plan (tiny commits)
-- Execute with continuous verification
-- Final comparison against baseline
+- baseline 捕获（测试通过，行为快照）
+- 增量计划（小 commit）
+- 持续验证执行
+- 与 baseline 最终对比
 
-### `harness-workflow` (reshaped)
+### `harness-workflow`（重塑后）
 
-Slimmed to `harness` profile's declared entry. Keeps the `/harness-workflow --init` / `--adopt` / `--maintain` commands as passthroughs to `harness-common`. Existing user muscle memory survives.
-
----
-
-## Migration plan (summary — detailed plan in implementation stage)
-
-1. Create `profile-entry/` with routing logic + references
-2. Create `~/.claude/profiles/{default,harness}.yml` + `company.yml.template`
-3. Extract `harness-common/` from current `harness-workflow`
-4. Split current 8-Stage body into `harness-feature/`
-5. Create `harness-quick/` `harness-bugfix/` `harness-refactor/`
-6. Reshape `harness-workflow/skill.md` to profile declaration stub
-7. Add `harness-pack-test` CLI for contract validation
-8. Update root `README.md` to explain the new framework
-9. Verify: existing `--init` / `--adopt` / `--maintain` flows unchanged end-user behavior
+瘦身为 `harness` profile 的声明入口。`/harness-workflow --init` / `--adopt` / `--maintain` 命令保留为到 `harness-common` 的 passthrough。用户既有肌肉记忆不破坏。
 
 ---
 
-## Risks and mitigations
+## 迁移计划（摘要 — 详细 plan 在实施阶段产出）
 
-| Risk | Mitigation |
+1. 建 `profile-entry/`，写路由逻辑 + references
+2. 建 `~/.claude/profiles/{default,harness}.yml` + `company.yml.template`
+3. 从当前 `harness-workflow` 抽出 `harness-common/`
+4. 把现有 8-Stage 主体拆进 `harness-feature/`
+5. 建 `harness-quick/` `harness-bugfix/` `harness-refactor/`
+6. 重塑 `harness-workflow/skill.md` 为 profile 声明 stub
+7. 加 `harness-pack-test` 脚本做契约校验
+8. 更新根 `README.md` 说明新框架
+9. 验证：既有 `--init` / `--adopt` / `--maintain` 端到端行为不变
+
+---
+
+## 风险与缓解
+
+| 风险 | 缓解 |
 |----|----|
-| Structural fast-path misfires on edge cases (e.g., small diff but schema change) | Fast-path criteria documented in `references/fast-path.md` with explicit exclusions; easy to tune |
-| Marker validation warning becomes noisy after repo rename | Warning is informational, workflow continues; user can update or delete marker |
-| Sub-skill cross-references to `harness-common` break if user accesses a sub-skill directly | Each sub-skill's top paragraph states "normally invoked via profile-entry; direct invocation supported but may skip init checks" |
-| User forgets which profile they're in | Detection announcement on each profile transition; `/profile` flag with no args prints current profile |
-| Adding a new skill pack requires editing multiple files | Compensated by contract test; pack author gets fast feedback |
+| 结构性 fast-path 对边界场景误判（例如 diff 小但 schema 改动） | fast-path 标准写在 `references/fast-path.md` 里，含显式排除清单，方便调 |
+| repo 改名后 marker 校验警告变噪音 | 警告只是信息提示，workflow 继续；用户可手动更新或删除 marker |
+| 直接调用子 skill 时跨 skill 对 `harness-common` 的引用失效 | 每个子 skill 顶部段落声明"通常由 profile-entry 调用；直调支持但会跳过 init 检查" |
+| 用户忘了当前在哪个 profile | 每次 profile 切换时有探测公告；无参数 `/profile` 打印当前 |
+| 新加 skill pack 要改多处 | 靠契约测试兜底 — pack 作者能快速拿到反馈 |
 
 ---
 
-## Out of scope for this spec
+## 本 spec 范围外
 
-- Concrete company skill pack implementation (stub only)
-- Hook-based session re-injection (deferred; profile-entry's on-demand Skill loading should replace most of its need)
-- Claude Code plugin packaging (deferred; framework can be plugin-ified later without architectural change)
+- 实际公司 skill pack 实现（只预留 stub）
+- 基于 hook 的 session 重注入（延后；profile-entry 的按需 Skill load 应该能替代其大部分需求）
+- Claude Code 插件化打包（延后；框架可之后再 plugin 化，架构不用动）
 
 ---
 
-## Codex adversarial review record
+## Codex 对抗审查记录
 
-Three rounds. Final convergence:
+3 轮收敛：
 
-| Round | Issues raised | Resolution |
+| 轮次 | 提出的问题 | 解决 |
 |----|----|----|
-| 1 | 7 fundamental flaws (session-persistent yolo, 4-hop overhead, LLM task-type guessing, detection conflicts, wrap-not-replace, cold-start, no precedence contract) | Full redesign → v2 |
-| 2 | 4 resolved, 3 partial (heavy-path default, matcher tie-break, cold start), 1 new hole (stale marker authority) | Targeted fixes → v3 |
-| 3 | 6/7 sufficient, 1 remaining (explicit cold-start detection path) | F7 patch: default profile `always-match, priority=0` |
+| 1 | 7 条硬伤（session 持久 yolo、4 跳开销、LLM 任务类型猜测、探测冲突、包装而非替换、cold-start、无 precedence 契约） | 全面重设计 → v2 |
+| 2 | 4 条 resolved / 3 条 partial（heavy-path 默认、matcher 平局、cold start），+ 1 个新洞（marker 过度授权） | 4 个精准修复 → v3 |
+| 3 | 6/7 sufficient，仅剩 cold-start 显式探测路径 | F7 补丁：default profile `always-match, priority=0` |
 
-All codex session transcripts stored at `~/.codex/sessions/2026/04/24/*.jsonl`.
+所有 codex session transcript 在 `~/.codex/sessions/2026/04/24/*.jsonl`。
