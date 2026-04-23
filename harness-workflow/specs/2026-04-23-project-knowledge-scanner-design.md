@@ -365,10 +365,10 @@ Codex 以只读模式跨模型审查：
 4. Coordinator 读 TODO 答案，**分支处理**（evidence-first 契约不可破）：
    - 每条用户答案 → 写入对应 `<domain>/gaps.md` 的 `resolved_by_user` 块（保留用户原话作"override 声明"）
    - 立即跑 **micro-rescan**：按该答案指引的 convention，用 rg/symbol 搜 2 个支持该 convention 的 file:line 示例
-   - **若找到 ≥ 2 正例** 或 **1 正 + 1 反** → 该规则升级为 high confidence，进 manifest.md，evidence.md 补充 anchor + examples；**同时清理旧的 user override**：
-     - 把对应 `<domain>/gaps.md` 的 `resolved_by_user` 块标记为 `superseded_by_rule: <new_rule_id>`（保留历史，但标记已被规则取代）
-     - 从 INDEX.md `## User Overrides` 表移除对应行
-     - 防止同一约定同时作为 binding rule + advisory override 重复注入
+   - **若找到 ≥ 2 正例** 或 **1 正 + 1 反** → 该规则升级为 high confidence，进 manifest.md；**新 rule 的 frontmatter 必须声明 `supersedes_gap_id: <此次用户答案的 gap_id>`**（stable ID 关联）；evidence.md 补充 anchor + examples；**按 ID 精确清理旧的 user override**：
+     - 把 `<domain>/gaps.md` 里 gap_id 精确匹配的 `resolved_by_user` 块标记为 `superseded_by_rule: <new_rule_id>`（保留历史但标注已被取代）
+     - 从 INDEX.md `## User Overrides` 表按 gap_id 精确移除对应行
+     - 禁止基于 text similarity 删除 — 防止误伤
    - **若找不到足够 evidence** → 规则保留在 gaps.md 作为 `explicit user override`，**不进 manifest**；Stage -0.5 注入时标注"用户声明约定（未核实）"并降低权重
 5. 生成最终 INDEX.md（含 snapshot_id + routing rules + user-override 声明清单）
 6. 删除所有 `*-draft.md` 临时文件
@@ -546,11 +546,23 @@ Stage 2/3 每个 subagent prompt 自动 prepend：
 ### Stage 4 入口门
 
 ```
+0. Disabled bypass：读 .harness-status.json.knowledgeCheck.effective_index_status
+   若 = "disabled"（Stage -0.5 Step 0 已设置）→ 跳过 knowledge gate，直接进 strict-reviewer（不做 knowledge-grounding 检查）
 1. 读 .harness-status.json.knowledgeCheck
-2. 若 snapshot_id 为空且 INDEX 存在 → BLOCKED（coordinator 漏跑 Stage -0.5，无 recovery，必须升级用户）
+2. 若 snapshot_id 为空且 INDEX 存在 AND effective_index_status != "disabled" → BLOCKED
+   （coordinator 漏跑 Stage -0.5 但 knowledge 启用中，是系统错误；无 recovery，必须升级用户）
 3. 若实际变更文件涉及 manifest 的 applies_to，但 relevant_knowledge_files 没包含对应 manifest
    → 进入 **Stage 4 Late Recovery**（见下）
 4. 通过 → 进 strict-reviewer
+```
+
+同步约定：Stage -0.5 Step 0 必须把 `effective_index_status` 写入 `.harness-status.json.knowledgeCheck`：
+```json
+"knowledgeCheck": {
+  "effective_index_status": "disabled" | "active" | "stale" | "drifted",
+  "snapshot_id": "scan-..." | null,
+  ...
+}
 ```
 
 ### Stage 4 Late Recovery（keyword-only retrieval 漏了 manifest 的自动补救）
@@ -685,10 +697,13 @@ Partial rescan 快速路径：
 - 若 scout 发现**新增 domain**（之前未激活的，现在有激活信号）→ partial-rescan 提示用户改跑 `--rescan` full 模式
 - Codex Contradiction Pass 仍跑（防新 manifest 与旧冲突）
 - TODO 聚合上限 ≤ 3 条
-- **User Override cleanup**（同 Phase 5 的升级流程）：
-  - 对每条本次新产出的 high-confidence rule，检查 INDEX `## User Overrides` 是否已有同 domain 的条目描述同一约定（**基于 text 相似度启发或 gap_id 明示关联**）
-  - 若是 → 标记 gaps.md 对应块 `superseded_by_rule: <new_rule_id>` + 移除 INDEX 行
-  - **同理处理 `## Expired Free-Form Rules`**：若新 rule 与某 expired rule 覆盖相同约束，标记 `superseded_by_rule` + 移除 expired 行（允许 expired rule 被新 evidence 重新"救活"为 binding 形态）
+- **User Override cleanup**（stable ID 精确匹配，禁止 fuzzy text similarity）：
+  - 每条新升级的 high-confidence rule，其 frontmatter 必须声明 `supersedes_gap_id: <gap-N>` 或 `supersedes_rule_id: <old-rule-N>` — 这是**显式来源关联**
+  - Cleanup 逻辑只按**显式 ID 匹配**进行：
+    - 若 rule 声明 `supersedes_gap_id: X` → 标记 `<domain>/gaps.md#X` 为 `superseded_by_rule: <new-rule-id>` + 从 INDEX `## User Overrides` 移除 gap_id=X 的行
+    - 若 rule 声明 `supersedes_rule_id: Y` → 从 INDEX `## Expired Free-Form Rules` 移除 rule_id=Y 的行 + 在对应 manifest 里保留旧 rule 但标 `status: superseded`
+  - **禁止 text similarity 自动删除**：text similarity 只能 propose candidate 写入 TODO，让用户确认后再 bump `supersedes_*` ID 手动触发精确清理
+  - Rationale：大型 repo 里相似表述跨 domain 常见，自动 fuzzy 删除会误伤（codex Round 6 Finding 2）
 
 ### 与 strict-reviewer 的反向反馈闭环
 
@@ -799,10 +814,15 @@ evidence.status:
    - 跑 `/harness-workflow --apply-knowledge-answers`
    - 验证：答案 **不进 manifest**；写入 `<domain>/gaps.md#gap-N` 作 `resolved_by_user` 块；INDEX.md 的 `## User Overrides` 表新增一行；TODO.md 相应条目清空；下次 Stage -0.5 注入时作 Advisory Context（非 FAIL 依据）
 
-7. **Drift detection**：
-   - manifest 说 "use A"，但代码里 40% 文件用 B
+7a. **Drift detection — 单条 rule 漂移（manifest 整体不变）**：
+   - manifest 有 5 条 rules，其中 Rule-3 说 "use A"，但代码里对应 rule 的 occurrences 中 40% 用 B
    - 跑 `/harness-workflow --maintain`
-   - 验证：manifest `status: drifted`，TODO.md 追加"是否更新 manifest"
+   - 验证：**Rule-3 的 per-rule `Status: drifted`**；manifest frontmatter 级 `status` 仍 `active`；TODO.md 追加"Rule-3 drifted — 是否更新"；Stage -0.5 注入时 Rule-3 不进 knowledge_requirements 也不进 advisory
+
+7b. **Drift detection — 多数 rule 漂移（manifest 整体 drifted）**：
+   - manifest 有 5 条 rules，其中 3 条都 drift（>50%）
+   - 跑 `/harness-workflow --maintain`
+   - 验证：manifest frontmatter 级 `status: drifted`；每条 drifted 的 rule 也标 `Status: drifted`；整个 manifest 在 INDEX 的 Domain Map 里更新 status；Stage -0.5 注入时该 manifest 整体不参与
 
 8. **Partial rescan**：
    - 跑 `/harness-workflow --partial-rescan internal-components`
