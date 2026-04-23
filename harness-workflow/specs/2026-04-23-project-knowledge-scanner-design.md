@@ -451,7 +451,12 @@ Codex 以只读模式跨模型审查：
 ```json
 {
   "knowledgeCheck": {
+    "effective_index_status": "active",
     "snapshot_id": "scan-...",
+    "retrieval_outcome": "success",      // success | coordinator_miss | all_candidates_filtered
+    "filtered_candidates": [              // 仅在 all_candidates_filtered 时填，解释为什么 empty
+      {"manifest": "docs/harness/knowledge/i18n-and-text-boundaries/manifest.md", "reason": "manifest.status: drifted"}
+    ],
     "relevant_knowledge_files": ["docs/harness/knowledge/internal-components/manifest.md", ...],
     "advisory_knowledge": [
       {
@@ -519,24 +524,32 @@ Codex 以只读模式跨模型审查：
 
 ### Task prompt 注入规范
 
+**关键**：Stage -0.5 **不能直接注入 `<manifest 全文>`**。原因是 manifest 含 active / expired / drifted / superseded 四态 rule，直接全文注入会把非 binding 的 rule 当 binding 推给 subagent。必须按 Status 过滤后 render 两个分离的视图。
+
 Stage 2/3 每个 subagent prompt 自动 prepend：
 
 ```
-# Project Knowledge Context（由 Stage -0.5 预查，本任务相关）
+# Project Knowledge Context（由 Stage -0.5 预查 + 按 Status 过滤后 render）
 
-## Binding Rules（来自 manifest，违反 → reviewer FAIL）
+## Binding Rules（违反 → reviewer FAIL）
 
-以下 manifest 来自 docs/harness/knowledge/：
+以下为命中 manifest 中 `Status: active` 的 rule（已过滤掉 expired / drifted / superseded）：
 
-### <domain>/manifest.md
-<manifest 全文>
+### <domain> (from <domain>/manifest.md)
+- **[<rule_id>]** <规则描述一句话>
+  适用: <path glob>
+  violation_test: <enum>
 
-## Advisory Context（来自 user overrides 和过期 free_form_review rule，非强制）
+### <next domain> ...
 
-以下是用户声明的约定或已过期的主观规则，**尽量遵循但 reviewer 不会以此为 FAIL 依据**：
+## Advisory Context（非强制，仅作风格参考，reviewer 不以此为 FAIL 依据）
 
-- [<gap_id>] <override_text>
-- [<expired-rule-id>] <requirement_text>（last_verified 已过期）
+以下来自：(a) INDEX `## User Overrides` 里的用户声明（无 high-confidence 证据支撑）；(b) `Status: expired` 的 free_form_review rule（时间过期未 refresh）：
+
+- **[user_override: <gap_id>]** <override_text 摘要>
+- **[expired_rule: <rule_id>]** <requirement_text> (last_verified 已过期 N 天)
+
+（若有 drifted 或 superseded rule，**不注入任何 context**；仅在 coordinator log 里记 knownIssue）
 
 ---
 
@@ -546,6 +559,25 @@ Stage 2/3 每个 subagent prompt 自动 prepend：
 3. 若 Binding Rule 与需求冲突 → 停下上报，不要自行决定违反
 4. 输出中 echo 一行 "Knowledge check:" 证明你已消化
 5. 对每条 Binding Rule，给出遵循证据（file:line 或 test:case）
+```
+
+**Render pipeline**（Stage -0.5 执行）：
+
+```
+for each manifest in relevant_knowledge_files:
+  parse manifest.md 的所有 rule blocks
+  for each rule:
+    if Status == "active":
+      render 到 Binding Rules view
+    elif Status == "expired":
+      render 到 Advisory Context view (source: expired_rule)
+    elif Status in ("drifted", "superseded"):
+      skip（不进任何 view），追加到 coordinator 的 knownIssue log
+
+for each entry in INDEX `## User Overrides` (过滤到命中 domain):
+  render 到 Advisory Context view (source: user_override)
+
+合并两个 view 生成最终注入文本
 ```
 
 ### Stage 4 入口门
@@ -612,8 +644,9 @@ Verdict 决定规则扩展：
 | 条件 | verdict |
 |---|---|
 | 任一 knowledge_requirement 被违反 | FAIL |
-| INDEX 存在但 `relevant_knowledge_files` 为空，**且原因是 coordinator 未填写**（未跑 Stage -0.5） | BLOCKED |
-| INDEX 存在但 `relevant_knowledge_files` 为空，**且原因是所有 candidate manifest 都 drifted / superseded 被系统过滤** | 不 BLOCK；记 knownIssue；warn "所有相关 manifest 过时/被取代，建议跑 `/harness-workflow --partial-rescan <domain>` 或 `--rescan`"，允许本轮继续（无 knowledge binding，但不死锁）|
+| INDEX 存在但 `relevant_knowledge_files = []` AND `retrieval_outcome = "coordinator_miss"` | BLOCKED |
+| INDEX 存在但 `relevant_knowledge_files = []` AND `retrieval_outcome = "all_candidates_filtered"`（`filtered_candidates` 列出具体被滤 manifest + 原因）| 不 BLOCK；记 knownIssue；warn "所有相关 manifest 过时/被取代，建议跑 `/harness-workflow --partial-rescan <domain>` 或 `--rescan`"，允许本轮继续（无 knowledge binding，但不死锁）|
+| `retrieval_outcome = "success"` 但 `relevant_knowledge_files = []`（任务 changed_files 的所有路径都不命中任何 Domain Map routing rule）| 不 BLOCK（本任务无相关 knowledge，正常情况）|
 | 其他 | 按原规则 |
 
 ### CLAUDE.md 触发契约（scanner 完成后自动追加）
@@ -828,10 +861,10 @@ evidence.status:
    - 跑 `/harness-workflow --maintain`
    - 验证：**Rule-3 的 per-rule `Status: drifted`**；manifest frontmatter 级 `status` 仍 `active`；TODO.md 追加"Rule-3 drifted — 是否更新"；Stage -0.5 注入时 Rule-3 不进 knowledge_requirements 也不进 advisory
 
-7b. **Drift detection — 多数 rule 漂移（manifest 整体 drifted）**：
+7b. **Drift detection — 多数 rule 漂移（manifest 整体 drifted，但仍 render 剩余 active rule）**：
    - manifest 有 5 条 rules，其中 3 条都 drift（>50%）
    - 跑 `/harness-workflow --maintain`
-   - 验证：manifest frontmatter 级 `status: drifted`；每条 drifted 的 rule 也标 `Status: drifted`；整个 manifest 在 INDEX 的 Domain Map 里更新 status；Stage -0.5 注入时该 manifest 整体不参与
+   - 验证：manifest frontmatter 级 `status: drifted`（告警性质）；每条 drifted 的 rule 也标 `Status: drifted`；整个 manifest 在 INDEX 的 Domain Map 里更新 status；**Stage -0.5 注入时仍读该 manifest，但 render pipeline 只把剩余 `Status: active` 的 2 条 rule 放入 Binding Rules**；注入 prompt 里加 warning "manifest <name> 处于 drifted 状态，仅 active rule 参与；建议 `--partial-rescan`"；drifted rule 追加到 knownIssue
 
 8. **Partial rescan**：
    - 跑 `/harness-workflow --partial-rescan internal-components`
