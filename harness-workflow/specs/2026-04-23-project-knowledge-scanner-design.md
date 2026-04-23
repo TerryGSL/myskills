@@ -166,6 +166,22 @@ Rules Stage -0.5 uses to select relevant_knowledge_files for a task:
 ## Open TODOs
 
 See TODO.md (count: <N>)
+
+## User Overrides
+
+（由 Phase 5 `--apply-knowledge-answers` 生成，Stage -0.5 读取此处作为 Advisory Context 输入）
+
+| gap_id | domain | summary | source_gap_anchor |
+|--------|--------|---------|-------------------|
+| <domain>/gap-<N> | <domain> | <一句话总结用户约定> | <domain>/gaps.md#gap-<N> |
+
+## Expired Free-Form Rules
+
+（由 `--maintain` 步骤 7 检测并移入此处；Stage -0.5 作为 Advisory Context 注入，不再绑定 FAIL）
+
+| rule_id | domain | last_verified | expiry_after_days | requirement_text |
+|---------|--------|---------------|-------------------|-----------------|
+| <domain>/rule-<N> | <domain> | YYYY-MM-DD | <int> | <一句话描述> |
 ```
 
 ### `<domain>/manifest.md`（≤ 140 行，运行时检索）
@@ -382,12 +398,12 @@ Codex 以只读模式跨模型审查：
 
 4. 加载每个命中 manifest.md（**只读 manifest，不读 evidence**）
 
-4a. **加载相关 user overrides**（新）：
-   - 从 INDEX.md 的 `user-overrides` 列表读被命中 domain 的 override 条目
-   - 对每个命中 domain，读 `<domain>/gaps.md` 里 `resolved_by_user` 块
-   - 把每条 override 打包为 `{gap_id, domain, override_text, weight: "advisory"}`
-   - **不进 `knowledge_requirements`**（reviewer 不以此作为 FAIL 依据）
-   - 注入到下面步骤 5 的 `user_overrides` 字段
+4a. **加载相关 advisory knowledge**（新）：
+   - 从 INDEX.md 的 `## User Overrides` 表读命中 domain 的条目 → 每条转 `{source: "user_override", id: gap_id, domain, text: <gaps.md 里对应 resolved_by_user 块的完整文本>, weight: "advisory"}`
+   - 从 INDEX.md 的 `## Expired Free-Form Rules` 表读命中 domain 的条目 → 每条转 `{source: "expired_rule", id: rule_id, domain, text: requirement_text, weight: "advisory"}`
+   - 合并为单一 `advisory_knowledge` 数组（统一 schema，两种来源共存）
+   - **这些条目绝不进 `knowledge_requirements`**（reviewer 不以 advisory 作 FAIL 依据）
+   - 注入到下面步骤 5
 
 5. 写入 `.harness-status.json`（结构化，**不用 free-form string**）：
 
@@ -398,11 +414,19 @@ Codex 以只读模式跨模型审查：
   "knowledgeCheck": {
     "snapshot_id": "scan-...",
     "relevant_knowledge_files": ["docs/harness/knowledge/internal-components/manifest.md", ...],
-    "user_overrides": [
+    "advisory_knowledge": [
       {
-        "gap_id": "internal-components/gap-2",
+        "source": "user_override",
+        "id": "internal-components/gap-2",
         "domain": "internal-components",
-        "override_text": "新 service 使用 constructor injection（用户声明，未在代码里找到 high-confidence 证据）",
+        "text": "新 service 使用 constructor injection（用户声明，未在代码里找到 high-confidence 证据）",
+        "weight": "advisory"
+      },
+      {
+        "source": "expired_rule",
+        "id": "exception-and-error-contracts/rule-5",
+        "domain": "exception-and-error-contracts",
+        "text": "（原 free_form_review rule：避免在 Controller 层直接 catch RuntimeException）— last_verified 已过期",
         "weight": "advisory"
       }
     ],
@@ -445,9 +469,11 @@ Codex 以只读模式跨模型审查：
 **`free_form_review` 额外约束**（防止"永久主观 rule 不可驳"）：
 - 必须带 `manual_review_reason`（为何无法结构化的解释，一句话）
 - 必须带 `expiry_after_days`（默认 90 天）
-- `--maintain` 检查 `free_form_review` rule 的 `last_verified`：
-  - 若 `now - last_verified > expiry_after_days` → 该 Rule 在 Stage -0.5 注入时**降级**为 `weight: warning`（与 user_overrides 同等），**不再触发 reviewer FAIL**
-  - 除非被 `/harness-workflow --partial-rescan <domain>` 重新采证据或用户手动 bump `last_verified`
+- `--maintain` 步骤 7（下方定义）检查 `free_form_review` rule 的 `last_verified`：
+  - 若 `now - last_verified > expiry_after_days` → 做两件事：
+    - 在 manifest.md 中标注 `status: expired`（不删除 Rule，但 reviewer 不再以此作 FAIL 依据）
+    - 在 INDEX.md 的 `## Expired Free-Form Rules` 表追加一行（让 Stage -0.5 注入时把它合并进 `advisory_knowledge`）
+  - 除非被 `/harness-workflow --partial-rescan <domain>` 重新采证据或用户手动 bump `last_verified` → 从 INDEX `Expired Free-Form Rules` 表移除 + manifest 恢复 `status: active`
 - 这样任何"能 FAIL 但无法机器校验"的 rule 都有明确退出机制
 
 6. 注入到 Stage 2 / Stage 3 subagent 的 task prompt 前置
@@ -487,10 +513,27 @@ Stage 2/3 每个 subagent prompt 自动 prepend：
 
 ```
 1. 读 .harness-status.json.knowledgeCheck
-2. 若 snapshot_id 为空且 INDEX 存在 → BLOCKED（coordinator 漏跑 Stage -0.5）
-3. 若实际变更文件涉及 manifest 的 applies_to，但 relevant_knowledge_files 没包含对应 manifest → BLOCKED
+2. 若 snapshot_id 为空且 INDEX 存在 → BLOCKED（coordinator 漏跑 Stage -0.5，无 recovery，必须升级用户）
+3. 若实际变更文件涉及 manifest 的 applies_to，但 relevant_knowledge_files 没包含对应 manifest
+   → 进入 **Stage 4 Late Recovery**（见下）
 4. 通过 → 进 strict-reviewer
 ```
+
+### Stage 4 Late Recovery（keyword-only retrieval 漏了 manifest 的自动补救）
+
+当 Stage 4 发现 retrieval 漏 manifest（Stage -0.5 是基于需求文本 keyword 做的匹配，后来实际 diff 涉及了更多 domain），**不立即升级用户**，执行以下 recovery（最多 1 次）：
+
+1. coordinator 用**实际 git diff**（`git diff --name-only <baseSha>..HEAD`）重跑 Stage -0.5 的路径匹配部分（不重跑 scout）
+2. 生成更新的 `relevant_knowledge_files` + `knowledge_requirements`（可能新增 N 个 manifest）
+3. 更新 `.harness-status.json.knowledgeCheck`（保留原 snapshot_id，只补充 requirements）
+4. **若 recovery 新增的 manifest 含 `knowledge_requirements`**：
+   - 不直接进 reviewer
+   - 先 dispatch 一个 remediation task 到 Stage 3：让 subagent 读新 manifest，检查当前实现是否违反，若违反则修
+   - remediation 完成 → 重进 Stage 4 入口门（走完整检查）
+5. **若 recovery 后仍 BLOCK**（例如 recovery 本身执行失败 / 新 manifest 文件缺失）→ **升级用户**
+6. recovery 只跑 **1 次**，避免循环。第二次 late BLOCK 直接升级用户
+
+Recovery 是"retrieval 漏召回"的自动修复。本质上承认 keyword-based pre-retrieval 有局限，真正的 ground truth 是 diff，所以最后用 diff 兜底。
 
 ### strict-reviewer 第 4 硬门
 
