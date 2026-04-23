@@ -206,20 +206,34 @@ status: active | partial | drifted | superseded_by:<file>
 **适用**: <path glob>
 **Evidence**: evidence.md#<anchor>
 **Confidence**: high
-**Status**: active | expired      # active = reviewer 可 FAIL；expired = 仅作 advisory，reviewer 不 FAIL
+**Status**: active | expired | drifted   # 三态详解见下
 **violation_test**: <enum>        # 见 Activation 段枚举；仅 active + structured 的参与 binding 检查
 ```
 
 **硬格式约束**：
 - 每条 Rule 必须有 `Evidence:` 指向 evidence.md anchor
 - 每条 Rule 必须 `Confidence: high`（medium / low 不出现在 manifest）
-- 每条 Rule 必须有 `Status`（默认 `active`；由 `--maintain` 可改为 `expired`）
+- 每条 Rule 必须有 `Status`（默认 `active`；由 `--maintain` 可改为 `expired` 或 `drifted`）
 - Rule 描述 ≤ 3 段
 - manifest 超 140 行 → scanner 必须挤掉 low-impact 规则
 
-**Rule Status 运行时影响**：
-- `Status: active` → Stage -0.5 把它加入 `knowledge_requirements`（binding，违反 = FAIL）
-- `Status: expired` → Stage -0.5 **跳过**它加入 `knowledge_requirements`，而是把它镜像进 `advisory_knowledge`（non-binding advisory）；同时 INDEX 的 `## Expired Free-Form Rules` 表应该已有对应条目
+**Rule Status 三态运行时影响**：
+
+| Status | 意义 | Stage -0.5 处理 | reviewer 行为 |
+|---|---|---|---|
+| `active` | 正常有效的 rule | 加入 `knowledge_requirements`（binding）| 违反 → FAIL |
+| `expired` | free_form_review rule 过期，降级为主观 advisory | **不**加入 `knowledge_requirements`；镜像进 `advisory_knowledge`（source: expired_rule）| 不 FAIL，仅作提示 |
+| `drifted` | drift detection 发现该 rule 被 >30% 代码违反（即代码演化走向了新约定，老 rule 过时）| **不**加入 `knowledge_requirements`；**也不**进 advisory（避免误导）；记 knownIssue 提示用户 `--partial-rescan` | 不触发 |
+
+**drifted 与 expired 的区别**：
+- `expired`：free_form_review rule 的时间到期，rule 本身没过时，只是无法机器验证
+- `drifted`：rule 已**过时**（代码演化走了另一条路），应该通过 rescan 更新或删除，而不是保留为 advisory
+
+**per-rule Status vs per-manifest frontmatter status 的分工**：
+- per-rule `Status: active|expired|drifted` → 单条规则级别
+- manifest frontmatter `status: active|partial|drifted|superseded_by` → 整个 manifest 文件级别（scanner 失败等整体状态）
+
+两者各管各的层级，不冲突。
 
 ### `<domain>/evidence.md`（≤ 220 行，audit 用）
 
@@ -351,7 +365,10 @@ Codex 以只读模式跨模型审查：
 4. Coordinator 读 TODO 答案，**分支处理**（evidence-first 契约不可破）：
    - 每条用户答案 → 写入对应 `<domain>/gaps.md` 的 `resolved_by_user` 块（保留用户原话作"override 声明"）
    - 立即跑 **micro-rescan**：按该答案指引的 convention，用 rg/symbol 搜 2 个支持该 convention 的 file:line 示例
-   - **若找到 ≥ 2 正例** 或 **1 正 + 1 反** → 该规则升级为 high confidence，进 manifest.md，evidence.md 补充 anchor + examples
+   - **若找到 ≥ 2 正例** 或 **1 正 + 1 反** → 该规则升级为 high confidence，进 manifest.md，evidence.md 补充 anchor + examples；**同时清理旧的 user override**：
+     - 把对应 `<domain>/gaps.md` 的 `resolved_by_user` 块标记为 `superseded_by_rule: <new_rule_id>`（保留历史，但标记已被规则取代）
+     - 从 INDEX.md `## User Overrides` 表移除对应行
+     - 防止同一约定同时作为 binding rule + advisory override 重复注入
    - **若找不到足够 evidence** → 规则保留在 gaps.md 作为 `explicit user override`，**不进 manifest**；Stage -0.5 注入时标注"用户声明约定（未核实）"并降低权重
 5. 生成最终 INDEX.md（含 snapshot_id + routing rules + user-override 声明清单）
 6. 删除所有 `*-draft.md` 临时文件
@@ -391,9 +408,19 @@ Codex 以只读模式跨模型审查：
 
 **流程**：
 
+**Step 0: Disable check**（先于一切）
+
+读目标项目 `CLAUDE.md` 的 `<!-- harness-knowledge:start --> ... <!-- harness-knowledge:end -->` 块：
+- 若块内含 `harness-knowledge: disabled`（任意位置）→ 内存中设 `effective_index_status = disabled`，**跳过 Stage -0.5 其余步骤**（与 INDEX.status 无关）
+- 若块不存在 或 无 `disabled` 标记 → 继续
+
+**为什么用 CLAUDE.md 而非 INDEX.status**：disable 是**用户决策**，CLAUDE.md 是用户主笔区；INDEX.md 是 scanner 产物，用户不该被迫编辑。让 disable 开关在用户手边最自然。
+
+---
+
 1. 检查 `docs/harness/knowledge/INDEX.md` 存在性
    - 不存在 → 跳过 Stage -0.5（项目未接入 knowledge，走普通 harness 模式）
-   - 存在但 `status: disabled` → 跳过
+   - 存在且 INDEX.status 为 `disabled`（来自 scanner 的显式设置）→ 跳过
    - 其他状态 → 继续
 
 2. 读 INDEX.md 的 Retrieval Routing Rules 段
@@ -622,9 +649,10 @@ To disable: set `harness-knowledge: disabled` below this block.
    - Drift 触发条件（**同时满足**）：
      - 违反率 > **0.3**
      - `sample_size = compliant + noncompliant >= 5`（少于 5 个样本不下结论，避免小样本噪声）
-   - 命中 → 该 Rule 的 manifest `status: drifted`，drifted rule 清单写入 `gaps.md`
+   - 命中 → **设该 Rule 的 per-rule `Status: drifted`**（不是 manifest 级别），drifted rule 清单写入 `gaps.md`
+   - manifest 级别 frontmatter `status` 只有在**多数 Rule 都 drifted**（>50%）才设 `drifted`
    - `violation_test: free_form_review` 的 Rule 无法机器采样 → 降级为人工抽查提示（TODO.md 追加）
-   - drifted manifest 不被 Stage -0.5 注入其被污染的 Rule，本轮记 knownIssue
+   - drifted 的单条 Rule **既不**进 `knowledge_requirements`（不 binding），**也不**进 `advisory_knowledge`（避免误导），只记 knownIssue
    - 聚合到 TODO.md：用户决定"更新 manifest（跑 partial-rescan）"还是"修代码遵循 manifest"
 
 9. **Evidence file:line 有效性**
@@ -657,6 +685,10 @@ Partial rescan 快速路径：
 - 若 scout 发现**新增 domain**（之前未激活的，现在有激活信号）→ partial-rescan 提示用户改跑 `--rescan` full 模式
 - Codex Contradiction Pass 仍跑（防新 manifest 与旧冲突）
 - TODO 聚合上限 ≤ 3 条
+- **User Override cleanup**（同 Phase 5 的升级流程）：
+  - 对每条本次新产出的 high-confidence rule，检查 INDEX `## User Overrides` 是否已有同 domain 的条目描述同一约定（**基于 text 相似度启发或 gap_id 明示关联**）
+  - 若是 → 标记 gaps.md 对应块 `superseded_by_rule: <new_rule_id>` + 移除 INDEX 行
+  - **同理处理 `## Expired Free-Form Rules`**：若新 rule 与某 expired rule 覆盖相同约束，标记 `superseded_by_rule` + 移除 expired 行（允许 expired rule 被新 evidence 重新"救活"为 binding 形态）
 
 ### 与 strict-reviewer 的反向反馈闭环
 
