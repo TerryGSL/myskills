@@ -219,24 +219,24 @@ mkdir -p docs/01-requirements \
 ```markdown
 # DESIGN.md — Design System Tokens
 
-> All frontend components MUST use these tokens. No hardcoded colors, spacing, or typography.
+> 所有前端组件必须使用这些 token。禁止硬编码颜色、间距或字体。
 
 ## Color Tokens
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--color-primary` | `#1677FF` | Primary actions, links |
-| `--color-primary-hover` | `#0958D9` | Hover state |
-| `--color-success` | `#52C41A` | Success states |
-| `--color-warning` | `#FAAD14` | Warning states |
-| `--color-error` | `#FF4D4F` | Error states |
-| `--color-text-primary` | `#1F2937` | Main text |
-| `--color-text-secondary` | `#6B7280` | Secondary text |
-| `--color-text-disabled` | `#9CA3AF` | Disabled text |
-| `--color-bg-base` | `#FFFFFF` | Page background |
-| `--color-bg-container` | `#F9FAFB` | Container background |
-| `--color-border` | `#E5E7EB` | Borders |
+| Token | Value | 用途 |
+|-------|-------|------|
+| `--color-primary` | `#1677FF` | 主操作、链接 |
+| `--color-primary-hover` | `#0958D9` | 悬停状态 |
+| `--color-success` | `#52C41A` | 成功状态 |
+| `--color-warning` | `#FAAD14` | 警告状态 |
+| `--color-error` | `#FF4D4F` | 错误状态 |
+| `--color-text-primary` | `#1F2937` | 主文本 |
+| `--color-text-secondary` | `#6B7280` | 次要文本 |
+| `--color-text-disabled` | `#9CA3AF` | 禁用文本 |
+| `--color-bg-base` | `#FFFFFF` | 页面背景 |
+| `--color-bg-container` | `#F9FAFB` | 容器背景 |
+| `--color-border` | `#E5E7EB` | 边框 |
 
-## Spacing Scale (8px base grid)
+## Spacing Scale（8px 基准网格）
 | Token | Value |
 |-------|-------|
 | `--space-1` | `4px` |
@@ -278,12 +278,12 @@ mkdir -p docs/01-requirements \
 | `--shadow-md` | `0 4px 6px rgba(0,0,0,0.07)` |
 | `--shadow-lg` | `0 10px 15px rgba(0,0,0,0.1)` |
 
-## Component Conventions
-- **Button heights**: sm=28px, md=36px, lg=44px
-- **Input heights**: sm=28px, md=36px, lg=44px
-- **Table row height**: 48px (comfortable), 40px (compact)
-- **Modal widths**: sm=400px, md=560px, lg=720px, xl=960px
-- **Page max-width**: 1280px, padding: 24px
+## 组件约定
+- **按钮高度**：sm=28px, md=36px, lg=44px
+- **输入框高度**：sm=28px, md=36px, lg=44px
+- **表格行高**：48px（舒适模式），40px（紧凑模式）
+- **弹窗宽度**：sm=400px, md=560px, lg=720px, xl=960px
+- **页面最大宽度**：1280px，内边距：24px
 ```
 
 #### 情况 B：纯后端/CLI/Library 项目（projectType 为 `backend-api` / `cli` / `library`）

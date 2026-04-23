@@ -1,56 +1,56 @@
-# harness-workflow ↔ strict-reviewer Integration
+# harness-workflow ↔ strict-reviewer 集成
 
-> Caller-side protocol for Stage 4/5/6/7 to invoke `strict-reviewer` correctly.
-> Spec reference: `specs/2026-04-22-memory-reviewer-upgrade.md` §Invocation Protocol
+> Stage 4/5/6/7 正确调用 `strict-reviewer` 的调用方侧协议。
+> Spec 参考：`specs/2026-04-22-memory-reviewer-upgrade.md` §Invocation Protocol
 
-## Roles
+## 角色
 
-- **strict-reviewer skill** — stateless reviewer (see `strict-reviewer/SKILL.md`)
-- **Caller** — harness-workflow main agent acting as Stage 4/5/6/7 coordinator
-- **Scorecard** — `docs/memory/harness_reviewer_scorecard.yml`, owned and persisted by caller
+- **strict-reviewer skill** —— 无状态审查器（见 `strict-reviewer/SKILL.md`）
+- **Caller** —— harness-workflow 主 agent，扮演 Stage 4/5/6/7 协调者
+- **评分卡** —— `docs/memory/harness_reviewer_scorecard.yml`，由调用方持有并持久化
 
-## Protocol
+## 协议
 
-### 1. Construct `review_target`
+### 1. 构造 `review_target`
 
-Caller gathers inputs from current round state:
+调用方从当前 round 状态收集输入：
 
-| Field | Source |
-|-------|--------|
+| 字段 | 来源 |
+|-------|-------|
 | `changed_files` | `git diff --name-only <.harness-status.json.baseSha>..HEAD` |
 | `diff_summary` | `git log --oneline <baseSha>..HEAD` + `git diff --stat` |
-| `stage` | Current Stage: `"qa"` for Stage 6, `"security"` for Stage 7, `"spec"` for Stage 4, `"quality"` for Stage 5 |
-| `claims_to_verify` | Stage-specific: Stage 4 = spec acceptance criteria; Stage 5 = plan's test checklist; Stage 6 = PRD acceptance criteria; Stage 7 = security requirements |
-| `memory_cases` | Read from `.harness-status.json.memoryCheck.matches` |
-| `prior_verdict` | If this is a re-review after FAIL, pass the prior output; else null |
+| `stage` | 当前 Stage：Stage 6 为 `"qa"`、Stage 7 为 `"security"`、Stage 4 为 `"spec"`、Stage 5 为 `"quality"` |
+| `claims_to_verify` | Stage 相关：Stage 4 = spec 验收标准；Stage 5 = plan 的测试清单；Stage 6 = PRD 验收标准；Stage 7 = 安全需求 |
+| `memory_cases` | 从 `.harness-status.json.memoryCheck.matches` 读取 |
+| `prior_verdict` | 如为 FAIL 后的复审，传入上一轮输出；否则为 null |
 
-### 2. Invoke
+### 2. 调用
 
 ```
 Skill(skill="strict-reviewer", args=<serialized review_target YAML>)
 ```
 
-Caller waits for YAML-shaped response.
+调用方等待 YAML 格式的响应。
 
-### 3. Parse response
+### 3. 解析响应
 
-Response is YAML matching the Output schema in `strict-reviewer/SKILL.md`. Caller MUST:
+响应为 YAML，匹配 `strict-reviewer/SKILL.md` 的 Output schema。调用方必须：
 
-- Parse as YAML (Python `yaml.safe_load` or equivalent)
-- If parse fails → retry once with identical `review_target`
-- If second parse fails → treat as `verdict: BLOCKED` reason `"reviewer output malformed"`
+- 按 YAML 解析（Python `yaml.safe_load` 或等价实现）
+- 若解析失败 → 用同样的 `review_target` 重试一次
+- 若第二次仍失败 → 视为 `verdict: BLOCKED`，原因 `"reviewer output malformed"`
 
-### 4. Route by verdict
+### 4. 根据 verdict 路由
 
-| verdict | caller action |
-|---------|--------------|
-| `PASS` | Continue to next Stage. Append `scorecard_delta` to scorecard (see step 5). |
-| `FAIL` | Enter Stage's auto-fix loop: Stage 4 ≤ 3 rounds / Stage 5 ≤ 3 rounds / Stage 6/7 per P0 bug rules. Each retry builds a new `review_target` with `prior_verdict` set. |
-| `BLOCKED` | **Escalate to user**. Do not auto-retry, do not continue. `BLOCKED` means system state is incomplete (input malformed, coverage impossible, etc.), not that code is broken. |
+| verdict | 调用方动作 |
+|---------|-----------|
+| `PASS` | 进入下一个 Stage。将 `scorecard_delta` 追加到评分卡（见步骤 5）。 |
+| `FAIL` | 进入该 Stage 的自动修复循环：Stage 4 ≤ 3 轮 / Stage 5 ≤ 3 轮 / Stage 6/7 按 P0 bug 规则。每次重试构造新的 `review_target` 并填入 `prior_verdict`。 |
+| `BLOCKED` | **升级给用户**。禁止自动重试，禁止继续。`BLOCKED` 意味着系统状态不完整（输入畸形、覆盖不可能等），而不是代码有问题。 |
 
-### 5. Scorecard persistence (caller owns, strict-reviewer is stateless)
+### 5. Scorecard 持久化（调用方持有，strict-reviewer 无状态）
 
-For every invocation (PASS / FAIL / BLOCKED), caller appends to `docs/memory/harness_reviewer_scorecard.yml`:
+每次调用（PASS / FAIL / BLOCKED），调用方都向 `docs/memory/harness_reviewer_scorecard.yml` 追加：
 
 ```yaml
 reviews:
@@ -63,7 +63,7 @@ reviews:
     linked_error_case: null              # set later if false-pass correction fires
 ```
 
-And update `totals`:
+并更新 `totals`：
 
 ```yaml
 totals:
@@ -71,27 +71,27 @@ totals:
   <verdict lower>_count: +1
 ```
 
-Then check rotation: if `len(reviews) > 500` → move older entries to `docs/memory/archive/harness_reviewer_scorecard_<year>.yml` (keep most recent 100).
+随后检查轮转：若 `len(reviews) > 500` → 将较早条目移动到 `docs/memory/archive/harness_reviewer_scorecard_<year>.yml`（保留最近 100 条）。
 
-## strict-reviewer unavailable (degraded mode)
+## strict-reviewer 不可用（降级模式）
 
-If `Skill(skill="strict-reviewer", ...)` fails (skill missing, tool error, timeout):
+若 `Skill(skill="strict-reviewer", ...)` 失败（skill 缺失、工具错误、超时）：
 
-| Context | Action |
-|---------|--------|
-| harness mode (docs/STATE.json exists) | **BLOCKED**, escalate. NEVER fall back to legacy prompt. |
-| Standalone use (no STATE.json) | Fall back to legacy qa-prompt / security-prompt; log knownIssue |
-| User explicitly approves one-time degrade | Legacy prompt for this invocation only; append knownIssue with reason |
-| `autonomous_mode` | Always BLOCKED, wait for user. Do not silently degrade. |
+| 场景 | 动作 |
+|------|------|
+| harness 模式（存在 docs/STATE.json） | **BLOCKED**，升级。禁止回退到旧版 prompt。 |
+| 独立使用（无 STATE.json） | 回退到旧版 qa-prompt / security-prompt；记录 knownIssue |
+| 用户显式批准一次性降级 | 仅本次调用使用旧版 prompt；追加 knownIssue 并说明原因 |
+| `autonomous_mode` | 永远 BLOCKED，等待用户。禁止静默降级。 |
 
-Rationale: the whole point of strict-reviewer is the hard gates. When the enforcement infrastructure is gone is exactly when you need the gates most, not least.
+理由：strict-reviewer 的全部价值就是硬门槛。恰恰是在强制执行的基础设施消失时，最需要这些门槛，而不是最不需要。
 
-## Linking false-pass incidents
+## 关联误放行事件
 
-When a later bug contradicts a prior PASS review (the feedback loop that makes scorecard worth having):
+当后续 bug 与先前 PASS 审查相矛盾（正是让评分卡有意义的反馈闭环）：
 
-1. Open a new error case in `docs/memory/cases/harness_<date>_<slug>.md` (if it meets `errors_collection.min_criteria`)
-2. Append to scorecard `false_pass_incidents`:
+1. 若符合 `errors_collection.min_criteria`，在 `docs/memory/cases/harness_<date>_<slug>.md` 新开一个错误案例
+2. 向评分卡的 `false_pass_incidents` 追加：
    ```yaml
    false_pass_incidents:
      - incident_id: "fpi-<date>-<N>"
@@ -100,15 +100,15 @@ When a later bug contradicts a prior PASS review (the feedback loop that makes s
        detected_at: "<ISO>"
        action_taken: "..."
    ```
-3. `--maintain` scans `false_pass_incidents` periodically to feed reviewer-prompt examples (future work)
+3. `--maintain` 周期性扫描 `false_pass_incidents`，用于喂给 reviewer-prompt 示例（未来工作）
 
-## Claims verification guidance per stage
+## 各 Stage 的 claims 验证指引
 
-Callers should pick `claims_to_verify` appropriate to the stage:
+调用方应为各 Stage 选择合适的 `claims_to_verify`：
 
-- **Stage 4 (spec review)**: each acceptance criterion in plan / spec — does the code meet it?
-- **Stage 5 (quality / codex cross-review)**: core architecture assertions — single responsibility, no layering violations, no abandoned branches
-- **Stage 6 (QA)**: each test case in plan's test checklist — does the code + test pair produce the expected behavior?
-- **Stage 7 (security)**: OWASP-style threat statements — does the code prevent <specific class of attack>?
+- **Stage 4（spec review）**：plan / spec 中的每条验收标准 —— 代码是否满足？
+- **Stage 5（quality / codex 交叉审查）**：核心架构断言 —— 单一职责、无分层越界、无废弃分支
+- **Stage 6（QA）**：plan 测试清单中的每个测试用例 —— 代码 + 测试组合能否产生预期行为？
+- **Stage 7（security）**：OWASP 风格的威胁陈述 —— 代码能否防御 <某具体类别的攻击>？
 
-Empty `claims_to_verify` is allowed but strongly discouraged — it lets strict-reviewer only rely on adversarial search, reducing signal density.
+允许 `claims_to_verify` 为空，但强烈不推荐 —— 这会让 strict-reviewer 只能依赖对抗性搜索，降低信号密度。

@@ -1,11 +1,10 @@
 # constraints/
 
-Legacy constraints, business rules, compliance requirements — facts that bound future
-design choices but aren't decisions themselves.
+遗留约束、业务规则、合规要求 —— 这些事实会限定未来的设计选择，但本身并不是决策。
 
-Examples:
-- "User sessions must not exceed 15 min due to finance compliance" → one file
-- "Legacy OAuth flow must remain for 6 months during SSO migration" → one file
+示例：
+- "用户 session 不得超过 15 分钟（金融合规要求）" → 一个文件
+- "SSO 迁移期间，遗留 OAuth 流程必须保留 6 个月" → 一个文件
 
-Files: `harness_<slug>.md` (harness-owned) or `<your-slug>.md` (human-owned).
-No date required — constraints often persist longer than cases.
+文件：`harness_<slug>.md`（harness 专属）或 `<your-slug>.md`（人类专属）。
+无需日期 —— 约束通常比案例持续更久。

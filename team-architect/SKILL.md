@@ -93,17 +93,16 @@ version: 1.1.0
 
 ### Phase 2: 架构蓝图（ARCHITECTURE.md）
 
-写入 `docs/03-architecture/ARCHITECTURE.md`（**全英文**）：
+写入 `docs/03-architecture/ARCHITECTURE.md`：
 
 ````markdown
 # System Architecture & Technical Blueprint
 
-> **FROZEN**: Once this document enters Phase 4 (Implementation),
-> no changes to Section 4 (API Contracts) without architect approval.
+> **冻结**：文档进入 Phase 4（实现阶段）后，Section 4（API 契约）未经架构师批准不得修改。
 
 ## 1. Core Technology Stack
 
-> Selected based on `.harness-context.json` detection. Rationale column explains why alternatives were rejected.
+> 基于 `.harness-context.json` 探测结果选择。Rationale 列说明为何拒绝了其他替代方案。
 
 | Layer | Technology | Version | Rationale |
 |-------|-----------|---------|-----------|
@@ -115,69 +114,69 @@ version: 1.1.0
 | Build Tool | <e.g., Vite / webpack / Gradle / Poetry> | <version> | <why> |
 | Container | Docker | — | <why> |
 
-**Explicitly rejected alternatives** (and why):
-- <Alternative A>: rejected because <reason>
+**明确拒绝的替代方案**（及原因）：
+- <替代方案 A>：拒绝原因 <reason>
 
 ---
 
 ## 2. Directory Structure & Access Control
 
-> Directory layout is adapted to the detected language/framework from `.harness-context.json`.
+> 目录布局根据 `.harness-context.json` 探测到的语言/框架自动适配。
 
-**Node.js projects** use `src/core/`:
+**Node.js 项目**使用 `src/core/`：
 ```text
 project-root/
 ├── src/
-│   ├── core/          # 🔒 ARCHITECT + SENIOR-DEV ONLY
+│   ├── core/          # 🔒 仅架构师 + 老登可修改
 │   │   ├── config/
 │   │   ├── security/
 │   │   ├── database/
 │   │   ├── exception/
 │   │   └── middleware/
-│   ├── modules/       # 🟡 JUNIOR-DEV implements, SENIOR-DEV reviews
-│   └── shared/        # 🟢 All agents
+│   ├── modules/       # 🟡 小登实现，老登审查
+│   └── shared/        # 🟢 所有 Agent 可用
 ```
 
-**Python projects** use `src/core/` or `app/core/` (follow existing project convention):
+**Python 项目**使用 `src/core/` 或 `app/core/`（遵循已有项目约定）：
 ```text
 project-root/
 ├── src/               # or: app/
-│   ├── core/          # 🔒 ARCHITECT + SENIOR-DEV ONLY
+│   ├── core/          # 🔒 仅架构师 + 老登可修改
 │   │   ├── config/
 │   │   ├── security/
 │   │   ├── database/
 │   │   └── middleware/
-│   ├── modules/       # 🟡 JUNIOR-DEV implements, SENIOR-DEV reviews
-│   └── shared/        # 🟢 All agents
+│   ├── modules/       # 🟡 小登实现，老登审查
+│   └── shared/        # 🟢 所有 Agent 可用
 ```
 
-**Go projects** use `internal/core/`:
+**Go 项目**使用 `internal/core/`：
 ```text
 project-root/
 ├── internal/
-│   ├── core/          # 🔒 ARCHITECT + SENIOR-DEV ONLY
+│   ├── core/          # 🔒 仅架构师 + 老登可修改
 │   │   ├── config/
 │   │   ├── auth/
 │   │   ├── db/
 │   │   └── middleware/
-│   ├── modules/       # 🟡 JUNIOR-DEV implements, SENIOR-DEV reviews
-│   └── shared/        # 🟢 All agents
-├── cmd/               # Entrypoints
-└── pkg/               # Exported libraries
+│   ├── modules/       # 🟡 小登实现，老登审查
+│   └── shared/        # 🟢 所有 Agent 可用
+├── cmd/               # 入口
+└── pkg/               # 导出库
 ```
 
-**Java projects** follow standard Maven/Gradle layout:
+**Java 项目**遵循标准 Maven/Gradle 布局：
 ```text
 project-root/
 └── src/main/java/<base-package>/
-    ├── core/          # 🔒 ARCHITECT + SENIOR-DEV ONLY
-    ├── modules/       # 🟡 JUNIOR-DEV implements, SENIOR-DEV reviews
-    └── shared/        # 🟢 All agents
+    ├── core/          # 🔒 仅架构师 + 老登可修改
+    ├── modules/       # 🟡 小登实现，老登审查
+    └── shared/        # 🟢 所有 Agent 可用
 ```
 
-Common across all:
+所有项目通用：
 ```text
-├── docs/              # 🔒 Read-only during implementation
+├── docs/              # 🔒 实现阶段只读
 └── tests/
     ├── unit/
     ├── integration/

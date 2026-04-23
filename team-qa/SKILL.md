@@ -249,7 +249,7 @@ test.describe('核心用户旅程', () => {
 \`\`\`
 **影响范围**: <影响的功能/用户/数据>
 **修复建议**: <可选>
-**状态**: Open / Fixed / Won't Fix
+**状态**：待修复 / 已修复 / 不修复
 ```
 
 **Bug 优先级**：
@@ -263,10 +263,10 @@ test.describe('核心用户旅程', () => {
 写入 `docs/05-testing/TEST-REPORT.md`：
 
 ```markdown
-# Test Report
-Date: <日期> | Tester: QA Agent
+# 测试报告
+日期：<日期> | 测试者：QA Agent
 
-## Summary
+## 汇总
 | 类型 | 总计 | 通过 | 失败 | 跳过 |
 |------|------|------|------|------|
 | 单元测试 | <N> | <N> | <N> | <N> |

@@ -54,22 +54,22 @@ version: 1.1.0
 写入 `docs/04-implementation/IMPL-PLAN.md`（如不存在则创建）：
 
 ```markdown
-# Implementation Plan
+# 实现计划
 
-## Module: <模块名>
-Owner: Senior Dev
-Estimated complexity: High / Medium
+## 模块：<模块名>
+负责人：Senior Dev
+预估复杂度：高 / 中
 
-### Tasks
-- [ ] <任务1> — 涉及文件: src/modules/<x>/<File>.java
-- [ ] <任务2> — 涉及文件: src/modules/<y>/<File>.java
+### 任务
+- [ ] <任务1> — 涉及文件：src/modules/<x>/<File>.java
+- [ ] <任务2> — 涉及文件：src/modules/<y>/<File>.java
 
-### Dependencies
+### 依赖
 - 依赖 core/security/JwtAuthFilter 提供的 UserContext
 - 依赖 core/database/ 的事务管理
 
-### Risk Points
-- <风险1>: <应对方案>
+### 风险点
+- <风险1>：<应对方案>
 ```
 
 将计划告知用户，等待确认后再开始编码。
@@ -166,19 +166,19 @@ public class OrderService {
 当运行 `/team-senior-dev review` 时，扫描根据 ARCHITECTURE.md 定义的核心目录下所有文件，输出 Review 报告：
 
 ```markdown
-## Code Review Report
-Reviewer: Senior Dev | Date: <日期>
+## Code Review 报告
+审查者：Senior Dev | 日期：<日期>
 
-### 🔴 MUST FIX (阻塞合并)
+### 🔴 必须修复（阻塞合并）
 - `src/modules/order/OrderService.java:47`
   硬编码超时时间 `3000`，必须抽取到配置文件
   
-### 🟡 SHOULD FIX (强烈建议)
+### 🟡 应当修复（强烈建议）
 - `src/modules/user/UserService.java:89`
   N+1 查询：循环内调用 `userRepository.findById()`
   建议改为 `userRepository.findAllByIdIn(ids)`
 
-### 🔵 SUGGESTION (可接受，但能更好)
+### 🔵 改进建议（可接受，但能更好）
 - `src/modules/product/ProductController.java:23`
   方法名 `getData()` 不够清晰，建议改为 `getProductList()`
 
@@ -187,9 +187,9 @@ Reviewer: Senior Dev | Date: <日期>
 ```
 
 严重级别说明：
-- 🔴 MUST FIX：安全漏洞、数据一致性问题、会导致线上故障的 Bug
-- 🟡 SHOULD FIX：性能问题、代码规范严重违反
-- 🔵 SUGGESTION：可读性、可维护性改进
+- 🔴 必须修复：安全漏洞、数据一致性问题、会导致线上故障的 Bug
+- 🟡 应当修复：性能问题、代码规范严重违反
+- 🔵 改进建议：可读性、可维护性改进
 
 **Review 完成后**：
 - 所有 🔴 问题修复前，不允许更新 STATE.json 到 Phase 5

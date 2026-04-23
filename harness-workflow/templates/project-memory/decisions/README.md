@@ -1,11 +1,9 @@
 # decisions/
 
-Architecture Decision Records emitted by Stage 2 planning. One file per decision:
-`harness_YYYY-MM-DD_<slug>.md` (harness-owned) or `<your-slug>.md` (human-owned).
+由 Stage 2 规划阶段产出的架构决策记录（ADR）。每条决策一个文件：
+`harness_YYYY-MM-DD_<slug>.md`（harness 专属）或 `<your-slug>.md`（人类专属）。
 
-Suggested structure: Context → Options considered → Decision → Why → Consequences.
-Cross-link to relevant cases in `cases/` and constraints in `constraints/` when they
-drove the decision.
+推荐结构：Context → Options considered → Decision → Why → Consequences。
+当决策由某些案例或约束驱动时，交叉链接到 `cases/` 与 `constraints/` 下的相应文件。
 
-Harness picks up new decisions at Stage 8 and adds index entries to `MEMORY.md`
-inside the `recent-decisions` marker block.
+Harness 在 Stage 8 收集新决策，并在 `MEMORY.md` 的 `recent-decisions` 标记块内追加索引条目。

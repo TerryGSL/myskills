@@ -1,10 +1,10 @@
 ---
 name: task-dispatcher
 description: >
-  Universal task orchestrator — 通用任务编排层。自动评估每条用户消息的并行化机会，派发 sub-agent 处理独立子任务，协调汇总结果。
-  不限于代码开发 — 适用于 research、ops、config、Q&A、debugging 及混合工作负载。
-  Use on EVERY user message to maximize throughput.
-  Triggers: 任何包含 2+ 独立子任务的用户消息自动激活。
+  通用任务编排器。自动评估每条用户消息的并行化机会，派发 sub-agent 处理独立子任务，协调汇总结果。
+  不限于代码开发 — 适用于调研、运维、配置、问答、调试及混合工作负载。
+  在每条用户消息上使用以提升吞吐量。
+  触发条件：任何包含 2+ 独立子任务的用户消息自动激活。
 ---
 
 # Task Dispatcher — 通用任务编排
@@ -218,70 +218,70 @@ Sub-agent **没有**本次对话的任何上下文。必须包含：
 
 ## Agent Prompt 模板
 
-Every agent dispatch MUST follow this template structure:
+每次 Agent 派发必须遵循以下模板结构：
 
 ```
-## Context
-{1-2 sentences: what project, what round, what's the overall goal}
+## 上下文
+{1-2 句话：什么项目、第几轮、整体目标是什么}
 
-## Your task
-{specific files to modify/create, with exact paths}
-{for each file: what to change, with line numbers if known}
+## 你的任务
+{要修改/创建的具体文件，附完整路径}
+{每个文件：要改什么，如有行号请标注}
 
-## Constraints
-- You handle ONLY these files: {list}
-- Do NOT touch: {excluded files/dirs}
-- Match existing code style (read CLAUDE.md if unsure)
+## 约束
+- 你只负责这些文件：{列表}
+- 不要碰：{排除的文件/目录}
+- 保持与现有代码风格一致（不确定时读 CLAUDE.md）
 
-## Acceptance criteria
-{for each fix: how to verify it worked}
-- After all changes: run `npx tsc --noEmit` — must pass with 0 errors
-- If tsc fails: fix the error yourself, re-verify, max 3 attempts
-- If still failing after 3 attempts: revert changes with `git checkout -- {files}` and report the error
+## 验收标准
+{每个修复：如何验证已生效}
+- 所有变更完成后：运行 `npx tsc --noEmit` — 必须零错误通过
+- 如果 tsc 失败：自行修复错误，重新验证，最多 3 次
+- 如果 3 次后仍失败：用 `git checkout -- {files}` 回退变更并报告错误
 
-## Return format
-Report in under 200 words:
-1. Files modified (path + what changed)
-2. tsc result (pass/fail)
-3. Any issues encountered
+## 返回格式
+200 字以内报告：
+1. 修改的文件（路径 + 改了什么）
+2. tsc 结果（通过/失败）
+3. 遇到的任何问题
 ```
 
 ---
 
 ## 验收标准协议
 
-After ALL dispatched agents return:
-1. **Merge check**: `git diff --stat` to confirm no unexpected files changed
-2. **Type check**: `npx tsc --noEmit`
-3. **Test suite**: `pnpm test` (or project's test command)
-4. **Conflict scan**: if 2+ agents modified adjacent lines in overlapping files, manually review the merge
-5. **Only commit after all 4 checks pass**
+所有派发的 Agent 返回后：
+1. **合并检查**：`git diff --stat` 确认没有意外文件被修改
+2. **类型检查**：`npx tsc --noEmit`
+3. **测试套件**：`pnpm test`（或项目的测试命令）
+4. **冲突扫描**：如果 2 个以上 Agent 修改了重叠文件的相邻行，手动审查合并
+5. **以上 4 项全部通过后才能提交**
 
 ---
 
 ## 回退协议
 
-If an agent's changes break the build:
-1. Identify which agent's changes caused the break (from the git diff)
-2. `git checkout -- {broken files}` to revert just that agent
-3. Re-dispatch the agent with a more detailed prompt including the error message
-4. Do NOT re-dispatch all agents — only the one that failed
+如果某个 Agent 的变更导致构建失败：
+1. 从 git diff 中定位是哪个 Agent 的变更导致了问题
+2. `git checkout -- {broken files}` 仅回退该 Agent 的文件
+3. 用更详细的 prompt（包含错误信息）重新派发该 Agent
+4. 不要重新派发所有 Agent — 只重新派发失败的那个
 
 ---
 
 ## 批次划分原则
 
-When dispatching multiple agents:
-- **Max 1 agent per file** — never let two agents edit the same file
-- **Locale files exception**: one agent can handle ALL locale files (they're independent per locale)
-- **If a task needs 10+ file changes**: split into sub-batches by directory
-- **Agent count vs. overhead**: for <10 second tasks, don't spawn an agent — do it inline. Agent overhead is ~15-30 seconds for setup.
+派发多个 Agent 时：
+- **每个文件最多 1 个 Agent** — 绝不让两个 Agent 编辑同一个文件
+- **多语言文件例外**：一个 Agent 可以处理所有 locale 文件（各语言文件相互独立）
+- **如果任务需要修改 10 个以上文件**：按目录拆分为子批次
+- **Agent 数量 vs. 开销**：预计耗时 < 10 秒的任务，不要启动 Agent — 直接内联完成。Agent 启动开销约 15-30 秒。
 
 ---
 
 ## 进度汇报模板
 
-After dispatching agents, immediately tell the user:
+派发 Agent 后，立即告知用户：
 
 ```
 | Agent | 负责文件 | 任务 | 状态 |
@@ -289,10 +289,10 @@ After dispatching agents, immediately tell the user:
 | {descriptive name} | {files} | {what it does} | 🔄 运行中 |
 ```
 
-As each agent completes, update inline:
-- "✅ {agent name} 完成：{1-line summary}"
+每个 Agent 完成时，内联更新：
+- "✅ {agent name} 完成：{一句话总结}"
 
-When ALL complete:
-- Full verification results (tsc + test)
-- Commit message preview
-- Any issues found
+全部完成时：
+- 完整验证结果（tsc + 测试）
+- 提交信息预览
+- 发现的任何问题

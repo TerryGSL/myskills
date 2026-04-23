@@ -6,13 +6,13 @@ description: >
   支持任意技术栈（Node/Python/Go/Rust），自动探测项目环境。
   任务规模自动分级（S/M/L/XL），XL 级自动拆多轮串行执行。
   实时心跳监控，Round 完成自动输出报告。
-  Use when:
+  使用场景：
   (1) 用户提出任何开发任务（"做XXX"/"加XXX"/"修XXX"/"改XXX"/"实现XXX"）
   (2) "下一轮"/"开始新round"/"继续开发"
   (3) "初始化环境"/"接入harness"/"harness-workflow --init"
   (4) "维护harness"/"同步状态"/"harness-workflow --maintain"
   (5) "工作流状态"/"当前进度"
-  Triggers: /harness-workflow, /harness-workflow --init, /harness-workflow --adopt, /harness-workflow --maintain, /harness-workflow --next
+  触发命令：/harness-workflow, /harness-workflow --init, /harness-workflow --adopt, /harness-workflow --maintain, /harness-workflow --next
 ---
 
 # Harness Workflow.0 — 自治开发工作流
@@ -23,10 +23,10 @@ description: >
 > `/harness-workflow --next` — 手动触发下一轮
 > `/harness-workflow` — 查看当前状态 + 工作流概览
 
-## Quick Reference
+## 快速参考
 
 | 模式 | 做什么 | 跳过什么 |
-|------|--------|---------|
+|------|--------|----------|
 | 默认（无参数） | 显示当前状态 + 工作流概览 | — |
 | `--init` | Phase 1-4 全部执行（新项目） | — |
 | `--adopt` | 检测已有文件，只补缺失 | 不覆盖已有内容 |
@@ -38,7 +38,7 @@ description: >
 
 ## 核心原则
 
-**Autonomous + Rigorous。** 用户说一句话，AI 自动完成全流程。
+**自治且严谨。** 用户说一句话，AI 自动完成全流程。
 
 - **完全自治**：S/M 级任务全流程零介入；L/XL 级仅方向确认一次
 - **8-Stage 编排**：每轮按规模激活对应 Stage
@@ -140,7 +140,7 @@ WALKTHROUGH.md 如在根目录 → 移动到 `docs/`。
 
 > 走 `--init` 或 `--adopt` 时执行。`--maintain` 不重跑（只做漂移检查）。
 
-1. **生成 `.harness-memory.yml`**（contract 锚点）
+1. **生成 `.harness-memory.yml`**（契约锚点）
 
    从 `templates/project-memory/.harness-memory.yml.template` 渲染，填充：
    - `project.name` (from `package.json.name` / `go.mod` / `pyproject.toml`)
@@ -156,7 +156,7 @@ WALKTHROUGH.md 如在根目录 → 移动到 `docs/`。
    - `ERRORS.md.template` → `docs/memory/ERRORS.md`
    - 四个子目录 `cases/` / `decisions/` / `constraints/` / `archive/` + 各自 `README.md`
 
-3. **初始化 scorecard**（`docs/memory/harness_reviewer_scorecard.yml`）
+3. **初始化评分卡**（`docs/memory/harness_reviewer_scorecard.yml`）
 
    ```yaml
    schema_version: "1.0.0"
@@ -306,7 +306,7 @@ Round N Stage 8 完成 → 检查 pendingRounds
 - [ ] WALKTHROUGH.md 已追加
 - [ ] CLAUDE.md 已更新（如有 ADR）
 - [ ] claude-mem observation 已写入
-- [ ] `.harness-memory.yml` contract 通过验证（forbidden_paths 非空 + 无 broad 模式）
+- [ ] `.harness-memory.yml` 契约通过验证（forbidden_paths 非空 + 无 broad 模式）
 - [ ] `harness_project_stack.md` 反映当前技术栈（Stage 8 刷新）
 - [ ] Scorecard 追加了本轮所有 review 条目（无遗漏）
 - [ ] 本轮新 case（若 errors_collection 阈值达成）已写入 `docs/memory/cases/harness_<date>_<slug>.md`
@@ -331,7 +331,7 @@ CLAUDE.md ADR 数量       vs  实际架构决策       → 是否遗漏？
 
 不一致 → **先同步文件，再写代码**。
 
-### Drift Red Flags
+### 漂移警示信号（Drift Red Flags）
 
 | 想法 | 正确做法 |
 |------|---------|

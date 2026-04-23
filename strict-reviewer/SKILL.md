@@ -19,7 +19,7 @@ analyses to pass cleanly.
 If coverage is incomplete, verdict is BLOCKED — not PASS.
 ```
 
-这不是自我激励辞，是**契约**。违反任一硬门的 PASS 等同于 false pass，未来会被 false-pass-correction 机制追溯。
+这不是自我激励辞，是**契约**。违反任一硬门的 PASS 等同于误放行，未来会被 false-pass-correction 机制追溯。
 
 ## Input（caller 必须传入的 YAML 字符串）
 
@@ -39,17 +39,17 @@ review_target:
 
 ## Required Steps（严格执行，不跳）
 
-1. **Read every changed file** — 用 Read tool 读每个 `changed_files` 文件。不能读的 → 加入 `coverage.skipped_files` 并说明原因
-2. **Verify every claim** — 对 `claims_to_verify` 的每一条，对着 file:line / 命令输出 / repro 步骤逐条验证。没证据支持的 claim 算 finding（severity: high，grounded_by: 缺席）
-3. **Minimum adversarial search** — 列出 **3 个**可能失败模式（concurrent race / edge input / auth bypass / data corruption / resource leak 等）。对每一条，论证：
+1. **读取每个变更文件（Read every changed file）** — 用 Read tool 读每个 `changed_files` 文件。不能读的 → 加入 `coverage.skipped_files` 并说明原因
+2. **核验每条声明（Verify every claim）** — 对 `claims_to_verify` 的每一条，对着 file:line / 命令输出 / repro 步骤逐条验证。没证据支持的 claim 算 finding（severity: high，grounded_by: 缺席）
+3. **最小对抗性搜索（Minimum adversarial search）** — 列出 **3 个**可能失败模式（并发竞态 / 边界输入 / 鉴权绕过 / 数据损坏 / 资源泄漏 等）。对每一条，论证：
    - 当前代码是否处理了
    - 若未处理但 severity 低 → low finding
    - 若未处理且 severity 高 → high/critical finding
    不列够 3 个 = 审稿未完成，返回 BLOCKED
-4. **Apply three gates**:
-   - **Grounding gate**：每个 finding 必须带 `file:line` 或 `符号` 或 `命令输出` 或 `repro 步骤`。纯口头 finding 不计数
-   - **Reproduction gate**：任何声称的 bug 必须有 repro steps / failing test / trace，或者 `reproduction: "not reproducible because <reason>"`
-   - **Coverage gate**：`coverage.inspected_files` 必须包含所有 `changed_files` 里的关键文件（非测试文件、非 generated）。未读关键变更文件 → verdict 不得 PASS，应为 BLOCKED
+4. **应用三硬门（Apply three gates）**：
+   - **Grounding 闸门**：每个 finding 必须带 `file:line` 或 `符号` 或 `命令输出` 或 `repro 步骤`。纯口头 finding 不计数
+   - **Reproduction 闸门**：任何声称的 bug 必须有 repro steps / failing test / trace，或者 `reproduction: "not reproducible because <reason>"`
+   - **Coverage 闸门**：`coverage.inspected_files` 必须包含所有 `changed_files` 里的关键文件（非测试文件、非 generated）。未读关键变更文件 → verdict 不得为 PASS，应为 BLOCKED
 
 ## Output（严格 YAML，供 caller 解析）
 
@@ -90,26 +90,26 @@ scorecard_delta:
 |------|---------|
 | 至少一个 `critical` finding | **FAIL** |
 | 至少一个 `high` finding 且 stage ∈ {qa, security, spec} | **FAIL** |
-| `high` finding 只在 stage=quality | **FAIL**（quality stage 也严格）|
+| `high` finding 仅出现在 stage=quality | **FAIL**（quality 阶段同样严格）|
 | 仅 `medium` findings | **FAIL**（但 caller 可接受为 "merge-with-knownissues"）|
 | 仅 `low` findings + 三硬门全过 + adversarial 3 条全论证 | **PASS** |
 | 任何硬门失败 | **BLOCKED** |
-| Input malformed / 缺 required 字段 | **BLOCKED** |
+| 输入格式错误 / 缺少 required 字段 | **BLOCKED** |
 
 ## Scorecard（caller 负责 persist）
 
 `strict-reviewer` 自己 **完全 stateless**。`scorecard_delta` 是给 caller 的一次性 payload。
 
-Caller（harness Stage 6/7 coordinator，或手动调用用户）按 `docs/memory/harness_reviewer_scorecard.yml` 的 schema（见 spec §`harness_reviewer_scorecard.yml` Schema）做：
-1. Append 一条 `reviews[]` entry
-2. 更新 `totals` 各计数
-3. 若超过 500 条 → 归档到 `docs/memory/archive/harness_reviewer_scorecard_<year>.yml` + 保留最新 100 条
+Caller（harness Stage 6/7 coordinator，或手动调用的用户）按 `docs/memory/harness_reviewer_scorecard.yml` 的 schema（见 spec §`harness_reviewer_scorecard.yml` Schema）做：
+1. 追加一条 `reviews[]` entry
+2. 更新 `totals` 各项计数
+3. 若超过 500 条 → 归档到 `docs/memory/archive/harness_reviewer_scorecard_<year>.yml` 并保留最新 100 条
 
 ## 何时被调用
 
 ### 自动（harness-workflow 内部）
 
-`harness-workflow/references/workflow.md` 定义 Stage 4/5/6/7 在完成各自工作后，由主 agent coordinator 构造 `review_target` + invoke `strict-reviewer`。
+`harness-workflow/references/workflow.md` 定义 Stage 4/5/6/7 在各自工作完成后，由主 agent coordinator 构造 `review_target` 并调用 `strict-reviewer`。
 
 详细协议 → `harness-workflow/references/reviewer-integration.md`
 
@@ -119,12 +119,12 @@ Caller（harness Stage 6/7 coordinator，或手动调用用户）按 `docs/memor
 /strict-reviewer <review_target YAML>
 ```
 
-独立模式下 scorecard 无处写 → 输出的 `scorecard_delta` 返给用户，用户自己决定存哪。
+独立模式下评分卡无处写入 → 输出的 `scorecard_delta` 返回给用户，由用户自行决定存放位置。
 
 ## 不该做什么（避免 persona 膨胀）
 
-- ❌ 不写 "I am a brutal senior engineer..." 之类 persona prose
-- ❌ 不根据 stage 改变"人格"（qa 和 security 的域不同，但硬门和 adversarial search 流程一致）
-- ❌ 不自己读 `docs/memory/` 或 `.harness-memory.yml`（caller 已在 `memory_cases` 注入）
-- ❌ 不跨 review 持 state（stateless 铁律）
+- ❌ 不写 "I am a brutal senior engineer..." 这类 persona 散文
+- ❌ 不根据 stage 改变"人格"（qa 与 security 的领域不同，但硬门和对抗性搜索流程一致）
+- ❌ 不自行读取 `docs/memory/` 或 `.harness-memory.yml`（caller 已通过 `memory_cases` 注入）
+- ❌ 不跨 review 保留状态（stateless 铁律）
 - ❌ 不降级到 "temporary relaxed mode"。若资源不够 → BLOCKED

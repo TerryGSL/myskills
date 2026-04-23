@@ -1,26 +1,24 @@
-# `.harness-memory.yml` Schema Migrations
+# `.harness-memory.yml` Schema 迁移
 
-> Declarative migration steps per major version bump. Harness reads this file on
-> `--init/--adopt/--maintain` when it detects a contract whose `schema_version`
-> is older than the current release.
+> 每次 major 版本升级对应的声明式迁移步骤。Harness 在 `--init/--adopt/--maintain`
+> 时读取此文件，当检测到某个契约的 `schema_version` 早于当前发布版本时启用。
 >
-> Reference: `specs/2026-04-22-memory-reviewer-upgrade.md` §版本演化
+> 参考：`specs/2026-04-22-memory-reviewer-upgrade.md` §版本演化
 
-## Format
+## 格式
 
-Each migration is a section keyed by semver range. Steps are declarative (natural
-language + YAML diffs), not executable code. Harness's job is to read, explain the
-change to the user, and apply only after explicit confirmation.
+每个迁移是一个按 semver 区间分节的段落。步骤是声明式的（自然语言 + YAML diff），
+不是可执行代码。Harness 的职责是读取、向用户解释变更，仅在显式确认后才应用。
 
-## Current Version
+## 当前版本
 
-`1.0.0` — Initial release (this commit).
+`1.0.0` —— 初始发布（本次提交）。
 
-No prior versions exist, so no migration steps are defined yet.
+此前没有版本，因此尚未定义任何迁移步骤。
 
-## Future: 1.0.0 → 2.0.0 (placeholder for next major bump)
+## 未来：1.0.0 → 2.0.0（下一次 major 升级的占位）
 
-When schema_version 2.0.0 is released, a section like this will be appended:
+当 schema_version 2.0.0 发布时，会在此追加类似章节：
 
 ```
 ### 1.0.0 → 2.0.0
@@ -41,9 +39,9 @@ When schema_version 2.0.0 is released, a section like this will be appended:
 - Confirm YES/NO after harness shows diff preview
 ```
 
-## Rules
+## 规则
 
-- **Patch (x.y.z bump)**: no migration needed
-- **Minor (x.Y.z bump)**: optional; harness reads new fields with defaults
-- **Major (X.y.z bump)**: migration section REQUIRED in this file before release
-- **No migration for downgrades** — harness refuses to operate on newer-major contract in read-only mode
+- **Patch（x.y.z 升级）**：无需迁移
+- **Minor（x.Y.z 升级）**：可选；harness 按默认值读取新字段
+- **Major（X.y.z 升级）**：发布前必须在本文件中补充迁移章节
+- **不支持降级迁移** —— harness 拒绝对更高 major 的契约进行非只读操作

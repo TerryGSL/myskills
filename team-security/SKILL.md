@@ -60,7 +60,7 @@ version: 2.0.0
 识别攻击面，输出威胁模型（写入 `docs/06-security/THREAT-MODEL.md`）：
 
 ```markdown
-# Threat Model
+# 威胁模型
 
 ## 信任边界
 - 外部用户 → API Gateway → Backend Service（需认证）
@@ -73,7 +73,7 @@ version: 2.0.0
 | Spoofing（伪造） | JWT 伪造 | HIGH | 强签名算法（RS256） |
 | Tampering（篡改）| 订单金额篡改 | CRITICAL | 服务端重新计算价格 |
 | Repudiation（抵赖）| 操作无日志 | MEDIUM | 操作审计日志 |
-| Info Disclosure | 异常信息泄露 | MEDIUM | 生产环境屏蔽堆栈 |
+| Info Disclosure（信息泄露） | 异常信息泄露 | MEDIUM | 生产环境屏蔽堆栈 |
 | DoS | 未限流 API | HIGH | Rate Limiting |
 | Elevation（提权）| 越权访问他人数据 | CRITICAL | 数据级权限校验 |
 ```
@@ -253,17 +253,17 @@ version: 2.0.0
 写入 `docs/06-security/SECURITY-REVIEW.md`：
 
 ```markdown
-# Security Review Report
-Date: <日期> | Reviewer: Security Agent
+# 安全审查报告
+日期：<日期> | 审查者：Security Agent
 
-## Executive Summary
-总体安全评级: 🔴 HIGH RISK / 🟡 MEDIUM RISK / 🟢 LOW RISK
+## 总览
+总体安全评级：🔴 高风险 / 🟡 中等风险 / 🟢 低风险
 
 ## 发现问题汇总
 | 编号 | 类型 | 严重级别 | 置信度 | 位置 | 变体数 | 状态 |
 |------|------|----------|--------|------|--------|------|
-| SEC-001 | 水平越权 | CRITICAL | 10/10 | OrderController.java:45 | 3 | Open |
-| SEC-002 | 密码 MD5 存储 | CRITICAL | 9/10 | UserService.java:67 | 1 | Open |
+| SEC-001 | 水平越权 | CRITICAL | 10/10 | OrderController.java:45 | 3 | 待修复 |
+| SEC-002 | 密码 MD5 存储 | CRITICAL | 9/10 | UserService.java:67 | 1 | 待修复 |
 
 ## CRITICAL 问题详情（必须修复后才能上线）
 
