@@ -12,7 +12,7 @@ description: >
 # harness-bugfix — Bug 修复五步 TDD
 
 > 由 profile-entry 路由（显式 `--fix` flag 或 bug 语义识别）。
-> Source: 原 harness-workflow v0 的 M 级 Stage 集 + investigate skill 方法论。
+> 核心方法论：Skill(investigate) 复用调试方法论 + TDD 五步纪律。
 
 ## 输入契约（来自 profile-entry）
 
@@ -52,4 +52,4 @@ description: >
 
 - Case frontmatter schema：`harness-common/references/memory-layers.md`
 - errors_collection 阈值配置：`docs/memory/.harness-memory.yml`
-- 原 M 级 Stage 定义：`harness-workflow/archive/pre-reshape-backup.md`
+- Workflow 详细契约：`harness-workflow/references/workflow.md`

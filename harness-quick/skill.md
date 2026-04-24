@@ -11,7 +11,6 @@ description: >
 # harness-quick — 无仪式快速路径
 
 > 由 profile-entry 的 fast-path 确定性路由到这里。用户不直接触发。
-> Source: 原 harness-workflow v0 的 S 级 Stage 集（`harness-workflow/archive/pre-reshape-backup.md`）。
 
 ## 输入契约（来自 profile-entry）
 

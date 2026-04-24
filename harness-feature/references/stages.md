@@ -236,9 +236,10 @@ Stage 8 完成后：
 
 ---
 
-## Canonical Reference Bank — 原 harness-workflow v0 references
+## Canonical Reference Bank — harness 生态共享权威
 
-原 harness-workflow/skill.md reshape 成 100 行 stub 后，其 13 个 references + templates 目录**全部保留**在 `harness-workflow/references/` 和 `harness-workflow/templates/` 下，作为整个 harness 生态的 **canonical reference bank**。
+`harness-workflow/references/` 和 `harness-workflow/templates/` 是整个 harness 生态的
+**canonical reference bank**（跨 skill 共享的权威规范）。
 
 下列文件在各 Stage 实操中按需读取（跨 skill 引用，不重复写）：
 
@@ -260,6 +261,5 @@ Stage 8 完成后：
 | `harness-workflow/templates/project-memory/*` | init/adopt 时（CLI 已打进 bundled） | 原 v1.0 memory 模板集 |
 
 **读取原则**：
-- harness-feature 的 references/ 只写"新增 / 关键对外契约"（本 skill.md body 引用的 4 份）
-- 涉及原 v0 已有的详细规范（监控 / STATE.json / hooks 模板 / 审稿细节 / memory doctrine）→ 跨引用到 `harness-workflow/references/`
-- 若 harness-workflow/archive/pre-reshape-backup.md 也需要（如查 v0 的某段原话） → 也是 authoritative source（但已归档，仅作考古）
+- harness-feature 的 references/ 写本 skill 特定的 8-Stage 契约（4 份）
+- 生态共享规范（监控 / STATE.json / hooks 模板 / 审稿细节 / memory doctrine）→ 跨引用到 `harness-workflow/references/`

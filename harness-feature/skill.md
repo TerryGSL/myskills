@@ -1,19 +1,16 @@
 ---
 name: harness-feature
 description: >
-  L/XL 级新功能的完整 8-Stage 自治流程。承接原 harness-workflow v0 的 8-Stage 全文，
-  显式调用 team-pd / team-architect / team-{senior,junior}-dev / team-qa / team-security
-  + strict-reviewer 完成需求→架构→规划→实现→审查→QA→安全→收尾闭环。
-  Stage -0.5 集成 Spec 1 knowledge scanner；Stage 8 按 profile.hard_floor 强制执法。
-  **不对外公开触发词** —— 由 profile-entry 路由（默认所有非 quick/bugfix/refactor 都走这里）。
+  L/XL 级新功能的 8-Stage 自治流程。显式调用 team-pd / team-architect /
+  team-{senior,junior}-dev / team-qa / team-security + strict-reviewer 完成
+  需求 → 架构 → 规划 → 实现 → 审查 → QA → 安全 → 收尾闭环。
+  Stage -0.5 集成 knowledge scanner；Stage 8 按 profile.hard_floor 强制执法。
+  不对外公开触发词 —— 由 profile-entry 路由（默认所有非 quick/bugfix/refactor 都走这里）。
   使用场景：新功能开发、跨模块改造、新子系统引入。
   触发命令：（无公开触发词；profile-entry 路由）
 ---
 
 # harness-feature — 8-Stage 自治新功能流程
-
-> 由 profile-entry 路由到本 skill。8-Stage 循环的 canonical 继承者。
-> 原 v0 全文备份：`harness-workflow/archive/pre-reshape-backup.md:236-320`。
 
 ## 输入契约（来自 profile-entry）
 
@@ -27,7 +24,7 @@ description: >
 ## 8-Stage 总览
 
 ```
-Stage -0.5  Project Context Retrieval     (Spec 1 knowledge 注入)
+Stage -0.5  Project Context Retrieval     (knowledge scanner 注入)
 Stage 0     需求分析                      team-pd
 Stage 1     架构审查                      team-architect
 Stage 2     规划                          superpowers:writing-plans
@@ -47,7 +44,7 @@ Stage 8     收尾                          Coordinator (hard_floor 执法)
 
 **分级表 + 拆轮原则** → [references/round-sizing.md](references/round-sizing.md)
 
-## Knowledge Scanner 集成（Spec 1）
+## Knowledge Scanner 集成
 
 Stage -0.5 注入 `.harness-status.json.knowledgeCheck`（8 字段）给下游 Stage。Render 为：
 
@@ -81,7 +78,7 @@ Stage 8 完成 → 检查 `pendingRounds`：
 
 - Stage -0.5 若 `knowledge_requirements` 非空但 Stage 4 未核查 → FAIL
 - Stage 8 hard_floor 动作 → 硬 abort（即使 `/yolo`）
-- 连续 10 Round 未 PASS Stage 4 → 停下反思（参照 2026-04-22 iteration-log）
+- 连续 10 Round 未 PASS Stage 4 → 停下反思路径是否错
 
 ## 依赖 skill 的 degraded fallback
 
@@ -93,38 +90,32 @@ Stage 8 完成 → 检查 `pendingRounds`：
 | team-qa | 手工跑测试 + 标 degraded |
 | team-security | 跳过 Stage 7 + 在 learnings 记 high-priority entry |
 | gstack | 前端任务手工 E2E 验证 + 标 degraded |
-| investigate | 通用调试（harness-bugfix 专用，非 harness-feature 主线） |
 
 **不静默兜底** —— 每个 degraded 场景在 learnings 记条目 + 显式提示用户。
 
 ## 引用
 
-### 本 skill 内 references/（progressive disclosure）
+### 本 skill references/（progressive disclosure）
 
 - [references/stages.md](references/stages.md) — 8-Stage 详解
 - [references/round-sizing.md](references/round-sizing.md) — S/M/L/XL 分级 + XL 拆轮
 - [references/hard-floor-enforcement.md](references/hard-floor-enforcement.md) — Stage 8 hard_floor 执法
-- [references/knowledge-integration.md](references/knowledge-integration.md) — Spec 1 Stage -0.5 集成
+- [references/knowledge-integration.md](references/knowledge-integration.md) — knowledge scanner 集成
 
-### Canonical reference bank（原 harness-workflow v0 references 保留）
+### Canonical reference bank（harness 生态共享）
 
-**所有原 v0 能力在此完整保留**，按需跨引用：
-
-- `harness-workflow/references/monitoring.md` — 心跳机制 + cronJobId 协议（XL Round 实时监控）
+- `harness-workflow/references/monitoring.md` — 心跳监控 + cronJobId 协议（XL Round 实时监控）
 - `harness-workflow/references/templates.md` — STATE.json / WALKTHROUGH / DESIGN 模板
-- `harness-workflow/references/workflow.md` — Stage 细节 + 自治决策分支
+- `harness-workflow/references/workflow.md` — Stage 详细 + 自治决策分支
 - `harness-workflow/references/maintenance.md` — --maintain 完整流程
 - `harness-workflow/references/hooks.md` — 7 hook 模板 + settings.json 配置
-- `harness-workflow/references/autonomy.md` / `parallel-agents.md` / `protocols.md` / `project-detection.md` / `reviewer-integration.md` / `memory.md` / `memory-migrations.md` / `migration-checklist.md`
-- `harness-workflow/templates/project-memory/*` — 原 memory 模板集
-
-完整 reference bank 索引 → [references/stages.md](references/stages.md) 末尾 "Canonical Reference Bank" 章节。
+- `harness-workflow/references/{autonomy,parallel-agents,protocols,project-detection,reviewer-integration,memory,memory-migrations,migration-checklist}.md`
 
 ### Spec
 
-- `harness-workflow/specs/2026-04-24-harness-cli-integration-design.md` §附录 C（skill 保留矩阵）
-- `harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md`（Spec 1）
-- `docs/superpowers/specs/2026-04-24-profile-based-dispatch-redesign-design.md`（Spec 2）
+- `harness-workflow/specs/2026-04-24-harness-cli-integration-design.md` §附录 C（skill 处理矩阵）
+- `harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md`
+- `docs/superpowers/specs/2026-04-24-profile-based-dispatch-redesign-design.md`
 
 ### 共享基础设施
 

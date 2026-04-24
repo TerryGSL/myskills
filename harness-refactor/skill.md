@@ -11,7 +11,6 @@ description: >
 # harness-refactor — 重构专用流程
 
 > 由 profile-entry 的 `--refactor` flag 或自动识别路由。
-> Source: 原 harness-workflow v0 的重构相关 Stage 组合。
 
 ## 核心原则
 
@@ -81,5 +80,4 @@ FAIL → **立即 revert 该步**（`git reset --hard HEAD~1`），回到 plan �
 
 - Baseline 四件套：[references/baseline-contract.md](references/baseline-contract.md)
 - Step 纪律：[references/step-discipline.md](references/step-discipline.md)
-- 原重构模式：`harness-workflow/archive/pre-reshape-backup.md`
 - strict-reviewer 审稿模板：`strict-reviewer/SKILL.md`

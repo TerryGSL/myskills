@@ -1,125 +1,99 @@
 ---
 name: harness-workflow
 description: >
-  Harness 工作流的公开兼容入口。保留 /harness-workflow 触发词，真正的路由通过内部 profile-entry 完成。
-  生命周期命令（--init / --adopt / --maintain / --doctor / --scan）作为显式 passthrough 到
-  harness-workflow-cli（CLI）。代码任务保持薄：接入、强制 harness profile 交棒。
+  Harness 工作流的公开入口。用户通过 /harness-workflow 触发任何代码任务（新功能、bug 修复、
+  重构、trivial 编辑），由本 skill 内部路由到合适的叶子 skill（harness-{quick,bugfix,feature,refactor}
+  或 company-* overlay）。生命周期命令（--init / --adopt / --maintain / --doctor / --scan）
+  passthrough 到 harness-workflow-cli。
   使用场景：
-  (1) 用户沿用 /harness-workflow 旧习惯开发代码
+  (1) 用户说"做 XXX / 加 XXX / 修 XXX / 改 XXX / 实现 XXX"等开发请求
   (2) 用户执行 init / adopt / maintain / doctor / scan 生命周期命令
-  (3) 老文档、hook、CLAUDE.md 仍引用 harness-workflow 触发词
-  (4) 多项目 harness 升级（/harness-workflow --next 或 --maintain）
+  (3) "下一轮 / 继续开发 / 扫描项目约定"
   触发命令：/harness-workflow, /harness-workflow --init, /harness-workflow --adopt,
   /harness-workflow --maintain, /harness-workflow --doctor, /harness-workflow --scan,
   /harness-workflow --next
-历史说明：v0 是 14949 字节 / 363 行的单体 skill（所有 Phase 1-4 + 8 Stage + 自治决策 + 监控 …）。
-v1 重塑为 ≤100 行 compatibility stub；原内容归档在 archive/pre-reshape-backup.md 作历史参考。
-Phase 1-4 职责已迁到 harness-workflow-cli（npm 包），详见 references/migration-checklist.md。
-8-Stage 循环迁到 harness-feature skill（Stage 2 里由 profile-entry 路由）。
 ---
 
-# harness-workflow — 兼容入口（v1）
+# harness-workflow — 公开工作流入口
 
-> 公开兼容名（保留用户肌肉记忆）。
-> 内部路由器是 `profile-entry`；**不对用户暴露 `/profile-entry` 触发词**。
+> 这是 harness 体系的公开触发词。代码任务路由由内部 `profile-entry` 完成。
 
 ## 职责
 
-1. 保留现有触发词 + 迁移安全（SessionStart hook / CLAUDE.md 无需改动）
-2. 将生命周期命令 passthrough 到 `harness-workflow-cli` CLI
-3. 对代码任务：invoke `profile-entry` 并强制 `forced_profile: harness`
-4. 当老文档仍指向这里时发迁移提示（首次会话提示一次即可）
-5. **零任务类型逻辑，零激进模式策略** —— 全部交 profile-entry / 叶子 skill
-
-## 非职责
-
-- 不自己分类任务类型（quick/bugfix/feature/refactor）
-- 不解析 profile matcher（profile-entry 做）
-- 不持久化会话模式
-- 不实现公司策略（company-mt overlay 做）
-- 不重复叶子 skill 选择
+1. 保留 `/harness-workflow` 公开触发词（SessionStart hook + CLAUDE.md 规则 + 用户肌肉记忆）
+2. 生命周期命令 passthrough 到 `harness-workflow-cli` CLI
+3. 代码任务 → invoke `Skill(profile-entry)` 让它做路由 + 叶子 skill 选择
+4. 零任务类型逻辑、零激进模式策略（由 profile-entry 和叶子 skill 承担）
 
 ## 路由规则
 
-**生命周期命令（passthrough 到 CLI）**：
+### 生命周期命令（passthrough 到 CLI）
 
-| 触发 | 调用 |
-|------|------|
+| 触发 | 调用 CLI |
+|------|---------|
 | `/harness-workflow --init` | `harness init` |
 | `/harness-workflow --adopt` | `harness adopt` |
 | `/harness-workflow --maintain` | `harness maintain` |
 | `/harness-workflow --doctor` | `harness doctor` |
 | `/harness-workflow --scan` | `harness scan` |
-| `/harness-workflow` (无参) | `harness doctor` + 显示当前 profile / Round |
+| `/harness-workflow` （无参） | `harness doctor` + 显示当前 profile / Round |
 
-如果 CLI 未安装 → abort + 提示 `npm install -g harness-workflow-cli`。
+CLI 未安装 → abort + 提示 `npm install -g harness-workflow-cli`。
 
-**代码任务（转发到 profile-entry）**：
+### 代码任务（转发到 profile-entry）
 
 ```
-invoke Skill(profile-entry) with:
+Skill(profile-entry) with:
   forced_profile: harness
   public_entrypoint: harness-workflow
   requested_flags: <解析后的 flag>
   cwd: <当前仓库>
+  task_description: <原用户请求>
 ```
 
-profile-entry 会做：marker 查找 → fallback matcher → 结构化 fast-path → 优先级解析 → 加载 exactly ONE 叶子 skill（`harness-{quick,bugfix,feature,refactor}`）。
+profile-entry 做：marker 查 → fallback matcher → 结构化 fast-path → 优先级解析 → 加载
+exactly ONE 叶子 skill（`harness-{quick,bugfix,feature,refactor}` 或对应 `company-*`）。
 
-## 会话 schema 版本哨兵（R6/T4）
+## 会话 schema 版本哨兵
 
-进入任何代码任务之前，读 `.harness/current.json.workflow_schema_version`：
+代码任务入口前读 `.harness/current.json.workflow_schema_version`：
 
-- 缺失 / null → 触发一次性 migration（写入 "1.0.0"）
+- 缺失 / null → 触发一次性 migration（写入 `"1.0.0"`）
 - `<= 1.0.0` → 正常继续
-- `> 1.0.0`（未来版本）→ **硬 abort** + 提示 `npm install -g harness-workflow-cli@latest`（AD4 双向哨兵）
+- `> 1.0.0`（未来版本）→ 硬 abort + 提示 `npm install -g harness-workflow-cli@latest`
 
-## 迁移提示
+## 引用
 
-老文档和 hook 调用 `/harness-workflow` 仍**完全有效**。
-新架构文档可以提到 `profile-entry`，但只作为内部组件不对外宣传。
+### Canonical Reference Bank（harness 生态共享权威规范）
 
-## Canonical Reference Bank（本 skill 保留的原 v0 资产）
+以下 references 文档是 harness 工作流的跨 skill 共享权威源，由各叶子 skill 按需 cross-link：
 
-虽然 `skill.md` 从 363 行 reshape 到 103 行 stub，**原 13 个 references + templates 目录全部保留**
-作为整个 harness 生态的 **canonical reference bank**（跨 skill 共享的权威规范）：
-
-- `references/monitoring.md` — 心跳监控 + cronJobId 协议（XL Round 实时监控）
+- `references/monitoring.md` — 心跳监控协议（`.harness-status.json` schema + `cronJobId` + CronCreate 轮询频率）
 - `references/templates.md` — `docs/STATE.json` / `docs/WALKTHROUGH.md` / `docs/DESIGN.md` 模板
-- `references/workflow.md` — Stage 细节 + 自治决策分支
-- `references/maintenance.md` — `--maintain` 完整流程
-- `references/hooks.md` — 7 个 hook 模板 + settings.json 配置
-- `references/autonomy.md` / `parallel-agents.md` / `protocols.md` / `project-detection.md`
-- `references/reviewer-integration.md` / `memory.md` / `memory-migrations.md`
-- `references/migration-checklist.md`（R5/T10 产出，Phase → CLI 交叉核查）
-- `templates/project-memory/*` — memory 模板集
+- `references/workflow.md` — Stage 详细描述 + 自治决策分支 + subagent 派发规则
+- `references/maintenance.md` — `--maintain` 同步检查 + 漂移恢复 playbook
+- `references/hooks.md` — 7 个 hook 完整模板 + settings.json 配置
+- `references/autonomy.md` — 自治决策树 + 人工介入触发条件
+- `references/parallel-agents.md` — Stage 3 senior/junior 并行策略
+- `references/protocols.md` — skill 间参数传递约定
+- `references/project-detection.md` — 各语言 / 框架详细探测规则
+- `references/reviewer-integration.md` — review_target 完整字段 + Stage-specific 审稿点
+- `references/memory.md` — memory doctrine 完整论证
+- `references/memory-migrations.md` — memory schema 版本升级路径
+- `references/migration-checklist.md` — Phase → CLI 动作交叉核查表
 
-新 skill（harness-feature / harness-common 等）的 references/ 只写**新增 / 关键对外契约**；
-详细规范（监控 / STATE.json / hook 模板 / 审稿细节 / memory doctrine）由它们**跨引用**到本目录。
-完整索引 → [harness-feature/references/stages.md](../harness-feature/references/stages.md) 末尾
-"Canonical Reference Bank" 章节。
+### Templates
 
-原 v0 `skill.md` 全文存档 → `archive/pre-reshape-backup.md`（历史考古用）。
+- `templates/project-memory/*` — memory 模板集（CLI 已打进 bundled，用户通常不用手动拷贝）
 
-原 v0 的 8-Stage 全文 + Phase 1-4 指令在以下位置：
-- **Phase 1-4 实现** → `harness-workflow-cli` (npm 包)；mapping 见 `references/migration-checklist.md`
-- **8-Stage 循环** → `harness-feature` skill
-- **Quick/Bugfix/Refactor 变体** → `harness-{quick,bugfix,refactor}` skill
-- **共享基础设施** → `harness-common` skill
-- **原 v0 备份** → `archive/pre-reshape-backup.md`
+### Specs
 
-## 与其他 skill 的关系
+- `specs/2026-04-23-project-knowledge-scanner-design.md` — knowledge scanner 设计
+- `specs/2026-04-24-harness-cli-integration-design.md` — CLI + skill 生态设计
 
-| Skill | 位置 | 何时调用 |
-|-------|------|---------|
-| `profile-entry` | 内部路由（不对外） | 代码任务首次入口 |
-| `harness-common` | 共享基础设施 | Phase 1-4 逻辑（drift 检测、--maintain 共享） |
-| `harness-feature` | 8-Stage 完整流程 | L/XL 级新功能 |
-| `harness-bugfix` | TDD 五步 | bug 修复 |
-| `harness-quick` | 无仪式快速路径 | 1 文件 <10 行改动（fast-path 自动路由） |
-| `harness-refactor` | baseline + 增量 | 重构任务 |
-| `team-init` | 初始化入口 skill | 用户提"接入 harness"时调 CLI |
-| `strict-reviewer` | 审稿（含 Step 5 知识合规） | Stage 4/5 |
-| `team-pd` / `team-architect` / `team-{senior,junior}-dev` / `team-qa` / `team-security` | 原 8-Stage 子角色 | harness-feature 内部 Stage invoke |
+## 硬边界
 
-完整 skill 保留矩阵 → `references/` 下的 spec 附录 C。
+- 不自己做代码任务路由（交 profile-entry）
+- 不自己写代码（交叶子 skill）
+- 不公开 `/profile-entry` 触发词（内部 only）
+- 生命周期命令必须 passthrough 到 CLI（不允许 AI 手工 Edit/Write 代替）

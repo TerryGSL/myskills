@@ -12,7 +12,10 @@
     "templates": {
       "root": [
         "resources/templates/root/CLAUDE.md.template",
-        "resources/templates/root/harness.config.json.template"
+        "resources/templates/root/harness.config.json.template",
+        "resources/templates/root/STATE.json.template",
+        "resources/templates/root/WALKTHROUGH.md.template",
+        "resources/templates/root/DESIGN.md.template"
       ],
       "memory": [
         "resources/templates/memory/.harness-memory.yml.template",

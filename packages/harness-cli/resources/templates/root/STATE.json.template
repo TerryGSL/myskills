@@ -1,0 +1,18 @@
+{
+  "project": "{{project_name}}",
+  "version": "0.1.0",
+  "lastUpdated": "{{today}}",
+  "currentRound": 0,
+  "currentStage": null,
+  "stageOutcome": null,
+  "escalations": [],
+  "pendingRounds": [],
+  "completedRounds": [],
+  "features": {},
+  "knownIssues": [],
+  "summary": {
+    "totalCommits": 0,
+    "testsWritten": 0,
+    "testsPassing": 0
+  }
+}

@@ -58,6 +58,7 @@ function planFiles(input: InitInput, info: ReturnType<typeof detectProject>): Te
     preset: `preset:${input.preset}`,
     profile_name: input.preset === 'personal' ? 'harness' : input.preset,
     profile_resolved_by: 'marker',
+    today: new Date().toISOString().slice(0, 10),
   };
 
   return [
@@ -72,6 +73,27 @@ function planFiles(input: InitInput, info: ReturnType<typeof detectProject>): Te
       sourceRelative: 'templates/root/harness.config.json.template',
       targetRelative: 'harness.config.json',
       category: 'config',
+      renderVars: vars,
+      asTemplate: true,
+    },
+    {
+      sourceRelative: 'templates/root/STATE.json.template',
+      targetRelative: 'docs/STATE.json',
+      category: 'docs',
+      renderVars: vars,
+      asTemplate: true,
+    },
+    {
+      sourceRelative: 'templates/root/WALKTHROUGH.md.template',
+      targetRelative: 'docs/WALKTHROUGH.md',
+      category: 'docs',
+      renderVars: vars,
+      asTemplate: true,
+    },
+    {
+      sourceRelative: 'templates/root/DESIGN.md.template',
+      targetRelative: 'docs/DESIGN.md',
+      category: 'docs',
       renderVars: vars,
       asTemplate: true,
     },
@@ -157,7 +179,11 @@ function ensureMemorySubdirs(projectRoot: string): string[] {
  */
 function ensureGitignore(projectRoot: string): boolean {
   const file = path.join(projectRoot, '.gitignore');
-  const must = ['.harness/managed-files.json', '.harness/current.json'];
+  const must = [
+    '.harness/managed-files.json',
+    '.harness/current.json',
+    '.harness-context.json',
+  ];
   const current = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
   const lines = current.split('\n');
   let changed = false;
@@ -193,6 +219,34 @@ function writeCurrent(projectRoot: string): void {
       { spaces: 2 },
     );
   }
+}
+
+/**
+ * Write `.harness-context.json` cache with detected build/test/lint commands
+ * so downstream skills don't re-detect on every Round.
+ */
+function writeContext(projectRoot: string, info: ReturnType<typeof detectProject>): void {
+  const file = path.join(projectRoot, '.harness-context.json');
+  const commandSuggestions: Record<string, { build?: string; test?: string; lint?: string }> = {
+    node: { build: 'npm run build', test: 'npm test', lint: 'npm run lint' },
+    java: { build: './mvnw package -DskipTests', test: './mvnw test', lint: './mvnw spotless:check' },
+    go: { build: 'go build ./...', test: 'go test ./...', lint: 'go vet ./...' },
+    rust: { build: 'cargo build', test: 'cargo test', lint: 'cargo clippy' },
+    python: { build: 'python -m build', test: 'pytest', lint: 'ruff check .' },
+    unknown: {},
+  };
+  const cmds = commandSuggestions[info.projectType] ?? {};
+  const context = {
+    schemaVersion: 1,
+    projectType: info.projectType,
+    projectName: info.projectName,
+    buildFiles: info.buildFiles,
+    buildCommand: cmds.build ?? null,
+    testCommand: cmds.test ?? null,
+    lintCommand: cmds.lint ?? null,
+    detectedAt: new Date().toISOString(),
+  };
+  fs.writeJsonSync(file, context, { spaces: 2 });
 }
 
 /**
@@ -252,9 +306,10 @@ export function runInit(input: InitInput): InitResult {
   const info = detectProject(projectRoot);
   const profileName = preset === 'personal' ? 'harness' : preset;
 
-  // Marker + current.json + gitignore (cheap, always OK to run)
+  // Marker + current.json + context cache + gitignore (cheap, always OK to run)
   writeMarker(projectRoot, { profile: profileName, resolved_by: 'marker' });
   writeCurrent(projectRoot);
+  writeContext(projectRoot, info);
   ensureGitignore(projectRoot);
 
   // Memory subdirs (4 .gitkeep)
