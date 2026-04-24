@@ -3,6 +3,9 @@ import { Command } from 'commander';
 import * as path from 'node:path';
 import { runInit } from './commands/init.js';
 import { runAdopt } from './commands/adopt.js';
+import { runDoctor } from './commands/doctor.js';
+import { runMaintain } from './commands/maintain.js';
+import { runScan } from './commands/scan.js';
 
 const program = new Command();
 
@@ -65,6 +68,70 @@ program
     if (r.blockedBy) {
       process.stderr.write(`BLOCKED at ${r.blockedBy}\n`);
     }
+    process.exit(r.exitCode);
+  });
+
+program
+  .command('doctor')
+  .description('Health check: managed-files git status, schema version, profile, memory tree')
+  .option('--json', 'JSON output (for bootstrap skill handshake)', false)
+  .argument('[projectPath]', 'Project root (defaults to cwd)', '.')
+  .action((projectPath, opts) => {
+    const projectRoot = path.resolve(projectPath);
+    const r = runDoctor({ projectRoot });
+    if (opts.json) {
+      process.stdout.write(JSON.stringify(r, null, 2) + '\n');
+    } else {
+      process.stdout.write(`harness-workflow-cli ${r.version} (schema ${r.schema_version})\n`);
+      process.stdout.write(`profile: ${r.profile ?? '(none)'}\n`);
+      process.stdout.write(`managed-files git: ${r.managed_files_git_status}\n`);
+      process.stdout.write(`workflow_schema_version: ${r.workflow_schema_version ?? '(unset)'}\n`);
+      for (const i of r.issues) {
+        process.stdout.write(`[${i.severity.toUpperCase()}] ${i.code}: ${i.message}\n`);
+      }
+    }
+    process.exit(r.exitCode);
+  });
+
+program
+  .command('maintain')
+  .description('Drift check + promotable learnings reminder')
+  .option('-p, --preset <preset>', 'Preset', 'personal')
+  .option('--upgrade', 'Re-apply bundled templates with four-state conflict handling', false)
+  .argument('[projectPath]', 'Project root', '.')
+  .action((projectPath, opts) => {
+    const projectRoot = path.resolve(projectPath);
+    const preset = opts.preset === 'company-mt' ? 'company-mt' : 'personal';
+    const r = runMaintain({ projectRoot, preset, upgrade: opts.upgrade });
+    process.stdout.write(`health issues: ${r.healthIssues}\n`);
+    process.stdout.write(`promotable learnings: ${r.promotableFlags.length}\n`);
+    for (const f of r.promotableFlags) {
+      process.stdout.write(`  [${f.reason}] ${f.file} / ${f.id}${f.days ? ` (${f.days}d)` : ''}\n`);
+    }
+    if (r.upgrade) {
+      process.stdout.write(`upgrade: wrote ${r.upgrade.filesWritten.length}, conflicts ${r.upgrade.conflicts.length}\n`);
+      if (r.upgrade.blockedBy) process.stderr.write(`BLOCKED at ${r.upgrade.blockedBy}\n`);
+    }
+    process.exit(r.exitCode);
+  });
+
+program
+  .command('scan')
+  .description('Request knowledge scan (AI pipeline runs via harness-workflow Stage -0.5)')
+  .option('--apply-answers', 'Apply user answers in TODO.md', false)
+  .option('--budget <min>', 'Time budget in minutes', '28')
+  .option('--domain <name>', 'Limit to one domain')
+  .argument('[projectPath]', 'Project root', '.')
+  .action((projectPath, opts) => {
+    const projectRoot = path.resolve(projectPath);
+    const r = runScan({
+      projectRoot,
+      applyAnswers: opts.applyAnswers,
+      budgetMin: opts.budget ? Number(opts.budget) : undefined,
+      domain: opts.domain,
+    });
+    process.stdout.write(`scan: ${r.action}\n`);
+    if (r.reason) process.stderr.write(`${r.reason}\n`);
     process.exit(r.exitCode);
   });
 
