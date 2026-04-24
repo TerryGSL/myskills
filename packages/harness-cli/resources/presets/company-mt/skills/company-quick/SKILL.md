@@ -1,36 +1,56 @@
 ---
 name: company-quick
 description: >
-  company-mt overlay of harness-quick. Java 企业仓库下的快速路径需要更严的 gate：
-  禁止触碰 pom.xml / SQL migration / 权限代码 / 审批流节点，即使 diff 小。
-  由 profile-entry 在 company-mt profile + fast-path 同时命中时路由到此。
+  company-mt overlay of harness-quick. Java 企业仓库下的快速路径更严：
+  禁止 pom.xml / SQL migration / Mapper.xml / 权限代码 / 审批流节点 / i18n 文本改动，
+  即使 diff 很小。由 profile-entry 在 company-mt profile + fast-path 同时命中时路由到此。
   触发命令：（无公开触发词）
 ---
 
-# company-quick — Java 企业快速路径（v1 overlay）
+# company-quick — Java 企业快速路径 overlay
 
-> 基于 `harness-quick`，叠加 Java 企业约束。任何被禁止的改动 → 退回 profile-entry 走 company-feature。
+> 基于 `harness-quick`，叠加 Java 企业约束。违禁类改动 → 退回 company-feature。
 
-## 额外硬禁止（相对 harness-quick）
+## 差异点（相对 harness-quick）
 
-即使 1 文件 <10 行，以下改动**一律禁止**走 quick：
+在 harness-quick 的 5 步（读 manifest → edit → scoped test → commit → learnings）基础上：
 
-- `pom.xml` / `mvnw` / `build.gradle*` — 依赖 / 构建配置
-- `src/main/resources/**/*.sql` — SQL schema / migration
-- `**/*Mapper.xml` — MyBatis DDL/DML
-- `**/Permission*.java` / `**/Auth*.java` / `**/Security*.java` — 权限/鉴权代码
-- `**/ApprovalFlow*.java` / `bpm_flow_node*` — 审批流节点
-- `messages_*.properties` / i18n resource bundle — 文本边界
-- 任何带 `@RequestMapping` / `@GetMapping` / `@PostMapping` 的 Controller 方法签名变化
+1. **额外 gate**：Step 1 后 + Step 2 前，检查是否触碰 Java 企业保护路径
+2. **违禁 → 退回**：不尝试 quick，立即回 profile-entry 走 company-feature
 
-→ 上述任一命中 → 写 learnings ERROR 条 "quick route refused: <file> is enterprise-guarded" + 升级到 company-feature。
+## 保护路径清单（完整详见引用）
 
-## 其他
+**绝对禁止 quick**（即使 diff 1 行）：
 
-承接 `harness-quick` 的 5 步（读 knowledge manifest → edit → 测试 → commit → learnings）。
+- 依赖 / 构建：`pom.xml` / `build.gradle*` / `mvnw*`
+- Schema：`migration/*.sql` / `Mapper.xml` 结构 / `entity/*.java` 字段
+- 权限：`**/Permission*.java` / `**/Auth*.java` / `**/Security*.java` / Filter / Interceptor
+- 审批流：`**/ApprovalFlow*.java` / `**/bpm/*.java` / `bpm_flow_node` SQL
+- i18n：`messages_*.properties` / 含中文字面量 `"[一-龥]+"` 的源文件 diff
+- API 边界：Controller `@*Mapping` 方法签名变化 / RPC 接口
 
-## 参考
+**完整清单（Category 1）** → [../../references/java-gates.md](../../references/java-gates.md)
 
-- 基础：`harness-quick/skill.md`
-- 企业约束来源：company-mt profile 的 `hard_floor` + `repo_conventions`
-- Spec：`harness-workflow/specs/2026-04-24-harness-cli-integration-design.md` §7.4
+## 退回处理
+
+检测到违禁路径 → 立即：
+
+1. echo "company-mt quick 路径不适用：<具体路径/原因>，退回 company-feature"
+2. 不 commit、不 write learnings（未完成不记账）
+3. return control to profile-entry with hint `task-type: feature`
+4. profile-entry 重新路由到 company-feature
+
+## 共用 harness-quick 的硬边界
+
+- 不调 team-pd / team-architect
+- 不写 ADR
+- 不触发完整 Round
+- 只读 `docs/harness/knowledge/*` 不写
+- 只读 `docs/memory/*` 不写
+
+## 引用
+
+- 基础 skill：`harness-quick/skill.md`
+- Java 保护路径完整清单：[../../references/java-gates.md](../../references/java-gates.md)
+- Degraded fallback 协议：[../../references/degraded-fallback.md](../../references/degraded-fallback.md)
+- company-mt profile hard_floor：`../../profile/company-mt.yml.template`
