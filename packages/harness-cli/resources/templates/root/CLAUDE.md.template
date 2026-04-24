@@ -1,0 +1,28 @@
+# {{project_name}}
+
+{{project_description}}
+
+<!-- harness-knowledge:start -->
+## Harness Knowledge Activation
+
+This project has `docs/harness/knowledge/INDEX.md`. Before any harness-workflow round:
+
+1. Harness coordinator MUST run Stage -0.5 (Project Context Retrieval)
+2. Stage 2/3 subagent prompts MUST include knowledge context
+3. Stage 4 MUST verify knowledge_requirements compliance
+
+To disable: set `harness-knowledge: disabled` below this block.
+<!-- harness-knowledge:end -->
+
+<!-- harness-profile:start -->
+## Harness Profile
+
+- profile: {{profile_name}}
+- resolved_by: {{profile_resolved_by}}
+
+For code tasks in this project, Claude Code routes via `team-init` (bootstrap) → CLI → `profile-entry` → leaf sub-skill.
+<!-- harness-profile:end -->
+
+## Team Preferences
+
+<!-- users write freely below this line; harness will never touch it -->
