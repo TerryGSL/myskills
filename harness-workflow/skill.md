@@ -79,6 +79,28 @@ profile-entry 会做：marker 查找 → fallback matcher → 结构化 fast-pat
 老文档和 hook 调用 `/harness-workflow` 仍**完全有效**。
 新架构文档可以提到 `profile-entry`，但只作为内部组件不对外宣传。
 
+## Canonical Reference Bank（本 skill 保留的原 v0 资产）
+
+虽然 `skill.md` 从 363 行 reshape 到 103 行 stub，**原 13 个 references + templates 目录全部保留**
+作为整个 harness 生态的 **canonical reference bank**（跨 skill 共享的权威规范）：
+
+- `references/monitoring.md` — 心跳监控 + cronJobId 协议（XL Round 实时监控）
+- `references/templates.md` — `docs/STATE.json` / `docs/WALKTHROUGH.md` / `docs/DESIGN.md` 模板
+- `references/workflow.md` — Stage 细节 + 自治决策分支
+- `references/maintenance.md` — `--maintain` 完整流程
+- `references/hooks.md` — 7 个 hook 模板 + settings.json 配置
+- `references/autonomy.md` / `parallel-agents.md` / `protocols.md` / `project-detection.md`
+- `references/reviewer-integration.md` / `memory.md` / `memory-migrations.md`
+- `references/migration-checklist.md`（R5/T10 产出，Phase → CLI 交叉核查）
+- `templates/project-memory/*` — memory 模板集
+
+新 skill（harness-feature / harness-common 等）的 references/ 只写**新增 / 关键对外契约**；
+详细规范（监控 / STATE.json / hook 模板 / 审稿细节 / memory doctrine）由它们**跨引用**到本目录。
+完整索引 → [harness-feature/references/stages.md](../harness-feature/references/stages.md) 末尾
+"Canonical Reference Bank" 章节。
+
+原 v0 `skill.md` 全文存档 → `archive/pre-reshape-backup.md`（历史考古用）。
+
 原 v0 的 8-Stage 全文 + Phase 1-4 指令在以下位置：
 - **Phase 1-4 实现** → `harness-workflow-cli` (npm 包)；mapping 见 `references/migration-checklist.md`
 - **8-Stage 循环** → `harness-feature` skill

@@ -99,7 +99,33 @@ Stage 8 完成 → 检查 `pendingRounds`：
 
 ## 引用
 
-- Spec：`harness-workflow/specs/2026-04-24-harness-cli-integration-design.md` §附录 C（15 skill 保留矩阵）
-- Spec 1：`harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md`
-- Spec 2：`docs/superpowers/specs/2026-04-24-profile-based-dispatch-redesign-design.md`
-- 共享基础设施：`harness-common/skill.md` + `harness-common/references/*`
+### 本 skill 内 references/（progressive disclosure）
+
+- [references/stages.md](references/stages.md) — 8-Stage 详解
+- [references/round-sizing.md](references/round-sizing.md) — S/M/L/XL 分级 + XL 拆轮
+- [references/hard-floor-enforcement.md](references/hard-floor-enforcement.md) — Stage 8 hard_floor 执法
+- [references/knowledge-integration.md](references/knowledge-integration.md) — Spec 1 Stage -0.5 集成
+
+### Canonical reference bank（原 harness-workflow v0 references 保留）
+
+**所有原 v0 能力在此完整保留**，按需跨引用：
+
+- `harness-workflow/references/monitoring.md` — 心跳机制 + cronJobId 协议（XL Round 实时监控）
+- `harness-workflow/references/templates.md` — STATE.json / WALKTHROUGH / DESIGN 模板
+- `harness-workflow/references/workflow.md` — Stage 细节 + 自治决策分支
+- `harness-workflow/references/maintenance.md` — --maintain 完整流程
+- `harness-workflow/references/hooks.md` — 7 hook 模板 + settings.json 配置
+- `harness-workflow/references/autonomy.md` / `parallel-agents.md` / `protocols.md` / `project-detection.md` / `reviewer-integration.md` / `memory.md` / `memory-migrations.md` / `migration-checklist.md`
+- `harness-workflow/templates/project-memory/*` — 原 memory 模板集
+
+完整 reference bank 索引 → [references/stages.md](references/stages.md) 末尾 "Canonical Reference Bank" 章节。
+
+### Spec
+
+- `harness-workflow/specs/2026-04-24-harness-cli-integration-design.md` §附录 C（skill 保留矩阵）
+- `harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md`（Spec 1）
+- `docs/superpowers/specs/2026-04-24-profile-based-dispatch-redesign-design.md`（Spec 2）
+
+### 共享基础设施
+
+- `harness-common/skill.md` + `harness-common/references/*`

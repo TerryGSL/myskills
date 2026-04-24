@@ -233,3 +233,33 @@ Stage 8 完成后：
   - 无 → 输出最终汇总报告
 
 详见 [references/round-sizing.md](round-sizing.md)。
+
+---
+
+## Canonical Reference Bank — 原 harness-workflow v0 references
+
+原 harness-workflow/skill.md reshape 成 100 行 stub 后，其 13 个 references + templates 目录**全部保留**在 `harness-workflow/references/` 和 `harness-workflow/templates/` 下，作为整个 harness 生态的 **canonical reference bank**。
+
+下列文件在各 Stage 实操中按需读取（跨 skill 引用，不重复写）：
+
+| 文件 | 何时读 | 内容 |
+|------|-------|------|
+| `harness-workflow/references/monitoring.md` | Stage 3 启动并行 agent 前、XL 级 Round | 心跳机制完整契约：`.harness-status.json` schema、`cronJobId` CronCreate 协议、Stage 3 每 2 分钟 / 单 agent 每 5 分钟心跳频率 |
+| `harness-workflow/references/workflow.md` | Stage 3-8 细节疑问时 | 各 Stage 更完整的描述、自治决策分支、subagent 派发规则 |
+| `harness-workflow/references/templates.md` | Stage 8 收尾前 | `docs/STATE.json` 初始模板（`rounds[]`/`features[]`/`knownIssues[]` 结构）、`docs/WALKTHROUGH.md` 操作日志格式、`docs/DESIGN.md` 按项目类型模板 |
+| `harness-workflow/references/maintenance.md` | `--maintain` 模式 | 同步检查详细规则、漂移恢复 playbook |
+| `harness-workflow/references/autonomy.md` | 决策分支不确定时 | 自治决策树、人工介入触发条件（何时升级用户） |
+| `harness-workflow/references/hooks.md` | 需要安装/修改 hooks 时 | 7 个 hook 完整模板（check-dangerous / check-secrets / heartbeat-check 等）+ settings.json 配置 |
+| `harness-workflow/references/parallel-agents.md` | Stage 3 subagent 派发 | senior/junior 并行策略、冲突解决 |
+| `harness-workflow/references/protocols.md` | 跨 skill invoke 时 | skill 间参数传递约定 |
+| `harness-workflow/references/project-detection.md` | Phase 2 探测细节 | 各语言 / 框架的详细 detection rule |
+| `harness-workflow/references/reviewer-integration.md` | Stage 4/5 strict-reviewer invoke | review_target 完整字段 + Stage-specific 审稿点 |
+| `harness-workflow/references/memory.md` | docs/memory/ 深度使用 | memory doctrine 完整论证（本 skill 的 memory-layers.md 是摘要索引） |
+| `harness-workflow/references/memory-migrations.md` | schema 版本升级 | memory 契约迁移步骤 |
+| `harness-workflow/references/migration-checklist.md` | R6/T3 验证 | Phase → CLI crosscheck 表（R5/T10 产出） |
+| `harness-workflow/templates/project-memory/*` | init/adopt 时（CLI 已打进 bundled） | 原 v1.0 memory 模板集 |
+
+**读取原则**：
+- harness-feature 的 references/ 只写"新增 / 关键对外契约"（本 skill.md body 引用的 4 份）
+- 涉及原 v0 已有的详细规范（监控 / STATE.json / hooks 模板 / 审稿细节 / memory doctrine）→ 跨引用到 `harness-workflow/references/`
+- 若 harness-workflow/archive/pre-reshape-backup.md 也需要（如查 v0 的某段原话） → 也是 authoritative source（但已归档，仅作考古）
