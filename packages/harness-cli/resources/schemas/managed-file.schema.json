@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-workflow-cli/managed-file.schema.json",
+  "title": "ManagedFilesState",
+  "type": "object",
+  "required": ["schemaVersion", "managedFiles"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "managedFiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "category", "strategy", "sourceHash", "targetHash", "lastSyncedAt"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "category": {
+            "enum": ["agents", "config", "docs", "plans", "skills", "knowledge", "memory", "learnings"]
+          },
+          "strategy": { "enum": ["copy", "generated", "overlay"] },
+          "sourceHash": { "type": "string", "minLength": 1 },
+          "targetHash": { "type": "string", "minLength": 1 },
+          "lastSyncedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}" }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
