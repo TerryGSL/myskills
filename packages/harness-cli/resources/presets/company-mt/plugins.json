@@ -1,0 +1,24 @@
+{
+  "name": "harness-company-mt",
+  "preset": "company-mt",
+  "description": "Meituan-style Java enterprise preset: overlay skills + Java rules + SDK + i18n seed",
+  "stages": {
+    "requirement-analysis": {
+      "required": ["team-pd"]
+    },
+    "plan-generation": {
+      "required": ["team-architect", "superpowers:writing-plans"]
+    },
+    "feature-execution": {
+      "required": ["company-feature", "company-bugfix", "company-refactor", "company-quick"],
+      "optional": ["meituan-java-standards", "java-backend-i18n-refactor", "costasset-i18n-phase2"]
+    },
+    "verification": {
+      "required": ["strict-reviewer", "team-qa"],
+      "optional": ["gstack"]
+    },
+    "doc-sync": {
+      "required": ["team-security"]
+    }
+  }
+}

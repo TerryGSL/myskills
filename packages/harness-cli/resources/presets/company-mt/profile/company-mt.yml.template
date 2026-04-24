@@ -1,0 +1,68 @@
+name: company-mt
+description: 美团风 Java 企业仓库，严格评审，不自动 push，knowledge + memory 启用
+
+detection:
+  priority: 30
+  matchers:
+    - type: path_glob
+      pattern: "{{company_repo_glob_1}}"
+    - type: path_glob
+      pattern: "{{company_repo_glob_2}}"
+    - type: path_glob
+      pattern: "{{company_repo_glob_3}}"
+    - type: git_remote_regex
+      pattern: "{{company_git_remote_regex}}"
+    - type: file_exists
+      pattern: "pom.xml"
+
+entry_skill: profile-entry
+
+task_types:
+  quick: company-quick
+  bugfix: company-bugfix
+  feature: company-feature
+  refactor: company-refactor
+
+default_mode: conservative
+
+hard_floor:
+  - auto_push
+  - force_push
+  - destructive_ops
+  - auto_merge
+  - rewrite_history
+  - network_install
+
+repo_conventions:
+  language: java
+  build_files: ["pom.xml", "mvnw"]
+  package_roots: ["src/main/java", "src/test/java", "src/main/resources"]
+  test_gate:
+    require_unit_test_for_backend_change: true
+    prefer_module_scoped_command: true
+  review_style:
+    verdict_first: true
+    file_line_grounding_required: true
+    no_speculation: true
+  memory_layout:
+    knowledge_root: "docs/harness/knowledge"
+    memory_root: "docs/memory"
+    learnings_root: ".harness/learnings"
+  i18n_defaults:
+    backend_skill: "java-backend-i18n-refactor"
+    repo_specific_phase2_skill: "costasset-i18n-phase2"
+
+compliance_hooks:
+  preflight:
+    - verify_git_repo
+    - verify_profile_marker
+    - verify_docs_memory_contract
+  required_checks:
+    - strict-reviewer
+    - knowledge-compliance
+    - backend-unit-verification
+  blocked_when:
+    - ungrounded_review
+    - malformed_memory_contract
+    - stale_profile_marker
+    - managed_file_conflict
