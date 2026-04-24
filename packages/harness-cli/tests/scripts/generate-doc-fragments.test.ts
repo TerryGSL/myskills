@@ -8,20 +8,36 @@ const REPO = path.resolve(__dirname, '../..');
 const SAMPLE = path.join(REPO, 'resources/skills/_sample/SAMPLE.md');
 const TSX = path.resolve(REPO, '../../node_modules/.bin/tsx');
 
+// Canonical placeholder state — what the sample looks like before any `generate` run
+const PLACEHOLDER = `# Sample Skill（用于测试 doc-gen，不真投放）
+
+## 规则状态枚举
+
+<!-- @generated:rule-status -->
+placeholder — 将被 doc-gen 覆盖
+<!-- @/generated -->
+
+## HardFloor 动作
+
+<!-- @generated:hard-floor-actions -->
+placeholder
+<!-- @/generated -->
+`;
+
 describe('generate-doc-fragments', () => {
-  let original: string;
+  // Save whatever's on disk at test-suite start (may be placeholder or already-generated)
+  let savedOnDisk: string;
 
   beforeAll(() => {
-    original = fs.readFileSync(SAMPLE, 'utf8');
+    savedOnDisk = fs.readFileSync(SAMPLE, 'utf8');
   });
 
   afterAll(() => {
-    fs.writeFileSync(SAMPLE, original);
+    fs.writeFileSync(SAMPLE, savedOnDisk);
   });
 
   it('replaces @generated:rule-status anchor with canonical values', () => {
-    // Reset to placeholder state first
-    fs.writeFileSync(SAMPLE, original);
+    fs.writeFileSync(SAMPLE, PLACEHOLDER);
     const r = spawnSync(TSX, ['scripts/generate-doc-fragments.ts'], {
       cwd: REPO,
       encoding: 'utf8',
@@ -34,8 +50,8 @@ describe('generate-doc-fragments', () => {
   });
 
   it('--check mode exits 1 when diff exists', () => {
-    // Reset to placeholder state, then --check should detect diff
-    fs.writeFileSync(SAMPLE, original);
+    // Always start from the raw placeholder so --check must detect a diff
+    fs.writeFileSync(SAMPLE, PLACEHOLDER);
     const r = spawnSync(TSX, ['scripts/generate-doc-fragments.ts', '--check'], {
       cwd: REPO,
       encoding: 'utf8',
@@ -51,6 +67,5 @@ describe('generate-doc-fragments', () => {
       encoding: 'utf8',
     });
     expect(r.status).not.toBe(0);
-    fs.writeFileSync(SAMPLE, original);
   });
 });
