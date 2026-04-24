@@ -17,7 +17,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "generate": "tsx scripts/generate-doc-fragments.ts",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test": "node --experimental-vm-modules ../../node_modules/.bin/jest",
     "check": "npm run build && npm run generate -- --check && npm run test"
   },
   "dependencies": {
