@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-workflow-cli/review-target.schema.json",
+  "title": "ReviewTarget",
+  "type": "object",
+  "required": ["changed_files", "diff_summary", "stage"],
+  "properties": {
+    "changed_files": { "type": "array", "items": { "type": "string" } },
+    "diff_summary": { "type": "string" },
+    "stage": { "enum": ["qa", "security", "spec", "quality"] },
+    "claims_to_verify": { "type": "array", "items": { "type": "string" } },
+    "memory_cases": { "type": "array", "items": { "type": "object" } },
+    "prior_verdict": { "type": ["object", "null"] },
+    "relevant_knowledge_files": { "type": "array", "items": { "type": "string" } },
+    "knowledge_snapshot_id": { "type": ["string", "null"] },
+    "knowledge_requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["rule_id", "manifest_file", "applies_to", "requirement_text", "violation_test"],
+        "properties": {
+          "rule_id": { "type": "string" },
+          "manifest_file": { "type": "string" },
+          "applies_to": { "type": "array", "items": { "type": "string" } },
+          "requirement_text": { "type": "string" },
+          "violation_test": {
+            "enum": [
+              "must_use_wrapper",
+              "must_call_component",
+              "must_not_throw_raw_exception",
+              "must_use_package",
+              "must_not_use_pattern",
+              "must_annotate_with",
+              "free_form_review"
+            ]
+          }
+        }
+      }
+    },
+    "retrieval_outcome": {
+      "enum": ["success", "coordinator_miss", "all_candidates_filtered"]
+    },
+    "known_issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["source", "id", "domain", "reason"],
+        "properties": {
+          "source": { "enum": ["drifted_rule", "superseded_rule", "filtered_manifest"] },
+          "id": { "type": "string" },
+          "domain": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
