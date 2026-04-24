@@ -35,7 +35,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && tsx scripts/verify-resources.ts",
     "dev": "tsc --watch",
     "generate": "tsx scripts/generate-doc-fragments.ts",
     "test": "node --experimental-vm-modules ../../node_modules/.bin/jest",
