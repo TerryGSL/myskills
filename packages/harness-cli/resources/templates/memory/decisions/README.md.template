@@ -1,0 +1,5 @@
+# decisions/
+
+Architecture decision records (ADR). Written by Stage 2 (writing-plans) per
+decision. Frontmatter schema: id / date / status / scope / decided_by /
+applies_to / superseded_by.

@@ -1,0 +1,5 @@
+# cases/
+
+Bug-case memory. Each file is one reusable case with frontmatter schema defined
+in `../.harness-memory.yml`. Promoted from `.harness/learnings/ERRORS.md` after
+the error has been resolved and reproduced cross-round.

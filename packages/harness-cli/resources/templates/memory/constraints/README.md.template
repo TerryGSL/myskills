@@ -1,0 +1,5 @@
+# constraints/
+
+Long-term external limits (legal/platform/business policy). Written by
+human or doc-sync, not by any Stage. Frontmatter schema: id / status / source
+/ owner / applies_to / last_verified / expiry_after_days.
