@@ -44,12 +44,18 @@ CLI 未安装 → abort + 提示 `npm install -g harness-workflow-cli`。
 
 ```
 Skill(profile-entry) with:
-  forced_profile: harness
+  forced_profile: null              # 关键：不硬塞 harness —— 让 profile-entry 正常做 marker → matcher → default 解析
   public_entrypoint: harness-workflow
   requested_flags: <解析后的 flag>
   cwd: <当前仓库>
   task_description: <原用户请求>
 ```
+
+**`forced_profile: null` 是硬要求**：
+- 公开入口是所有 profile 的共用触发词，不能替用户选 profile
+- 项目的 `.harness-profile` marker 和 `~/.claude/profiles/*.yml` matcher 决定 profile
+- company-mt 的 Java 项目通过 matcher（pom.xml / git remote）自动路由到 `company-*` 叶子
+- 只有个别场景（用户跑 `/harness-workflow --force-personal` 之类显式 flag，或 CLI 测试钩子）才传 `forced_profile`
 
 profile-entry 做：marker 查 → fallback matcher → 结构化 fast-path → 优先级解析 → 加载
 exactly ONE 叶子 skill（`harness-{quick,bugfix,feature,refactor}` 或对应 `company-*`）。

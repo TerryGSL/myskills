@@ -153,7 +153,86 @@ function planFiles(input: InitInput, info: ReturnType<typeof detectProject>): Te
       category: 'knowledge',
       asTemplate: true,
     },
+    ...knowledgeDomainSpecs(vars),
+    ...(input.preset === 'company-mt' ? companyMtPresetSpecs(vars) : []),
   ];
+}
+
+/**
+ * 5-domain knowledge scaffolds (per Spec 1 §knowledge structure).
+ * 5 domains × 3 files (manifest / evidence / gaps) = 15 specs.
+ */
+function knowledgeDomainSpecs(vars: Record<string, string>): TemplateSpec[] {
+  const domains = [
+    'style-and-structure',
+    'internal-components',
+    'exception-and-error-contracts',
+    'integrations-and-sdk-usage',
+    'i18n-and-text-boundaries',
+  ];
+  const files = ['manifest', 'evidence', 'gaps'];
+  const out: TemplateSpec[] = [];
+  for (const d of domains) {
+    for (const f of files) {
+      out.push({
+        sourceRelative: `templates/knowledge/${d}/${f}.md.template`,
+        targetRelative: `docs/harness/knowledge/${d}/${f}.md`,
+        category: 'knowledge',
+        renderVars: vars,
+        asTemplate: true,
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * company-mt preset specs: 4 overlay skill SKILL.md to .claude/skills/ + 4 reference seeds
+ * to docs/harness/knowledge/ + docs/memory/constraints/ per spec §7.2-§7.3.
+ */
+function companyMtPresetSpecs(vars: Record<string, string>): TemplateSpec[] {
+  const overlaySkills = ['company-quick', 'company-bugfix', 'company-feature', 'company-refactor'];
+  const specs: TemplateSpec[] = [];
+  for (const s of overlaySkills) {
+    specs.push({
+      sourceRelative: `presets/company-mt/skills/${s}/SKILL.md`,
+      targetRelative: `.claude/skills/${s}/SKILL.md`,
+      category: 'skills',
+      asTemplate: false,
+    });
+  }
+  // Reference seeds → target repo's knowledge/memory trees
+  specs.push(
+    {
+      sourceRelative: 'presets/company-mt/references/java-rules.md',
+      targetRelative: 'docs/harness/knowledge/style-and-structure/manifest.md',
+      category: 'knowledge',
+      renderVars: vars,
+      asTemplate: true,
+    },
+    {
+      sourceRelative: 'presets/company-mt/references/enterprise-sdk.md',
+      targetRelative: 'docs/harness/knowledge/integrations-and-sdk-usage/manifest.md',
+      category: 'knowledge',
+      renderVars: vars,
+      asTemplate: true,
+    },
+    {
+      sourceRelative: 'presets/company-mt/references/approval-flow.md',
+      targetRelative: 'docs/memory/constraints/harness_approval_flow.md',
+      category: 'memory',
+      renderVars: vars,
+      asTemplate: true,
+    },
+    {
+      sourceRelative: 'presets/company-mt/references/i18n.md',
+      targetRelative: 'docs/memory/constraints/harness_i18n_boundaries.md',
+      category: 'memory',
+      renderVars: vars,
+      asTemplate: true,
+    },
+  );
+  return specs;
 }
 
 /**

@@ -1,163 +1,274 @@
-# Hook 模板与 Settings 配置
+# Hooks / MCP / Plugins — 全局基础设施模板
 
-## settings.json hooks 注册
+Harness 工作流所需的全局配置（每用户一次配好，跨项目共享）。本文件是 canonical 源。
+
+## 目录
+
+- [settings.json 完整配置](#settingsjson)
+- [7 个 hook 脚本](#hook-scripts)
+- [MCP 配置](#mcp-servers)
+- [3 个插件](#plugins)
+- [触发保障三层](#三层触发保障)
+
+---
+
+## settings.json
+
+`~/.claude/settings.json` 的 hooks 段：
 
 ```json
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          { "type": "command", "command": "node \"/Users/<you>/.claude/plugins/cache/openai-codex/codex/*/scripts/session-lifecycle-hook.mjs\" SessionStart", "timeout": 5 },
+          { "type": "command", "command": "bash ~/.claude/hooks/harness-workflow-reminder.sh SessionStart", "timeout": 5 },
+          { "type": "command", "command": "bash ~/.claude/hooks/session-checklist.sh", "timeout": 5 }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash ~/.claude/hooks/harness-workflow-reminder.sh UserPromptSubmit", "timeout": 5 }
+        ]
+      }
+    ],
     "PreToolUse": [
-      { "matcher": "Bash", "hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/check-dangerous.sh" }] },
-      { "matcher": "Edit|Write", "hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/check-secrets.sh" }] }
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "bash ~/.claude/hooks/check-dangerous.sh", "timeout": 5 }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "bash ~/.claude/hooks/check-secrets.sh", "timeout": 5 }
+        ]
+      }
     ],
     "PostToolUse": [
-      { "matcher": "Edit|Write", "hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/post-edit-reminder.sh" }] }
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "bash ~/.claude/hooks/post-edit-reminder.sh", "timeout": 5 }
+        ]
+      },
+      {
+        "matcher": "Bash|Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "bash ~/.claude/hooks/heartbeat-check.sh", "timeout": 5 }
+        ]
+      }
     ],
     "PreCompact": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/pre-compact-reminder.sh" }] }
-    ],
-    "SessionStart": [
-      { "matcher": "startup|clear|compact", "hooks": [
-        { "type": "command", "command": "node \"~/.claude/plugins/codex/scripts/session-lifecycle-hook.mjs\" SessionStart", "timeout": 5 }
-      ]}
-    ],
-    "Stop": [
-      { "hooks": [{ "type": "command", "command": "node \"~/.claude/plugins/codex/scripts/stop-review-gate-hook.mjs\"", "timeout": 900 }] }
-    ],
-    "PostToolUse": [
-      { "matcher": "Edit|Write", "hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/post-edit-reminder.sh" }] },
-      { "matcher": "Bash|Edit|Write", "hooks": [{ "type": "command", "command": "bash ~/.claude/hooks/heartbeat-check.sh", "timeout": 5 }] }
-    ],
-    "Notification": [
-      { "matcher": "", "hooks": [{ "type": "command", "command": "osascript -e 'beep'" }] }
-    ],
-    "SessionEnd": [
-      { "hooks": [{ "type": "command", "command": "node \"~/.claude/plugins/codex/scripts/session-lifecycle-hook.mjs\" SessionEnd", "timeout": 5 }] }
+      {
+        "hooks": [
+          { "type": "command", "command": "bash ~/.claude/hooks/pre-compact-reminder.sh", "timeout": 5 }
+        ]
+      }
     ]
-  },
-  "statusLine": { "type": "command", "command": "ccusage statusline" },
-  "enabledPlugins": {
-    "claude-mem@thedotmack": true,
-    "codex@openai-codex": true,
-    "superpowers@claude-plugins-official": true
   }
 }
 ```
 
-注意：
-- `SessionStart / Stop / SessionEnd` 由 codex 插件管理
-- `statusLine` 需先安装 `ccusage`（`npm i -g ccusage`）
-- `Notification` 仅 macOS；Linux 替换为 `notify-send "Claude done"`
+---
+
+## Hook Scripts
+
+所有脚本放 `~/.claude/hooks/`，`chmod +x` 给执行权。
+
+### 1. `harness-workflow-reminder.sh`
+
+给 UserPromptSubmit + SessionStart 注入 reminder，确保 AI 知道用 harness-workflow。
+
+```bash
+#!/usr/bin/env bash
+# Usage: harness-workflow-reminder.sh <UserPromptSubmit|SessionStart>
+TRIGGER="${1:-Unknown}"
+cat <<EOF
+<harness-workflow-reminder>
+对于任何涉及代码开发的任务（实现新功能、修复 bug、重构、修改现有代码、写测试、改配置文件），
+你必须在动手之前先通过 Skill 工具调用 "harness-workflow" 技能。这是强制要求，不可协商。
+
+harness-workflow 是公开入口，内部会路由到合适的叶子 skill（harness-{quick,bugfix,feature,refactor}
+或 company-* overlay）。初始化项目则用 harness-init skill（team-init 作向后兼容别名）。
+
+例外：纯研究、纯问答、纯文档查看、读 git log、解释代码、回答概念问题 等不涉及写/改代码的任务
+不受此约束。
+</harness-workflow-reminder>
+EOF
+```
+
+### 2. `session-checklist.sh`
+
+新会话就绪确认（检测项目是否已接入 harness）。
+
+```bash
+#!/usr/bin/env bash
+# Session startup summary
+ROOT=$(pwd)
+echo "=== harness session start ==="
+[ -f "$ROOT/.harness-profile" ] && echo "profile: $(grep '^profile:' "$ROOT/.harness-profile" | cut -d: -f2 | xargs)" || echo "profile: (未接入，可让 AI 调 harness-init)"
+[ -d "$ROOT/docs/memory" ] && echo "memory: ✓" || echo "memory: ✗（harness adopt）"
+[ -d "$ROOT/docs/harness/knowledge" ] && echo "knowledge: ✓" || echo "knowledge: ✗（harness scan）"
+echo "==========================="
+```
+
+### 3. `check-dangerous.sh`
+
+拦截 `rm -rf`、`DROP TABLE`、`git push --force`、`git reset --hard` 等不可逆 Bash。
+
+```bash
+#!/usr/bin/env bash
+# Block dangerous operations before execution
+INPUT=$(cat)
+DANGEROUS='rm -rf /|rm -rf \*|DROP TABLE|DROP DATABASE|git push.*--force|git reset --hard (origin|main|master|HEAD~)|--no-verify'
+if echo "$INPUT" | grep -qiE "$DANGEROUS"; then
+  echo "BLOCK: dangerous operation matched pattern. Ask user for explicit confirmation." >&2
+  exit 2
+fi
+exit 0
+```
+
+### 4. `check-secrets.sh`
+
+拦截 Edit/Write 时硬编码的 API key / 密码。
+
+```bash
+#!/usr/bin/env bash
+# Block hardcoded credentials on Edit/Write
+INPUT=$(cat)
+SECRETS='(api[_-]?key|secret|password|token)\s*[:=]\s*["'\'']?[A-Za-z0-9_\-]{20,}'
+if echo "$INPUT" | grep -qiE "$SECRETS"; then
+  echo "BLOCK: possible hardcoded secret detected. Use env var or secrets manager." >&2
+  exit 2
+fi
+exit 0
+```
+
+### 5. `post-edit-reminder.sh`
+
+PostToolUse(Edit|Write) 检测 inline style / 硬编码色值 → 软 warning。
+
+```bash
+#!/usr/bin/env bash
+# Warn on inline style / hardcoded color (non-blocking)
+INPUT=$(cat)
+if echo "$INPUT" | grep -qE 'style=["'\''][^"'\'']+["'\'']|#[0-9A-Fa-f]{3,6}\b'; then
+  echo "WARN: inline style or hardcoded color detected; consider design tokens" >&2
+fi
+exit 0
+```
+
+### 6. `pre-compact-reminder.sh`
+
+PreCompact 提示保存重要 context。
+
+```bash
+#!/usr/bin/env bash
+cat <<EOF
+<compact-reminder>
+即将压缩 context。如有 Round 进度 / 未提交代码 / 未写入 STATE.json 的状态，请先：
+  1. git add + commit 未保存代码
+  2. 更新 docs/STATE.json 的 currentRound + completedRounds
+  3. 追加 docs/WALKTHROUGH.md 本轮摘要
+</compact-reminder>
+EOF
+```
+
+### 7. `heartbeat-check.sh`
+
+PostToolUse(Bash|Edit|Write) 检测 `.harness-status.json` 存在但无 `cronJobId` → 警告
+AI 立即 CronCreate（XL Round 实时监控）。
+
+```bash
+#!/usr/bin/env bash
+# Ensure heartbeat is armed during active Round
+STATUS_FILE=".harness-status.json"
+if [ -f "$STATUS_FILE" ]; then
+  CRON_ID=$(grep -oE '"cronJobId"\s*:\s*"[^"]*"' "$STATUS_FILE" | cut -d'"' -f4)
+  if [ -z "$CRON_ID" ]; then
+    cat <<EOF >&2
+<heartbeat-warning>
+.harness-status.json 存在但 cronJobId 字段为空 / 不存在。
+若当前处于 L/XL 级 Round 中，应立即用 CronCreate 工具创建心跳，
+频率参考 harness-workflow/references/monitoring.md（Stage 3 并行 agent 每 2min，其他 5min）。
+</heartbeat-warning>
+EOF
+  fi
+fi
+exit 0
+```
+
+### （附）`session-init-prompt.txt`
+
+**不是 hook script**，是 SessionStart 注入的 prompt 片段（由上面 `harness-workflow-reminder.sh SessionStart` 输出的 reminder 内容）。不需要单独维护文件 —— reminder 脚本就是它的 source of truth。
 
 ---
 
-## check-dangerous.sh
+## MCP Servers
 
-```bash
-#!/bin/bash
-INPUT=$(cat)
-COMMAND=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('command',''))" 2>/dev/null)
-[ -z "$COMMAND" ] && exit 0
+`~/.claude/mcp.json`：
 
-BLOCKED=0; REASON=""
-
-# rm -rf（非 /tmp/）
-if echo "$COMMAND" | grep -qE 'rm\s+(-[a-zA-Z]*f[a-zA-Z]*r[a-zA-Z]*|-[a-zA-Z]*r[a-zA-Z]*f[a-zA-Z]*)\s+'; then
-  if ! echo "$COMMAND" | grep -qE 'rm\s+.*\s+/tmp/'; then
-    BLOCKED=1; REASON="检测到 rm -rf 操作（非 /tmp 目录）"
-  fi
-fi
-# DROP/TRUNCATE
-echo "$COMMAND" | grep -qiE '(DROP\s+(TABLE|DATABASE|SCHEMA)|TRUNCATE\s+TABLE)' && { BLOCKED=1; REASON="检测到数据库破坏性操作"; }
-# force push 到主干
-if echo "$COMMAND" | grep -qE 'git\s+push.*--force|git\s+push.*-f(\s|$)'; then
-  echo "$COMMAND" | grep -qE '(main|master|develop|release)' && { BLOCKED=1; REASON="检测到 force push 到主干分支"; }
-fi
-# git reset --hard
-echo "$COMMAND" | grep -qE 'git\s+reset\s+--hard' && { BLOCKED=1; REASON="检测到 git reset --hard"; }
-# 覆写关键配置文件
-echo "$COMMAND" | grep -qE '>\s*(CLAUDE\.md|DESIGN\.md|docs/STATE\.json)' && { BLOCKED=1; REASON="检测到直接覆写关键文件"; }
-
-if [ $BLOCKED -eq 1 ]; then
-  echo "╔══════════════════════════════════════╗"
-  echo "║  HOOK BLOCKED — $REASON"
-  echo "║  命令: $(echo "$COMMAND" | head -c 60)"
-  echo "╚══════════════════════════════════════╝"
-  exit 2
-fi
-exit 0
+```json
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest", "--browser", "chromium", "--headless"]
+    }
+  }
+}
 ```
 
-## check-secrets.sh
+用途：
+- `context7` — 拉取最新上游文档（React / Next / Spring / etc）时给 AI 补最新 API
+- `playwright` — 前端 QA 自动化（Stage 6 gstack / team-qa 调用）
+
+---
+
+## Plugins
+
+| 插件 | Marketplace | 工作流用途 |
+|------|-------------|-----------|
+| `claude-mem@thedotmack` | thedotmack/claude-mem | 每 Round 写 observation；新会话 mem-search 回溯 |
+| `codex@openai-codex` | openai/codex-plugin-cc | Stage 5 跨模型 Code Review |
+| `superpowers@claude-plugins-official` | Anthropic 官方 | Stage 2 writing-plans + Stage 3-4 subagent-driven-development + code-review |
+
+### Codex Setup
+
+装了 codex 插件后，每个新环境还要跑一次 setup 确认登录：
 
 ```bash
-#!/bin/bash
-INPUT=$(cat)
-CONTENT=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('new_string',d.get('content','')))" 2>/dev/null)
-[ -z "$CONTENT" ] && exit 0
-
-FILE_PATH=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('file_path',''))" 2>/dev/null)
-echo "$FILE_PATH" | grep -qE '\.(test|spec)\.(ts|js|tsx|jsx)$|\.example$|\.sample$' && exit 0
-
-BLOCKED=0; REASON=""
-echo "$CONTENT" | grep -qE '(sk-[a-zA-Z0-9]{20,}|AKIA[A-Z0-9]{16}|ghp_[a-zA-Z0-9]{36}|glpat-[a-zA-Z0-9_-]{20,})' && { BLOCKED=1; REASON="疑似硬编码 API Key"; }
-if echo "$FILE_PATH" | grep -qvE '\.(env|env\.|example)'; then
-  echo "$CONTENT" | grep -qiE 'password\s*[:=]\s*["\x27][^"\x27]{6,}["\x27]' && { BLOCKED=1; REASON="疑似硬编码密码"; }
-fi
-
-if [ $BLOCKED -eq 1 ]; then
-  echo "╔══════════════════════════════════════╗"
-  echo "║  HOOK BLOCKED — $REASON"
-  echo "║  文件: $(basename "$FILE_PATH")"
-  echo "╚══════════════════════════════════════╝"
-  exit 2
-fi
-exit 0
+node "/Users/<you>/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs" setup --json
 ```
 
-## post-edit-reminder.sh
+期望返回 `"ready": true` + `"auth": { "loggedIn": true }`。如未登录 → 手工跑 `codex login`。
 
-```bash
-#!/bin/bash
-INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('file_path',''))" 2>/dev/null)
-[ -z "$FILE_PATH" ] && exit 0
-echo "$FILE_PATH" | grep -qE '\.(tsx|jsx)$' || exit 0
+---
 
-CONTENT=$(echo "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('new_string',d.get('content','')))" 2>/dev/null)
-[ -z "$CONTENT" ] && exit 0
+## 三层触发保障
 
-WARNINGS=""
-echo "$CONTENT" | grep -qE 'style=\{\{' && WARNINGS="${WARNINGS}\n  - inline style → Tailwind"
-echo "$CONTENT" | grep -qE 'className=.*#[0-9a-fA-F]{3,8}' && WARNINGS="${WARNINGS}\n  - 硬编码色值 → 主题 token"
-echo "$CONTENT" | grep -qE '(bg|text|border|ring)-\[#[0-9a-fA-F]' && WARNINGS="${WARNINGS}\n  - Tailwind 任意值色值 → 主题 token"
+1. **SessionStart Hook（硬保障）** — `harness-workflow-reminder.sh SessionStart` 在每个新
+   会话起点注入 reminder，AI 读到后知道代码任务必须调 harness-workflow skill
+2. **CLAUDE.md 规则（软保障）** — 项目根 `CLAUDE.md` 的"工作流规则"段（由 harness-init 投放
+   的 `CLAUDE.md.template` 生成时含两个 managed block：`harness-knowledge:*` + `harness-profile:*`）
+   强化上述约束
+3. **harness doctor 自动 adopt 检测（第三层）** —— 当 harness-workflow / harness-init 在一个
+   没 `.harness-profile` 的项目里被触发：
+   - harness-init 识别出缺 marker → 提示用户选 preset 后跑 `harness init` / `adopt`
+   - harness-workflow 若在无 profile 项目里被直接触发（代码任务）→ 先建议用户跑 harness-init
+     再重试（否则 profile-entry 无 marker + 无 matcher 命中会落到 `default` profile，失去
+     项目特定的 hard_floor）
+   - `harness doctor` 报 `no-profile-marker` warn（非硬 abort，但告知用户未接入）
 
-if [ -n "$WARNINGS" ]; then
-  echo "╔══════════════════════════════════════╗"
-  echo -e "║  NOTICE — 前端质量$WARNINGS"
-  echo "║  参考: docs/DESIGN.md"
-  echo "╚══════════════════════════════════════╝"
-fi
-exit 0
-```
-
-## pre-compact-reminder.sh
-
-```bash
-#!/bin/bash
-echo "╔══════════════════════════════════════════════════════╗"
-echo "║  ⚠️  上下文即将压缩 — 检查清单                       ║"
-echo "║  1. 产物已写入文件？                                 ║"
-echo "║  2. docs/STATE.json 已更新？                         ║"
-echo "║  3. WALKTHROUGH.md 已追加？                          ║"
-echo "║  4. claude-mem observation 已保存？                  ║"
-echo "╚══════════════════════════════════════════════════════╝"
-exit 0
-```
-
-## session-checklist.sh
-
-```bash
-#!/bin/bash
-echo '{"status":"ready"}'
-exit 0
-```
+三层协同确保用户不论从哪个触发点进入（肌肉记忆 `/harness-workflow`、SessionStart hook
+注入、CLAUDE.md 规则、甚至冷启动的空项目）都能正确路由或被导航到初始化入口。

@@ -27,7 +27,7 @@ If coverage is incomplete, verdict is BLOCKED — not PASS.
 
 ```yaml
 review_target:
-  # ── 原 v0 字段 ──
+  # ── 审稿目标核心字段 ──
   changed_files:          # required, array of strings
     - "src/auth/session.ts"
   diff_summary: "..."     # required, string
