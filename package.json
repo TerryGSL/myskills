@@ -1,0 +1,13 @@
+{
+  "name": "myskills",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Harness Engineering skills monorepo (myskills). Packages and skills share canonical types via packages/harness-cli.",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=10.0.0"
+  }
+}
