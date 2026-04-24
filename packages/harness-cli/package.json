@@ -2,15 +2,36 @@
   "name": "harness-workflow-cli",
   "version": "0.1.0",
   "description": "CLI for harness-workflow: init / adopt / maintain / doctor / scan. Single source of truth for canonical types + schemas shared with skill markdown.",
+  "keywords": [
+    "harness",
+    "workflow",
+    "claude-code",
+    "skill",
+    "npm-cli",
+    "monorepo"
+  ],
+  "author": "TerryGSL <lijunhao@ufl.edu>",
+  "license": "MIT",
+  "homepage": "https://github.com/TerryGSL/myskills#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TerryGSL/myskills.git",
+    "directory": "packages/harness-cli"
+  },
+  "bugs": {
+    "url": "https://github.com/TerryGSL/myskills/issues"
+  },
   "bin": {
-    "harness": "dist/cli.js"
+    "harness": "bin/cli.js"
   },
   "main": "dist/cli.js",
   "type": "module",
   "files": [
+    "bin",
     "dist",
     "resources",
     "bundled-manifest.json",
+    "LICENSE",
     "README.md"
   ],
   "scripts": {
@@ -18,7 +39,9 @@
     "dev": "tsc --watch",
     "generate": "tsx scripts/generate-doc-fragments.ts",
     "test": "node --experimental-vm-modules ../../node_modules/.bin/jest",
-    "check": "npm run build && npm run generate -- --check && npm run test"
+    "check": "npm run build && npm run generate -- --check && npm run test",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run check"
   },
   "dependencies": {
     "ajv": "^8.12.0",

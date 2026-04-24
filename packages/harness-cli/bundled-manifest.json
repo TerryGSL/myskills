@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "version": "0.1.0",
+  "description": "Manifest of bundled resources shipped inside the harness-workflow-cli npm tarball. Verified by scripts/verify-resources.ts at build time (R5/T11).",
+  "resources": {
+    "schemas": [
+      "resources/schemas/knowledge.schema.json",
+      "resources/schemas/review-target.schema.json",
+      "resources/schemas/profile.schema.json",
+      "resources/schemas/managed-file.schema.json"
+    ],
+    "templates": {
+      "root": [
+        "resources/templates/root/CLAUDE.md.template",
+        "resources/templates/root/harness.config.json.template"
+      ],
+      "memory": [
+        "resources/templates/memory/.harness-memory.yml.template",
+        "resources/templates/memory/MEMORY.md.template",
+        "resources/templates/memory/ERRORS.md.template",
+        "resources/templates/memory/harness_reviewer_scorecard.yml.template"
+      ],
+      "learnings": [
+        "resources/templates/learnings/LEARNINGS.md.template",
+        "resources/templates/learnings/ERRORS.md.template",
+        "resources/templates/learnings/FEATURE_REQUESTS.md.template"
+      ],
+      "knowledge": [
+        "resources/templates/knowledge/INDEX.md.template",
+        "resources/templates/knowledge/TODO.md.template"
+      ]
+    },
+    "skills": [],
+    "presets": []
+  }
+}
