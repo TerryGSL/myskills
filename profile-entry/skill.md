@@ -1,108 +1,108 @@
 ---
 name: profile-entry
 description: >
-  内部路由器。ONE Skill 加载，内部决策逻辑完成 profile 解析 / fast-path / 优先级，
-  然后加载 exactly ONE 叶子 skill。**不对外公开触发词**，仅由 harness-workflow 和
-  team-init 作为内部组件 invoke。
-  使用场景：harness-workflow 转发代码任务到此；team-init 初始化后交棒到此。
-  触发命令：（无公开触发词；仅通过 Skill(profile-entry) 内部调用）
+  Harness 工作流的内部路由器。Single-Skill load 完成 profile 解析 + 结构化 fast-path +
+  优先级裁决 + 加载 exactly ONE 叶子 skill（harness-{quick,bugfix,feature,refactor} 或
+  company-{quick,bugfix,feature,refactor}）。**不对外公开触发词**，仅由 harness-workflow
+  公开入口或 team-init 初始化后作为内部组件 invoke。
+  使用场景：用户通过 /harness-workflow 触发代码任务时被自动调用；team-init 完成项目初始化后交棒。
+  触发命令：（无公开触发词；仅通过 Skill(profile-entry) 内部 invoke）
 ---
 
-# profile-entry — 内部路由器（v1）
+# profile-entry — 内部路由器
 
-> 这是 **内部 only** skill。用户不应该直接触发 `/profile-entry` —
-> 所有入口通过 `harness-workflow` 公开触发词。
+> 内部 only skill。用户不应直接触发 `/profile-entry`；所有入口通过公开的 `/harness-workflow`。
 
 ## 输入契约
 
 调用方（`harness-workflow` 或 `team-init`）传入：
 
-- `forced_profile`（optional）：若设，跳过 detection，直接用该 profile
-- `public_entrypoint`：调用方名（仅用于日志）
-- `requested_flags`：解析后的 flag 数组（如 `["--yolo"]`、`["--safe"]`、`["--quick"]`）
-- `cwd`：当前项目路径
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| `forced_profile` | 否 | 若设，跳过 profile detection 直接用 |
+| `public_entrypoint` | 是 | 调用方名（日志用） |
+| `requested_flags` | 是 | 解析后的 flag 数组（`["--yolo"]` / `["--quick"]` 等） |
+| `cwd` | 是 | 当前项目路径 |
+| `task_description` | 是 | 原用户请求文本 |
 
-## 决策逻辑（按顺序）
+## 决策流程（5 步顺序，不可跳）
 
 ### Step 1：Profile 解析
 
-1. **`forced_profile` 存在** → 直接用
-2. 读 `<cwd>/.harness-profile` marker（`harness-workflow-cli` 写的）→ 用 marker.profile
-3. 都没有 → fallback matcher：读 `~/.claude/profiles/*.yml`，按 priority > specificity tie-break 选最高分
-4. tie 或全 miss → 用 `default` profile（always-match, priority=0）
+按 `forced_profile` → `.harness-profile` marker → fallback matcher → `default` 兜底顺序。
 
-**校验**：resolved profile 必须在 `~/.claude/profiles/<name>.yml` 存在并通过 schema（harness-workflow-cli 的 profile.schema.json）。不在 → 硬 abort + 提示。
+**详细算法** → [references/profile-resolution.md](references/profile-resolution.md)
 
-### Step 2：结构化 fast-path 检查（确定性，非 LLM 猜）
+### Step 2：结构化 Fast-Path 检查（确定性，非 LLM 猜）
 
-跑 `git diff --stat` 看本次任务涉及的 diff。若：
+基于 `git diff --stat` + 文件 pattern 判断是否静默路由到 `harness-quick`。
 
-- 无 explicit task-type flag（`--quick` / `--fix` / `--refactor` 之一）**且**
-- `git diff --stat` 显示 1 文件变动 **且**
-- diff 行数 < 10 **且**
-- 未新建文件 **且**
-- target 文件匹配 fast-path allowlist：
-  - 扩展名 ∈ `{.md, .txt, .json, .yml, .yaml}` **或**
-  - source 文件 且 diff 不涉及：exported 符号、函数签名、类型定义、SQL schema、migration 文件、`package.json` / `go.mod` / `pyproject.toml` / `Cargo.toml` 依赖段
+全通过 → silent route（无提示、无用户确认）。
+任一不过 → 走 Step 3。
 
-→ **silent route to `harness-quick`**（无显式提示，无需用户确认）。
-
-否则 → 走 Step 3。
+**完整 allowlist + 排除规则** → [references/fast-path.md](references/fast-path.md)
 
 ### Step 3：任务类型解析
 
 按优先级：
 
-1. fast-path 命中 → quick
-2. `--quick` / `--fix` / `--refactor` 显式 flag
-3. profile default（若 profile 无 default，用 `feature`）
+1. Fast-path 命中 → `quick`
+2. 显式 flag（`--quick` / `--fix` / `--refactor`）
+3. profile default（若 profile 无声明则默认 `feature`）
 
-→ 对应叶子 skill：`<profile>.task_types[type]`（personal = `harness-feature`，company-mt = `company-feature`，等等）
+对应叶子 skill：`<profile>.task_types[<type>]`
 
-### Step 4：激进模式（Aggression Mode）解析
+| profile | quick | bugfix | feature | refactor |
+|---------|-------|--------|---------|----------|
+| personal（harness）| harness-quick | harness-bugfix | harness-feature | harness-refactor |
+| company-mt | company-quick | company-bugfix | company-feature | company-refactor |
 
-优先级硬规则：
+### Step 4：Aggression Mode 解析
 
-```
-profile hard_floor policy  >  per-invocation flag  >  profile default  >  built-in conservative
-```
+优先级：`hard_floor > per-flag > profile default > conservative`
 
-- `profile.hard_floor` 列出的动作 **永远禁止**，无法被 `/yolo` 绕过
-  - 例：company-mt 的 `auto_push` 在 hard_floor 里 → `/yolo` 也不能让它自动 push
-- 无冲突时：`/yolo` → aggressive；`/safe` → conservative；其他 → profile default
-
-**Mode echo**：只在以下时机输出一次 mode：
-- profile detection 首次
-- flag override 生效
-- fast-path 自动降级到 quick
-- hard_floor 和 flag 冲突（显式报告 "Requested /yolo; Effective: company-safe; Reason: hard_floor auto_push"）
+**完整契约 + hard-floor vs flag 冲突处理** → [references/precedence.md](references/precedence.md)
 
 ### Step 5：加载 exactly ONE 叶子 skill
 
-用 `Skill(<resolved_task_skill>)` 调用，传入：
-- `resolved_profile`
-- `resolved_mode`
-- `task_description`（原用户请求）
-- `hard_floor`（profile 的禁止动作清单）
+```
+Skill(<resolved_task_skill>) with:
+  resolved_profile: <profile-object>
+  resolved_mode: conservative | standard | aggressive
+  task_description: <原用户请求>
+  hard_floor: <profile 禁止动作清单>
+```
 
-**硬约束**：必须 invoke 恰好一个叶子 skill。不得并行多个，不得跳过。
+**硬约束**：必须 invoke **恰好一个**叶子 skill。不得并行多个、不得跳过。
 
-## 不做的事
+## Mode Echo Discipline
 
-- 不自己写代码
-- 不做 LLM 语义任务分类（fast-path 是确定性 diff 检查，不是 LLM 猜）
+只在以下 4 种 transition 时 echo 一次 mode，其他保持静默：
+
+1. Profile detection 首次
+2. Flag override 生效
+3. Fast-path 自动降级到 quick
+4. Hard-floor vs flag 冲突（必须 echo，详见 precedence.md）
+
+## 会话 schema 版本哨兵（AD4）
+
+Step 1 前读 `<cwd>/.harness/current.json.workflow_schema_version`：
+
+- 缺失 → 触发一次性 migration（写入 `"1.0.0"`）
+- `> 1.0.0`（未来版本）→ 硬 abort + 提示 `npm install -g harness-workflow-cli@latest`
+
+## 硬边界（Not In Scope）
+
+以下**不是**本 skill 的职责，不要自己做：
+
+- 不写任何代码
+- 不做 LLM 语义任务分类（fast-path 是确定性 diff 检查）
 - 不持久化会话状态（纯 stateless，每次调用独立）
 - 不对外公开触发词
 - 不在 myskills README 宣传
 
-## 会话 schema 版本哨兵（与 harness-workflow 同步）
+## 引用
 
-Step 1 前读 `<cwd>/.harness/current.json.workflow_schema_version`：
-- 缺失 → 触发一次性 migration（写入 "1.0.0"）
-- `> 1.0.0` → 硬 abort 提示升级 CLI（AD4 双向）
-
-## 参考
-
-- 上游 spec：`harness-workflow/specs/2026-04-24-harness-cli-integration-design.md` §6.5 + 附录 C
-- Profile schema 真源：`harness-workflow-cli/resources/schemas/profile.schema.json`
-- Fast-path 规则来源：spec 2026-04-24-profile-based-dispatch-redesign-design.md:91-111
+- Profile schema 真源：`packages/harness-cli/src/types/profile.ts` + `resources/schemas/profile.schema.json`
+- 实际 matcher 实现：`packages/harness-cli/src/utils/profile.ts` (`matchProfile`)
+- 上游 spec：`harness-workflow/specs/2026-04-24-harness-cli-integration-design.md` §5.1 §6.5 附录 C
