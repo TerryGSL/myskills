@@ -116,46 +116,44 @@ ln -sf ~/Music/myskills/gstack/skills/* ~/.claude/skills/
 
 > 使用 `ln -sf` 而非复制，后续 `git pull` 后 skill 内容自动更新，无需重新链接。
 
-#### Step 2：跑 setup 脚本
+#### Step 2：跑 setup 脚本（dry-run 默认）
 
 ```bash
-~/Music/myskills/harness/setup/setup-harness.sh
+~/Music/myskills/harness/setup/setup-harness.sh           # dry-run，仅检查
+~/Music/myskills/harness/setup/setup-harness.sh --apply   # 实际写入缺失文件
 ```
 
-脚本会交互式询问：
+脚本不会问任何问题。它会：
+1. 检查 `~/.claude/profiles/` 是否有 `default.yml` / `harness.yml` / `company.yml.template`
+2. 缺失项在 `--apply` 模式下写默认值（含完整 schema）
+3. 检查 `~/.claude/settings.json` 是否注册 Stop Hook，输出 active/inactive 状态 + 注册 snippet（你自己决定要不要加）
 
-1. **主力开发场景**：个人项目 / 公司项目 / 两者都有
-2. **默认 push 策略**：conservative（手动）/ standard（询问）/ aggressive（自动）
-3. **公司项目参数**：本地路径 glob、git remote 正则（用于自动探测）
-4. **可选功能**：knowledge scanner、Stop Hook context monitor
+push 策略 / 公司项目细节 / Stop Hook 启停**都不再问**：
+- push 策略由 leaf skill 在 commit 后按改动 risk 动态决定（详 §6）
+- 公司 profile 用 `/profile-bootstrap` 命令派生（详 §4.3）
+- Stop Hook 阈值按 task_type 自适应
 
-配置写入 `~/.claude/profiles/harness.yml`（以及可选的 `company-<name>.yml`）。
+### 4.3 接入公司项目：/profile-bootstrap
 
-#### Step 3：（可选）启用 Stop Hook
+第一次进入公司项目时，运行：
 
-若 setup 时选择启用 Stop Hook，脚本末尾会输出以下 snippet，手动合并到 `~/.claude/settings.json`：
-
-```json
-{
-  "hooks": {
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/Users/twelve/Music/myskills/harness/hooks/context-monitor.sh"
-          }
-        ]
-      }
-    ]
-  }
-}
+```bash
+cd ~/work/acme-api
+/profile-bootstrap acme              # slug 自定，默认从 git remote 推导
 ```
 
-Stop Hook 在每次 Claude 停止输出时检查 context 占用比例，高占用时提示"建议重新注入 profile-entry"。
+profile-bootstrap 会：
+1. `git rev-parse --show-toplevel` 拿 canonical repo root（处理 symlink）
+2. `git remote -v` 扫所有 remotes，提取 host/org/repo 精确锚定（origin/upstream 不一致时 abort）
+3. 自动派生 `path_glob` 和 `git_remote_regex`，写到 `~/.claude/profiles/company-acme.yml`
+4. 在 repo 根写 `.harness-profile`（内容：`company-acme`）+ 加进 `.gitignore`
+5. 公司类 slug 默认带 `hard_floor: [auto_push, force_push, destructive_ops, auto_merge]`
 
-### 4.3 回退到旧版（legacy 备份）
+下次进入该 repo，profile-entry 通过 marker 直接命中，无需重新派生。
+
+完整契约 → `harness/profile-bootstrap/SKILL.md`
+
+### 4.4 回退到旧版（legacy 备份）
 
 若需要临时使用旧版 `harness-workflow` 单体 skill（`harness-workflow.legacy-backup-2026-04/` 里的快照），把 symlink 指回去即可：
 
@@ -244,6 +242,25 @@ echo "company-acme" > .harness-profile
 ```
 
 也可在消息中加 `/profile <name>` 临时覆盖本次会话。
+
+### 5.5 push 决策（risk-based，自动）
+
+leaf skill 在 commit 之后会**自动调用 push-decision 规则**评估改动 risk：
+
+| Risk | 触发条件 | 行为 |
+|------|---------|------|
+| LOW | 仅 md/i18n/注释；新增独立模块；单文件 <10 行 string 改动 | 自动 push |
+| MEDIUM | 一般业务改动 | 单次询问 [y/N] |
+| HIGH | .env / dependencies / db schema / CI / >3 文件 / 测试失败 / breaking keyword / 公共导出 | 拒绝 + 要求人工 push |
+
+公司项目（profile hard_floor 含 `auto_push`）**永远走 HIGH 分支**，行为与"绝不静默 push"等价。
+
+flags 覆盖：
+- `/no-push` 强制跳过任何 push
+- `/yolo` MEDIUM 自动通过（HIGH 仍 REFUSE）
+- `/safe` LOW 降级到 MEDIUM 询问
+
+详细规则 → `harness/harness-common/references/push-decision.md`
 
 ---
 
