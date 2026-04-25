@@ -151,7 +151,7 @@ exit 0
 #         "hooks": [
 #           {
 #             "type": "command",
-#             "command": "/Users/twelve/Music/myskills/harness-v2/hooks/context-monitor.sh"
+#             "command": "/Users/twelve/Music/myskills/harness/hooks/context-monitor.sh"
 #           }
 #         ]
 #       }
@@ -169,7 +169,7 @@ exit 0
 #         "hooks": [
 #           {
 #             "type": "command",
-#             "command": "/Users/twelve/Music/myskills/harness-v2/hooks/context-monitor.sh"
+#             "command": "/Users/twelve/Music/myskills/harness/hooks/context-monitor.sh"
 #           }
 #         ]
 #       }

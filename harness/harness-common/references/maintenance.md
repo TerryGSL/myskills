@@ -1,6 +1,6 @@
 # Maintenance — `--maintain` 完整 Audit 流程
 
-> **本文档权威路径**：`harness-v2/harness-common/references/maintenance.md`
+> **本文档权威路径**：`harness/harness-common/references/maintenance.md`
 > **关联 spec**：`harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md`
 > **关联 references**：`memory-contract.md`（memory audit 基础定义）、`knowledge-retrieval.md`（Stage -0.5 + retrieval 协议）
 

@@ -1,6 +1,6 @@
 # Project Detection — 技术栈自动探测
 
-> **迁移说明**：本文档从 `harness-workflow/references/project-detection.md` 迁入（harness-v2 架构重构），所有 harness-* task-type sub-skill 共享本探测规范。
+> **迁移说明**：本文档从 `harness-workflow/references/project-detection.md` 迁入（harness 架构重构），所有 harness-* task-type sub-skill 共享本探测规范。
 
 ## 概述
 

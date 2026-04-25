@@ -1,8 +1,8 @@
-# harness-v2 — 个人 Skill 体系 v2
+# harness — 个人 Skill 体系
 
 ## 1. 项目概览
 
-**harness-v2** 是 myskills 仓库的下一代工程 skill 体系。它把原来单体的 `harness-workflow` 拆分为一套分层派发框架，用更少的 context 占用支持更多样的任务场景。
+**harness** 是 myskills 仓库的工程 skill 体系。它把原来单体的 `harness-workflow` 拆分为一套分层派发框架，用更少的 context 占用支持更多样的任务场景。
 
 **设计目标**：
 
@@ -22,20 +22,20 @@
 
 ---
 
-## 2. 为什么需要 v2
+## 2. 设计动机
 
-### v1 的三个问题
+### 单体架构的三个问题
 
 **问题 1：Context 注意力分散**
 原 `harness-workflow` 是一个 363 行的单体 skill，每次 SessionStart 全量注入。对于"改一个 typo"这样的任务，Claude 也要先消化完整的 8-Stage 规程，导致注意力稀释。
 
 **问题 2：场景无法区分**
-v1 内部用 if/else 判断 S/M/L/XL 规模，没有 profile 概念。个人项目和公司项目用同一套规则，公司合规要求（禁止 auto-push、强制 code review）无法从框架层面保证。
+旧设计内部用 if/else 判断 S/M/L/XL 规模，没有 profile 概念。个人项目和公司项目用同一套规则，公司合规要求（禁止 auto-push、强制 code review）无法从框架层面保证。
 
 **问题 3：小任务过度工程**
-修一个注释或调整一个配置值，v1 也会走 Stage 0 需求分析 → Stage 1 架构审查 → … 的完整流程。用户为了避免这个开销，开始绕过 skill 手动改，导致 skill 形同虚设。
+修一个注释或调整一个配置值，单体架构也会走 Stage 0 需求分析 → Stage 1 架构审查 → … 的完整流程。用户为了避免这个开销，开始绕过 skill 手动改，导致 skill 形同虚设。
 
-### v2 如何解决
+### 新架构如何解决
 
 **2 层派发**：`task-dispatcher`（外层并行/串行分解）→ `profile-entry`（入口路由，单次 Skill load 内完成）→ leaf sub-skill（只加载该场景需要的内容）。
 
@@ -94,7 +94,7 @@ git clone --recurse-submodules git@github.com:TerryGSL/myskills.git ~/Music/mysk
 
 mkdir -p ~/.claude/skills
 
-# 把 harness-v2 的所有 skill 链到 ~/.claude/skills/
+# 把 harness 的所有 skill 链到 ~/.claude/skills/
 for skill in \
   profile-entry \
   harness-common \
@@ -107,7 +107,7 @@ for skill in \
   strict-reviewer \
   team-pd team-architect team-senior-dev team-junior-dev team-qa team-security \
   investigate office-hours; do
-  ln -sf ~/Music/myskills/harness-v2/${skill} ~/.claude/skills/${skill}
+  ln -sf ~/Music/myskills/harness/${skill} ~/.claude/skills/${skill}
 done
 
 # 链接 gstack 基础 skill
@@ -119,7 +119,7 @@ ln -sf ~/Music/myskills/gstack/skills/* ~/.claude/skills/
 #### Step 2：跑 setup 脚本
 
 ```bash
-~/Music/myskills/harness-v2/setup/setup-harness.sh
+~/Music/myskills/harness/setup/setup-harness.sh
 ```
 
 脚本会交互式询问：
@@ -144,7 +144,7 @@ ln -sf ~/Music/myskills/gstack/skills/* ~/.claude/skills/
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/twelve/Music/myskills/harness-v2/hooks/context-monitor.sh"
+            "command": "/Users/twelve/Music/myskills/harness/hooks/context-monitor.sh"
           }
         ]
       }
@@ -155,19 +155,19 @@ ln -sf ~/Music/myskills/gstack/skills/* ~/.claude/skills/
 
 Stop Hook 在每次 Claude 停止输出时检查 context 占用比例，高占用时提示"建议重新注入 profile-entry"。
 
-### 4.3 回退到 v1
+### 4.3 回退到旧版（legacy 备份）
 
-若需要临时使用原 `harness-workflow` 单体 skill，把 symlink 指回原位即可：
+若需要临时使用旧版 `harness-workflow` 单体 skill（`harness-workflow.legacy-backup-2026-04/` 里的快照），把 symlink 指回去即可：
 
 ```bash
-# 回退到 v1 单体
-ln -sf ~/Music/myskills/harness-workflow ~/.claude/skills/harness-workflow
+# 回退到旧版单体
+ln -sf ~/Music/myskills/harness-workflow.legacy-backup-2026-04 ~/.claude/skills/harness-workflow
 
-# 恢复到 v2
-ln -sf ~/Music/myskills/harness-v2/harness-workflow ~/.claude/skills/harness-workflow
+# 恢复到新版
+ln -sf ~/Music/myskills/harness/harness-workflow ~/.claude/skills/harness-workflow
 ```
 
-其他 skill（`task-dispatcher`、`team-*` 等）v1/v2 兼容，无需切换。
+其他 skill（`task-dispatcher`、`team-*` 等）新旧兼容，无需切换。
 
 ---
 
@@ -221,7 +221,7 @@ Reason: company profile hard-floor
 
 ### 5.3 老命令兼容
 
-原 v1 的所有命令都可继续使用，`harness-workflow` stub 负责 passthrough：
+原有的所有命令都可继续使用，`harness-workflow` stub 负责 passthrough：
 
 | 命令 | 效果 |
 |------|------|
@@ -278,13 +278,13 @@ echo "company-acme" > .harness-profile
 ```
 cd ~/Music/myskills
 
-你：README 里 "harness-v2" 写成了 "harness-V2"，帮我改一下
+你：README 里 "profile-bsed" 拼错了，应该是 "profile-based"，帮我改一下
 
 → profile-entry: 路径匹配 ~/Music/myskills/**，探测为 harness profile
 → fast-path 检查: git diff --stat 仅 README.md，1 行改动
 → 输出: "Fast-path: 单文件 1 行改动，路由到 harness-quick（/fix 覆盖）"
 → harness-quick: 直接改 → lint → commit
-→ commit: "fix: typo in README.md (harness-V2 → harness-v2)"
+→ commit: "fix: typo in README.md (profile-bsed → profile-based)"
 → 写轻量 memory observation，完成
 ```
 
@@ -358,10 +358,10 @@ cd ~/work/acme-corp/svc-x
 
 ---
 
-## 8. 和 v1（原 harness-workflow）的对比
+## 8. 和旧版（原 harness-workflow 单体）的对比
 
-| 维度 | v1 单体 | v2 分层 |
-|------|---------|---------|
+| 维度 | 旧版单体 | 新分层架构 |
+|------|---------|-----------|
 | 入口 skill 规模 | 单体 `harness-workflow` 363 行，全量注入 | `profile-entry` ~80 行，按需加载 leaf sub-skill |
 | 场景分档 | 内部 if 判断 S/M/L/XL | profile × task_type × mode 三维正交 |
 | 小任务处理 | 走完整 Stage 规程 | 结构性 fast-path，`harness-quick` 4 步完成 |
@@ -376,7 +376,7 @@ cd ~/work/acme-corp/svc-x
 ## 9. 目录结构速查
 
 ```
-harness-v2/
+harness/
 ├── profile-entry/           入口路由 skill（~80 行，薄路由器）
 │   ├── SKILL.md
 │   └── references/
@@ -457,7 +457,7 @@ mkdir -p ~/.claude/profiles
 
 cat > ~/.claude/profiles/harness.yml << 'EOF'
 name: harness
-description: "harness-v2 default profile"
+description: "harness default profile"
 default_mode: standard
 
 task_types:
@@ -479,7 +479,7 @@ EOF
 ### harness-pack-test 校验失败
 
 ```bash
-~/Music/myskills/harness-v2/tools/harness-pack-test ~/.claude/profiles/harness.yml
+~/Music/myskills/harness/tools/harness-pack-test ~/.claude/profiles/harness.yml
 ```
 
 常见原因：YAML 格式错误、`task_types` 字段缺少某个 key、skill 名称拼写不符合 registry。根据脚本输出逐项修复。
@@ -518,7 +518,7 @@ task_types:
 **第三步**：运行契约校验：
 
 ```bash
-~/Music/myskills/harness-v2/tools/harness-pack-test ~/.claude/profiles/my-company.yml
+~/Music/myskills/harness/tools/harness-pack-test ~/.claude/profiles/my-company.yml
 ```
 
 校验通过（零退出码）后，新 profile 即生效。
@@ -529,13 +529,13 @@ task_types:
 
 | 文档 | 说明 |
 |------|------|
-| `harness-v2/DESIGN.md` | 设计思路（演化历史、架构决策、权衡分析） |
-| `harness-v2/IMPLEMENTATION-PLAN.md` | 实施计划（24 tasks / 8 phases 全览） |
+| `harness/DESIGN.md` | 设计思路（演化历史、架构决策、权衡分析） |
+| `harness/IMPLEMENTATION-PLAN.md` | 实施计划（24 tasks / 8 phases 全览） |
 | `docs/superpowers/specs/2026-04-24-profile-based-dispatch-redesign-design.md` | Profile-based dispatch 架构 spec |
 | `harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md` | Knowledge scanner 设计 spec |
-| `harness-v2/profile-entry/references/` | Profile schema / precedence / fast-path 契约 |
-| `harness-v2/harness-common/references/` | Memory 契约 / Phase Init / Knowledge Retrieval 规范 |
+| `harness/profile-entry/references/` | Profile schema / precedence / fast-path 契约 |
+| `harness/harness-common/references/` | Memory 契约 / Phase Init / Knowledge Retrieval 规范 |
 
 ---
 
-*harness-v2 是 myskills 的活跃开发分支。如遇行为与文档不符，以各 skill 的 `SKILL.md` 为准。*
+*harness 是 myskills 的活跃开发分支。如遇行为与文档不符，以各 skill 的 `SKILL.md` 为准。*

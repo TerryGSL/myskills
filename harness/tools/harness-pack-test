@@ -1,5 +1,5 @@
 #!/bin/bash
-# harness-pack-test — Contract validator for harness-v2 skill pack YAML files.
+# harness-pack-test — Contract validator for harness skill pack YAML files.
 #
 # Usage: harness-pack-test <profile.yml>
 #
@@ -13,7 +13,7 @@ set -eu
 usage() {
   echo "Usage: $(basename "${0}") <profile.yml>"
   echo ""
-  echo "Contract-tests a harness-v2 skill pack YAML against the task-type-contract."
+  echo "Contract-tests a harness skill pack YAML against the task-type-contract."
   echo ""
   echo "Required fields:"
   echo "  name, description, detection, entry_skill, task_types,"

@@ -1,7 +1,7 @@
-# harness-v2 综合实施计划
+# harness 综合实施计划
 
 **日期**: 2026-04-24
-**目标**: 在 `harness-v2/` 沙盒里按 profile-based dispatch 架构重构 skill 体系，融合 project-knowledge-scanner 能力；保留 `/Users/twelve/Music/myskills/` 原有 skill 不破坏。
+**目标**: 在 `harness/` 沙盒里按 profile-based dispatch 架构重构 skill 体系，融合 project-knowledge-scanner 能力；保留 `/Users/twelve/Music/myskills/` 原有 skill 不破坏。
 
 **融合的三份设计**:
 1. `docs/superpowers/specs/2026-04-24-profile-based-dispatch-redesign-design.md` — 架构拆分（profile-entry + 4 task-type sub-skills + harness-common）
@@ -56,10 +56,10 @@ strict-reviewer          （4 硬门：grounding / reproduction / coverage / kno
 
 ---
 
-## 新文件结构（harness-v2/ 内）
+## 新文件结构（harness/ 内）
 
 ```
-harness-v2/
+harness/
 ├── profile-entry/                           (新，入口路由)
 │   ├── SKILL.md                             ~100 行
 │   └── references/
@@ -120,7 +120,7 @@ harness-v2/
 └── DESIGN.md                                (新，设计思路)
 ```
 
-用户级 profile registry（不在 harness-v2/，但脚手架要生成）：
+用户级 profile registry（不在 harness/，但脚手架要生成）：
 ```
 ~/.claude/profiles/
 ├── default.yml                              always-match fallback
@@ -135,61 +135,61 @@ harness-v2/
 ### Phase A: Profile Registry（用户级 YAML）
 
 **A1** — 创建 `~/.claude/profiles/` 目录 + 3 个 YAML（default / harness / company.yml.template）
-- 这些文件在用户 home，不在 harness-v2 内
+- 这些文件在用户 home，不在 harness 内
 - 但步骤一样：幂等检查，不覆盖已有自定义内容
 
 ### Phase B: profile-entry 入口
 
-**B1** — `harness-v2/profile-entry/SKILL.md`（~100 行路由逻辑）
+**B1** — `harness/profile-entry/SKILL.md`（~100 行路由逻辑）
 - 按序：marker 查找 → fallback matchers → 结构性 fast-path → precedence → 加载 leaf sub-skill
 - 禁：自己改代码 / LLM 分类 / 跨 turn 持久化
 
-**B2** — `harness-v2/profile-entry/references/profiles.md`（registry schema + matcher 规则）
+**B2** — `harness/profile-entry/references/profiles.md`（registry schema + matcher 规则）
 
-**B3** — `harness-v2/profile-entry/references/precedence.md`（precedence 契约示例）
+**B3** — `harness/profile-entry/references/precedence.md`（precedence 契约示例）
 
-**B4** — `harness-v2/profile-entry/references/fast-path.md`（结构性 fast-path allowlist + detection）
+**B4** — `harness/profile-entry/references/fast-path.md`（结构性 fast-path allowlist + detection）
 
-**B5** — `harness-v2/profile-entry/references/task-type-contract.md`（跨 pack sub-skill 契约）
+**B5** — `harness/profile-entry/references/task-type-contract.md`（跨 pack sub-skill 契约）
 
 ### Phase C: harness-common 共享层
 
-**C1** — `harness-v2/harness-common/SKILL.md`（共享基础设施入口，~100 行）
+**C1** — `harness/harness-common/SKILL.md`（共享基础设施入口，~100 行）
 
-**C2** — 迁移：`harness-v2/harness-common/references/memory-contract.md`（从 `harness-v2/harness-workflow/references/memory.md` 改名/移动 + 调整引用）
+**C2** — 迁移：`harness/harness-common/references/memory-contract.md`（从 `harness/harness-workflow/references/memory.md` 改名/移动 + 调整引用）
 
-**C3** — 迁移：`harness-v2/harness-common/references/project-detection.md`（从原位置移入）
+**C3** — 迁移：`harness/harness-common/references/project-detection.md`（从原位置移入）
 
-**C4** — 新写：`harness-v2/harness-common/references/phase-init.md`（从 harness-workflow Phase 1-4 抽出）
+**C4** — 新写：`harness/harness-common/references/phase-init.md`（从 harness-workflow Phase 1-4 抽出）
 
-**C5** — 新写：`harness-v2/harness-common/references/knowledge-retrieval.md`（Stage -0.5 完整流程 + render pipeline）
+**C5** — 新写：`harness/harness-common/references/knowledge-retrieval.md`（Stage -0.5 完整流程 + render pipeline）
 
-**C6** — 新写：`harness-v2/harness-common/references/project-scanner.md`（5-phase scan pipeline）
+**C6** — 新写：`harness/harness-common/references/project-scanner.md`（5-phase scan pipeline）
 
-**C7** — 新写：`harness-v2/harness-common/references/reviewer-integration.md`（strict-reviewer 调用契约 + 5 knowledge 字段 + retrieval_outcome + known_issues）
+**C7** — 新写：`harness/harness-common/references/reviewer-integration.md`（strict-reviewer 调用契约 + 5 knowledge 字段 + retrieval_outcome + known_issues）
 
-**C8** — 新写：`harness-v2/harness-common/references/maintenance.md`（--maintain 12 项 audit：原 memory 6 + 新 knowledge 6）
+**C8** — 新写：`harness/harness-common/references/maintenance.md`（--maintain 12 项 audit：原 memory 6 + 新 knowledge 6）
 
 ### Phase D: Knowledge Scanner Templates
 
-**D1** — 5 domain 目录 + `INDEX.md.template` + `TODO.md.template`（path: `harness-v2/harness-common/templates/project-knowledge/`）
+**D1** — 5 domain 目录 + `INDEX.md.template` + `TODO.md.template`（path: `harness/harness-common/templates/project-knowledge/`）
 
 **D2** — 5 × `manifest.md.template`（含 Rule ID + Status 四态 + Supersedes fields + violation_test enum）
 
 **D3** — 5 × `evidence.md.template` + 5 × `gaps.md.template`
 
-**D4** — `harness-v2/harness-feature/prompts/scanner-prompts.md`（5 domain scanner subagent prompts）
+**D4** — `harness/harness-feature/prompts/scanner-prompts.md`（5 domain scanner subagent prompts）
 
 ### Phase E: 4 task-type sub-skills
 
-**E1** — `harness-v2/harness-quick/SKILL.md`（~60 行）
+**E1** — `harness/harness-quick/SKILL.md`（~60 行）
 - 1 文件 / 1 行 / 无 ceremony
 - 直接改 + commit
 - memory observation 照常（轻量）
 - 不走 Stage -0.5（fast path 跳过 knowledge gate）
 - 不走 strict-reviewer（fast path 跳过）
 
-**E2** — `harness-v2/harness-bugfix/SKILL.md`（~100 行）
+**E2** — `harness/harness-bugfix/SKILL.md`（~100 行）
 - Step 1: 调 `investigate` skill
 - Step 2: 复现
 - Step 3: 修
@@ -198,13 +198,13 @@ harness-v2/
 - 调 Stage -0.5（读相关 knowledge）
 - 调 strict-reviewer（含 knowledge gate）
 
-**E3** — `harness-v2/harness-feature/SKILL.md`（~180 行）
+**E3** — `harness/harness-feature/SKILL.md`（~180 行）
 - 当前 8-Stage 主体
 - 前置：Stage -0.5 Project Context Retrieval
 - Stage 4/5/6/7 调 strict-reviewer（4 硬门全开）
 - Stage 8 收尾：memory refresh + knowledge check
 
-**E4** — `harness-v2/harness-refactor/SKILL.md`（~120 行）
+**E4** — `harness/harness-refactor/SKILL.md`（~120 行）
 - baseline 捕获（测试通过，行为快照）
 - 增量计划（小 commit）
 - 持续验证
@@ -214,7 +214,7 @@ harness-v2/
 
 ### Phase F: strict-reviewer 升级
 
-**F1** — `harness-v2/strict-reviewer/SKILL.md`
+**F1** — `harness/strict-reviewer/SKILL.md`
 - Input schema 加 5 knowledge 字段（`knowledge_snapshot_id` / `relevant_knowledge_files` / `knowledge_requirements` / `retrieval_outcome` / `known_issues`）
 - Required Steps 加 Step 5 Knowledge Compliance Check
 - Verdict 决定规则加 knowledge 违反 → FAIL、coordinator_miss → BLOCKED、all_candidates_filtered → knownIssue
@@ -222,38 +222,38 @@ harness-v2/
 
 ### Phase G: 重塑 harness-workflow + hooks + setup + 工具
 
-**G1** — `harness-v2/harness-workflow/skill.md` 重塑为 profile 声明 stub（~80 行）
+**G1** — `harness/harness-workflow/skill.md` 重塑为 profile 声明 stub（~80 行）
 - 声明 harness profile
 - 老命令（`--init` / `--adopt` / `--maintain` / `--next`）passthrough 到 harness-common
 - 兼容用户既有肌肉记忆
 
-**G2** — `harness-v2/hooks/context-monitor.sh`
+**G2** — `harness/hooks/context-monitor.sh`
 - PostToolUse hook 监控 context 占用
 - 高占用 + workflow 进行中 → 输出"建议重新注入 profile-entry"
 
-**G3** — `harness-v2/setup/setup-harness.sh`
+**G3** — `harness/setup/setup-harness.sh`
 - 交互式 / 一次性命令
 - 记录用户偏好：主力场景（个人 / 公司 / 混合）、push 策略默认、启用的 profiles
 - 输出到 `~/.claude/profiles/` 对应 YAML
 
-**G4** — `harness-v2/tools/harness-pack-test`（契约校验脚本）
+**G4** — `harness/tools/harness-pack-test`（契约校验脚本）
 - 跑 fixture 输入
 - 校验任意 skill pack 是否符合 task-type-contract
 - 违规非零退出
 
-**G5** — `harness-v2/task-dispatcher/SKILL.md` 小改
+**G5** — `harness/task-dispatcher/SKILL.md` 小改
 - 更新 "与 harness-workflow 的关系" → "与 profile-entry 的关系"
 - 代码任务交给 profile-entry 而非直接 harness-workflow
 
 ### Phase H: 文档 + 验证 + push
 
-**H1** — `harness-v2/README.md`（使用指南，中文）
+**H1** — `harness/README.md`（使用指南，中文）
 - 项目意图
-- 使用方法（如何激活 harness-v2 / 如何回退原 skill）
+- 使用方法（如何激活 harness / 如何回退原 skill）
 - 各 skill 职责速查
 - 常见场景示例
 
-**H2** — `harness-v2/DESIGN.md`（设计思路）
+**H2** — `harness/DESIGN.md`（设计思路）
 - 演化历史（单体 → 分层）
 - 三维正交设计
 - Knowledge scanner 架构
@@ -318,8 +318,8 @@ harness-v2/
 
 ## 用户指示确认
 
-- ✅ 新文件夹 `harness-v2/` 已建，原 skill 不动
-- ✅ 现有 skill 已复制进 harness-v2/
+- ✅ 新文件夹 `harness/` 已建，原 skill 不动
+- ✅ 现有 skill 已复制进 harness/
 - ✅ 会过程中用 subagent 提速保质
 - ✅ 完成后 push
 - ✅ README + DESIGN 完整文档

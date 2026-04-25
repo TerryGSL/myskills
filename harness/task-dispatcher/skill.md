@@ -177,8 +177,8 @@ Sub-agent **没有**本次对话的任何上下文。必须包含：
 
 两层协作关系如下：
 
-- **v1（旧）**：task-dispatcher 判定代码任务 → 直接甩 harness-workflow（单体 8-Stage）
-- **v2（当前）**：task-dispatcher 判定代码任务 → 派发给 `profile-entry`，由它做 profile 探测 + task_type 选择 + aggression mode 解析 → 加载恰好一个 leaf sub-skill（quick / bugfix / feature / refactor 等）
+- **旧版**：task-dispatcher 判定代码任务 → 直接甩 harness-workflow（单体 8-Stage）
+- **当前**：task-dispatcher 判定代码任务 → 派发给 `profile-entry`，由它做 profile 探测 + task_type 选择 + aggression mode 解析 → 加载恰好一个 leaf sub-skill（quick / bugfix / feature / refactor 等）
 
 代码任务类型（quick / bugfix / feature / refactor）**不再由 task-dispatcher 决定**；由 `profile-entry` 的结构性 fast-path + 用户 flag 决定。task-dispatcher 的外层并行/串行分解职责保持不变。
 

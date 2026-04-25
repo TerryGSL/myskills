@@ -1,18 +1,18 @@
 ---
 name: harness-workflow
-description: harness 体系的 **profile 声明入口 + 老命令 passthrough**。v2 架构重构后，本 skill 主要负责：(1) 声明 harness profile（供 profile-entry 识别）(2) 保留老命令 /harness-workflow --init / --adopt / --maintain / --next 的肌肉记忆，这些命令 passthrough 到 harness-common 对应阶段。新的代码任务派发（quick / bugfix / feature / refactor）由 profile-entry 处理，不再由本 skill 做 S/M/L/XL 内部分支。
+description: harness 体系的 **profile 声明入口 + 老命令 passthrough**。架构重构后，本 skill 主要负责：(1) 声明 harness profile（供 profile-entry 识别）(2) 保留老命令 /harness-workflow --init / --adopt / --maintain / --next 的肌肉记忆，这些命令 passthrough 到 harness-common 对应阶段。新的代码任务派发（quick / bugfix / feature / refactor）由 profile-entry 处理，不再由本 skill 做 S/M/L/XL 内部分支。
   触发命令：/harness-workflow, /harness-workflow --init, /harness-workflow --adopt, /harness-workflow --maintain, /harness-workflow --next
 ---
 
-# harness-workflow — v2 重塑后的 profile 入口 stub
+# harness-workflow — profile 入口 stub（架构重塑后）
 
-> 本 skill 已在 v2 架构重构中瘦身。核心职责从"单体 8-Stage 流水线"改为"声明 harness profile + 保留老命令"。
+> 本 skill 已在架构重构中瘦身。核心职责从"单体 8-Stage 流水线"改为"声明 harness profile + 保留老命令"。
 
-## 本 skill 在 v2 架构中的位置
+## 本 skill 在架构中的位置
 
 - **task-dispatcher**（外层分解，不变）
 - ↓ 代码任务
-- **profile-entry**（新入口路由，做 profile / task_type / mode 解析）
+- **profile-entry**（入口路由，做 profile / task_type / mode 解析）
 - ↓ 加载恰好一个
 - **harness-quick / harness-bugfix / harness-feature / harness-refactor**（4 个 task-type sub-skill）
 - ↓ 所有重路径引用
@@ -26,7 +26,7 @@ description: harness 体系的 **profile 声明入口 + 老命令 passthrough**�
 
 | 命令 | 行为 |
 |---|---|
-| `/harness-workflow` | 显示当前状态 + v2 架构概览 |
+| `/harness-workflow` | 显示当前状态 + 架构概览 |
 | `/harness-workflow --init` | 调 `harness-common` 的 phase-init（Phase 1-4） |
 | `/harness-workflow --adopt` | 调 `harness-common` phase-init 的 adopt 模式 |
 | `/harness-workflow --maintain` | 调 `harness-common/references/maintenance.md` 完整 12 项 audit |
@@ -59,9 +59,9 @@ description: harness 体系的 **profile 声明入口 + 老命令 passthrough**�
 
 ## 向后兼容声明
 
-既有项目已经跑过 `/harness-workflow --init` 的，**不需要**重新初始化。v2 读同样的 `.harness-context.json` / `docs/STATE.json` / `docs/memory/` / `docs/harness/knowledge/`。
+既有项目已经跑过 `/harness-workflow --init` 的，**不需要**重新初始化。新架构读同样的 `.harness-context.json` / `docs/STATE.json` / `docs/memory/` / `docs/harness/knowledge/`。
 
-用户若想体验 v2 架构，直接用 v2 的 profile-entry 触发即可。
+用户若想体验新架构，直接用 profile-entry 触发即可。
 
 ## 引用
 

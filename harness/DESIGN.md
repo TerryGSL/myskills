@@ -1,4 +1,4 @@
-# harness-v2 设计思路总览
+# harness 设计思路总览
 
 **定位**：本文面向"想理解为什么这样设计"的读者，讲设计决策、架构演化历史和 tradeoff。使用指南见 README.md。
 
@@ -12,7 +12,7 @@
 
 这一层的设计至今没有变过，也不需要变——外层消息分解本身是个稳定的问题，与"跑什么 workflow"正交。task-dispatcher 的职责边界清晰：分解消息、管理依赖、汇总结果。它不关心每个代码子任务的内部如何执行。
 
-### 1.2 harness-workflow v1（单体 8-Stage，363 行）
+### 1.2 原 harness-workflow（单体 8-Stage，363 行）
 
 第一代代码执行 workflow 是一个 363 行的单体 skill 文件。它试图在同一个文件里解决所有问题：
 
@@ -65,14 +65,14 @@ knowledge scanner 增加了 **Stage -0.5**（Project Context Retrieval）和 5 d
 
 经过 3 轮 codex 对抗审查收敛（Round 1 发现 7 条硬伤，Round 2 修复大部分，Round 3 只剩 cold-start 路径，F7 补丁解决）。
 
-### 1.6 v2 融合（2026-04-24）
+### 1.6 统一融合（2026-04-24）
 
-将 profile-based dispatch 重构和 knowledge scanner 设计合并到统一框架 `harness-v2/`，同时新增：
+将 profile-based dispatch 重构和 knowledge scanner 设计合并到统一框架 `harness/`，同时新增：
 - **Stop Hook**（context-monitor）：监控 context 占用，高占用时再注入
 - **Setup 命令**：一次性记录用户场景偏好
 - **harness-common 共享层**：7 个 references 供所有 sub-skill 引用，不复制
 
-原有 `myskills/` 下的 skill 完全保留，v2 在沙盒目录独立运行。
+原有 `myskills/` 下的 skill 完全保留，新版在沙盒目录独立运行。
 
 ---
 
@@ -510,7 +510,7 @@ Setup 是**一次配置，反复受益**。用户显式声明"这台机器的默
 2. 配置 hard_floor（合规要求）
 3. 逐步打磨 4 个 task_type sub-skill（可复用 harness pack，也可完全替换）
 
-这不在 harness-v2 的范围内——公司约定高度差异化，无法预先实现，只能提供接口（`task-type-contract.md`）和工具（`harness-pack-test`）。
+这不在 harness 的范围内——公司约定高度差异化，无法预先实现，只能提供接口（`task-type-contract.md`）和工具（`harness-pack-test`）。
 
 ### 9.2 其他 profile pack
 
@@ -547,7 +547,7 @@ Setup 是**一次配置，反复受益**。用户显式声明"这台机器的默
 
 ### Plan 文档
 
-- `harness-v2/IMPLEMENTATION-PLAN.md` — v2 综合实施计划（24 tasks / 8 phases）
+- `harness/IMPLEMENTATION-PLAN.md` — 综合实施计划（24 tasks / 8 phases）
 - `docs/superpowers/plans/2026-04-24-profile-based-dispatch-redesign.md` — profile 拆分 plan（16 tasks）
 
 ### Codex Session Transcripts

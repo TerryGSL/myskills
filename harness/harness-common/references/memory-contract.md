@@ -1,6 +1,6 @@
 # Memory Contract — 共享版
 
-> **迁移说明**：本文档从 `harness-workflow/references/memory.md` 迁入（harness-v2 架构重构），所有 harness-* task-type sub-skill 共享本契约。原路径的文件作为历史参照保留，本文档为权威版本。
+> **迁移说明**：本文档从 `harness-workflow/references/memory.md` 迁入（harness 架构重构），所有 harness-* task-type sub-skill 共享本契约。原路径的文件作为历史参照保留，本文档为权威版本。
 
 > 本文档是 harness 体系内项目长期记忆机制的权威 runtime 规范。
 > 完整设计推导见 `docs/specs/2026-04-22-memory-reviewer-upgrade.md`。

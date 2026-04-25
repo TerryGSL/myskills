@@ -1,6 +1,6 @@
 # Reviewer Integration — harness-common 与 strict-reviewer 调用协议
 
-> **本文档权威路径**：`harness-v2/harness-common/references/reviewer-integration.md`
+> **本文档权威路径**：`harness/harness-common/references/reviewer-integration.md`
 > **关联设计 spec**：
 > - `harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md`
 > - `docs/superpowers/specs/2026-04-24-profile-based-dispatch-redesign-design.md`

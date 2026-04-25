@@ -1,6 +1,6 @@
 ---
 name: strict-reviewer
-description: 反谄媚审稿 skill — 默认 FAIL 立场 + 三硬门（Grounding / Reproduction / Coverage）+ Minimum adversarial search。Schema-driven 薄 wrapper，stateless。用于 PR 审查、QA、安全审查、spec 审查等任何需要严格证据链的审稿场景。harness-workflow Stage 4/5/6/7 自动调用。手动调用：/strict-reviewer <review_target YAML>。Triggers：(1) "严格审稿 / strict review" (2) harness-workflow reviewer 阶段 (3) 用户直接调 /strict-reviewer。v2 升级加第 4 硬门 Knowledge Compliance Check，验证实现是否违反 Stage -0.5 注入的 knowledge_requirements 中的 Rule。
+description: 反谄媚审稿 skill — 默认 FAIL 立场 + 三硬门（Grounding / Reproduction / Coverage）+ Minimum adversarial search。Schema-driven 薄 wrapper，stateless。用于 PR 审查、QA、安全审查、spec 审查等任何需要严格证据链的审稿场景。harness-workflow Stage 4/5/6/7 自动调用。手动调用：/strict-reviewer <review_target YAML>。Triggers：(1) "严格审稿 / strict review" (2) harness-workflow reviewer 阶段 (3) 用户直接调 /strict-reviewer。本次升级加第 4 硬门 Knowledge Compliance Check，验证实现是否违反 Stage -0.5 注入的 knowledge_requirements 中的 Rule。
 ---
 
 # strict-reviewer — 反谄媚审稿 Skill
