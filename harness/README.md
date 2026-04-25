@@ -1,190 +1,95 @@
-> ## ⓘ A 套（本目录）— 完整独立实现
+# harness/ — 直接用法接入文档（Tier-3 fallback）
+
+> 本目录是 harness 工作流的**直接 markdown 接入路径** —— 不依赖 npm CLI，纯 markdown + bash fallback。
 >
-> 本仓库容纳**两套独立的 harness 工作流实现**：
+> 完整规则源在仓库顶层 `harness-common/contracts/` 下的 14 份 narrative contract。本目录是 markdown-only 接入路径与历史档案。
 >
-> - **A 套（本目录 `harness/`）** — 纯 markdown + bash，无 node 依赖；`profile-entry` / 4 个 leaf skill / `setup-harness.sh` 都在本目录里完整自包含
-> - **B 套（仓库顶层 + `packages/harness-cli/`）** — TypeScript npm CLI 工程化路线；入口是顶层 `harness-init/SKILL.md` + `harness` 二进制
->
-> 两套**互不依赖、互不导入**，可以分别接入。具体差异和选用建议见 [`/README.md`](../README.md) 的"仓库结构"段。
->
-> 下面的内容是 **A 套**的完整接入文档（融合 brainstorm 阶段写定）。
->
-> ---
+> CLI 工程化路线（`harness install` 一键 setup + jest 测试 + GitHub workflow CI）参 `packages/harness-cli/README.md`。
 
-# harness — 个人 Skill 体系（A 套）
+## 1. 概览
 
-## 1. 项目概览
+`harness` 是 myskills 仓库的工程协作 skill 体系。整体设计：profile × task_type × aggression mode 三维正交，hard_floor 强制不可绕过；4 个 task-type leaf skill（quick / bugfix / feature / refactor）按 routing 契约派发；14 份 narrative contract 集中在仓库顶层 `harness-common/contracts/`。
 
-**harness** 是 myskills 仓库的工程 skill 体系。它把原来单体的 `harness-workflow` 拆分为一套分层派发框架，用更少的 context 占用支持更多样的任务场景。
+**直接用法（本目录）的能力**：
 
-**设计目标**：
+- `harness/profile-bootstrap/lib/` — Tier-3 fallback 的纯 bash profile 派生算法 + test oracle
+- `harness/profile-entry/references/` — profile / precedence / fast-path / task-type 历史 reference 档案
+- `harness/harness-feature/prompts/` — feature scanner prompts 历史档案
+- `harness/harness-workflow/specs|plans/` — 工作流历史 spec / plan 档案
+- `harness/docs/` — 历史 narrative 档案
 
-- 个人项目和公司项目用同一套框架，但由不同 profile 控制行为差异
-- 任务类型（quick / bugfix / feature / refactor）结构性派发，不靠 LLM 猜测
-- 小任务走 fast-path，零仪式直接完成；复杂任务走完整 8-Stage
+## 2. 接入步骤（无 npm 环境）
 
-**关键特性**：
-
-| 特性 | 说明 |
-|------|------|
-| Profile 派发 | 按项目标记（`.harness-profile`）或路径 / git remote 自动探测 profile |
-| 4 种 task-type | `quick` / `bugfix` / `feature` / `refactor`，各有独立 sub-skill |
-| Knowledge Scanner | 5-domain 项目知识库，Stage -0.5 按需注入 |
-| Stop Hook | 监控 context 占用，高占用时提示重注入 |
-| Setup 脚本 | 一次性交互式配置，写 `~/.claude/profiles/` YAML |
-
----
-
-## 2. 设计动机
-
-### 单体架构的三个问题
-
-**问题 1：Context 注意力分散**
-原 `harness-workflow` 是一个 363 行的单体 skill，每次 SessionStart 全量注入。对于"改一个 typo"这样的任务，Claude 也要先消化完整的 8-Stage 规程，导致注意力稀释。
-
-**问题 2：场景无法区分**
-旧设计内部用 if/else 判断 S/M/L/XL 规模，没有 profile 概念。个人项目和公司项目用同一套规则，公司合规要求（禁止 auto-push、强制 code review）无法从框架层面保证。
-
-**问题 3：小任务过度工程**
-修一个注释或调整一个配置值，单体架构也会走 Stage 0 需求分析 → Stage 1 架构审查 → … 的完整流程。用户为了避免这个开销，开始绕过 skill 手动改，导致 skill 形同虚设。
-
-### 新架构如何解决
-
-**2 层派发**：`task-dispatcher`（外层并行/串行分解）→ `profile-entry`（入口路由，单次 Skill load 内完成）→ leaf sub-skill（只加载该场景需要的内容）。
-
-**三维正交**：Profile × task_type × aggression mode 三个维度各自独立解析，互不耦合。公司 profile 的 `hard_floor` 约束在框架层面强制执行，任何 flag 都无法绕过。
-
-**确定性 fast-path**：结构性检查（`git diff --stat`），完全确定性，不依赖 LLM 语义判断。1 文件 < 10 行改动直接走 `harness-quick`，commit 完成，全程不走 Stage 规程。
-
----
-
-## 3. 架构一图
-
-```
-用户消息
-  ↓
-task-dispatcher              （不变，外层并行/串行分解）
-  ↓ 每个代码子任务
-profile-entry                （新入口，~80 行路由，单次 Skill load 内完成）
-  │
-  │ Step 0: 读 .harness-profile marker
-  │ Step 1: 无 marker → fallback matchers（公开匹配结果）
-  │ Step 2: 结构性 fast-path 检查（确定性，基于 git diff）
-  │ Step 3: 解析 precedence (hard-floor > flag > profile default > conservative)
-  │ Step 4: Skill(<leaf sub-skill>) 加载恰好一个
-  ↓
-leaf sub-skill
-  │   harness-quick     → 1 文件 < 10 行改动，无 ceremony
-  │   harness-bugfix    → investigate → reproduce → fix → regression test
-  │   harness-feature   → 当前 8-Stage 主体 + Stage -0.5 + knowledge gate
-  │   harness-refactor  → baseline → incremental → verify
-  ↓ 所有重路径 sub-skill 都引用
-harness-common           （共享基础设施：memory / project-detection / phase-init / knowledge scanner / Stage -0.5）
-  ↓ 审稿统一调
-strict-reviewer          （4 硬门：grounding / reproduction / coverage / knowledge-compliance）
-```
-
----
-
-## 4. 安装使用
-
-### 4.1 前置依赖
-
-- [Claude Code](https://docs.claude.com/claude-code) 已安装
-- 三个必装插件（在 Claude Code 内安装）：
-  - `claude-mem@thedotmack` — 跨会话记忆
-  - `codex@openai-codex` — 跨模型 Code Review
-  - `superpowers@claude-plugins-official` — Anthropic 官方 superpowers
-- macOS 自带 ruby + yaml stdlib（setup 脚本依赖）
-
-### 4.2 首次激活（3 步）
-
-#### Step 1：Clone + symlink
+### Step 1 —— Clone + symlink
 
 ```bash
-# 克隆仓库（含 gstack submodule）
 git clone --recurse-submodules git@github.com:TerryGSL/myskills.git ~/Music/myskills
 
 mkdir -p ~/.claude/skills
 
-# 把 harness 的所有 skill 链到 ~/.claude/skills/
+# 链顶层 skill 到 ~/.claude/skills/（B 套；唯一推荐）
 for skill in \
-  profile-entry \
-  harness-common \
-  harness-quick \
-  harness-bugfix \
-  harness-feature \
-  harness-refactor \
-  harness-workflow \
-  task-dispatcher \
-  strict-reviewer \
+  harness-init profile-entry \
+  harness-quick harness-bugfix harness-feature harness-refactor \
+  harness-common harness-workflow profile-bootstrap \
+  task-dispatcher strict-reviewer \
   team-pd team-architect team-senior-dev team-junior-dev team-qa team-security \
+  team-init team-commander \
   investigate office-hours; do
-  ln -sf ~/Music/myskills/harness/${skill} ~/.claude/skills/${skill}
+  ln -sf ~/Music/myskills/${skill} ~/.claude/skills/${skill} 2>/dev/null || true
 done
 
 # 链接 gstack 基础 skill
 ln -sf ~/Music/myskills/gstack/skills/* ~/.claude/skills/
 ```
 
-> 使用 `ln -sf` 而非复制，后续 `git pull` 后 skill 内容自动更新，无需重新链接。
+### Step 2 —— 派生 profile（无 npm 用 bash fallback）
 
-#### Step 2：跑 setup 脚本（dry-run 默认）
-
-```bash
-~/Music/myskills/harness/setup/setup-harness.sh           # dry-run，仅检查
-~/Music/myskills/harness/setup/setup-harness.sh --apply   # 实际写入缺失文件
-```
-
-脚本不会问任何问题。它会：
-1. 检查 `~/.claude/profiles/` 是否有 `default.yml` / `harness.yml` / `company.yml.template`
-2. 缺失项在 `--apply` 模式下写默认值（含完整 schema）
-3. 检查 `~/.claude/settings.json` 是否注册 Stop Hook，输出 active/inactive 状态 + 注册 snippet（你自己决定要不要加）
-
-push 策略 / 公司项目细节 / Stop Hook 启停**都不再问**：
-- push 策略由 leaf skill 在 commit 后按改动 risk 动态决定（详 §6）
-- 公司 profile 用 `/profile-bootstrap` 命令派生（详 §4.3）
-- Stop Hook 阈值按 task_type 自适应
-
-### 4.3 接入公司项目：/profile-bootstrap
-
-第一次进入公司项目时，运行：
+公司项目接入：
 
 ```bash
 cd ~/work/acme-api
-/profile-bootstrap acme              # slug 自定，默认从 git remote 推导
+bash ~/Music/myskills/harness/profile-bootstrap/lib/derive-profile.sh acme   # Tier-3 fallback
 ```
 
-profile-bootstrap 会：
-1. `git rev-parse --show-toplevel` 拿 canonical repo root（处理 symlink）
-2. `git remote -v` 扫所有 remotes，提取 host/org/repo 精确锚定（origin/upstream 不一致时 abort）
-3. 自动派生 `path_glob` 和 `git_remote_regex`，写到 `~/.claude/profiles/company-acme.yml`
-4. 在 repo 根写 `.harness-profile`（内容：`company-acme`）+ 加进 `.gitignore`
-5. 公司类 slug 默认带 `hard_floor: [auto_push, force_push, destructive_ops, auto_merge]`
+会自动算 path_glob / git_remote_regex，写 `~/.claude/profiles/company-acme.yml` + repo 根 `.harness-profile`。
 
-下次进入该 repo，profile-entry 通过 marker 直接命中，无需重新派生。
+> 有 npm？推荐用 `harness profile-bootstrap acme` 命令（同算法，工程化封装）。
 
-完整契约 → `harness/profile-bootstrap/SKILL.md`
-
-### 4.4 回退到旧版（legacy 备份）
-
-若需要临时使用旧版 `harness-workflow` 单体 skill（`harness-workflow.legacy-backup-2026-04/` 里的快照），把 symlink 指回去即可：
+### Step 3 —— Stop Hook 注册
 
 ```bash
-# 回退到旧版单体
-ln -sf ~/Music/myskills/harness-workflow.legacy-backup-2026-04 ~/.claude/skills/harness-workflow
-
-# 恢复到新版
-ln -sf ~/Music/myskills/harness/harness-workflow ~/.claude/skills/harness-workflow
+# Claude Code 内执行 /update-config，把 hooks/context-monitor.sh 注册为 Stop Hook
 ```
 
-其他 skill（`task-dispatcher`、`team-*` 等）新旧兼容，无需切换。
+阈值按 task_type 自适应（quick: 80/90 / bugfix: 70/85 / feature/refactor: 60/80），无需手动调整。
 
----
+## 3. 14 narrative contract
 
-## 5. 日常使用
+完整规则在 `harness-common/contracts/`（仓库顶层），按能力分文件：
 
-### 5.1 最简流程
+| Contract | 说明 |
+|----------|------|
+| `profile.md` | profile schema、matcher 算法、bootstrap 派生 |
+| `routing.md` | task_type 派发 + tie-break |
+| `task-type.md` | 4 task-type 输入契约 |
+| `push-decision.md` | HIGH/MEDIUM/LOW 三档裁决 |
+| `hard-floor-enforcement.md` | flag 不可绕过 |
+| `aggression-mode.md` | conservative / standard / aggressive |
+| `autonomy.md` | 用户介入边界 |
+| `drift.md` | managed file 漂移检测 |
+| `memory.md` | 三层 memory 写入权限 |
+| `knowledge.md` | Stage -0.5 知识检索 |
+| `reviewer-gates.md` | 4 硬门审稿 |
+| `phase-init.md` | init / adopt / maintain |
+| `hooks.md` | Stop Hook 自适应阈值 |
+| `doctor-protocol.md` | 诊断输出契约 |
+
+> **Source of truth**：每份 contract 顶部都标注其代码 / schema 来源（`packages/harness-cli/src/types/constants.ts` + `resources/schemas/*.schema.json`）。如本文档与代码不一致，以代码为准。
+
+## 4. 日常使用
+
+### 4.1 最简流程
 
 正常情况下，用户只需直接说需求，框架自动完成路由：
 
@@ -192,29 +97,20 @@ ln -sf ~/Music/myskills/harness/harness-workflow ~/.claude/skills/harness-workfl
 你：帮我加个用户登录接口
 
 → task-dispatcher   外层分解，识别为代码任务
-→ profile-entry     探测当前项目 profile + task_type + mode
+→ harness route     探测当前项目 profile + task_type + mode
                     git diff 无改动，无 /fix /refactor flag → task_type = feature
 → harness-feature   加载 8-Stage 主体
 → Stage -0.5        读 knowledge INDEX，注入 Binding Rules
 → Stage 0~8         完整走通
 ```
 
-`profile-entry` 首次进入时会输出一行探测公告：
+无 npm 环境用 `profile-entry/SKILL.md`（顶层）作为 markdown router 兜底。
 
-```
-Detected profile: harness (matched: path_glob ~/Music/myskills/**, priority 10)
-Override: /profile <name>
-```
-
-后续 turn 保持沉默，不重复输出。
-
-### 5.2 显式 flags
-
-所有 flags 在任何消息中加入即可，`profile-entry` 优先识别：
+### 4.2 显式 flags
 
 | Flag | 效果 |
 |------|------|
-| `/quick` | 强制走 `harness-quick` fast-path（跳过 Stage 规程） |
+| `/quick` | 强制走 `harness-quick` fast-path |
 | `/fix` | 走 `harness-bugfix`（investigate → reproduce → fix） |
 | `/refactor` | 走 `harness-refactor`（baseline → 增量 → verify） |
 | `/yolo` | aggressive mode（受 profile `hard_floor` 约束） |
@@ -222,242 +118,54 @@ Override: /profile <name>
 
 **Precedence 铁律**：`profile hard_floor > 调用 flag > profile default > conservative`。
 
-公司 profile 里设置了 `hard_floor: [auto_merge]`，则即使加 `/yolo` 也不会自动 push，框架会输出公告：
-
-```
-Requested: /yolo
-Effective: company-safe (profile policy: auto_push=false, destructive_ops=false)
-Reason: company profile hard-floor
-```
-
-### 5.3 老命令兼容
-
-原有的所有命令都可继续使用，`harness-workflow` stub 负责 passthrough：
+### 4.3 老命令兼容
 
 | 命令 | 效果 |
 |------|------|
-| `/harness-workflow --init` | 新项目初始化（Phase 1-4） |
+| `/harness-workflow --init` | 新项目初始化 |
 | `/harness-workflow --adopt` | 现有项目接入 |
-| `/harness-workflow --maintain` | 12 项周期性健康审计 |
-| `/harness-workflow --next` | 手动启动下一轮 |
-| `/harness-workflow --scan-project` | 触发 5-phase knowledge scan |
+| `/harness-workflow --maintain` | 周期性健康审计 |
+| `/harness-workflow --scan` | 5-phase knowledge scan |
 
-### 5.4 显式覆盖 profile
+### 4.4 push 决策（自动 risk-based）
 
-若自动探测有误，可手动指定：
+leaf skill 在 commit 之后会自动按 `push-decision` 契约评估 risk，详 `harness-common/contracts/push-decision.md`。
 
-```bash
-# 在项目根目录创建 marker 文件
-echo "harness" > .harness-profile
-
-# 或指定公司 profile
-echo "company-acme" > .harness-profile
-```
-
-也可在消息中加 `/profile <name>` 临时覆盖本次会话。
-
-### 5.5 push 决策（risk-based，自动）
-
-leaf skill 在 commit 之后会**自动调用 push-decision 规则**评估改动 risk：
-
-| Risk | 触发条件 | 行为 |
-|------|---------|------|
-| LOW | 仅 md/i18n/注释；新增独立模块；单文件 <10 行 string 改动 | 自动 push |
-| MEDIUM | 一般业务改动 | 单次询问 [y/N] |
-| HIGH | .env / dependencies / db schema / CI / >3 文件 / 测试失败 / breaking keyword / 公共导出 | 拒绝 + 要求人工 push |
-
-公司项目（profile hard_floor 含 `auto_push`）**永远走 HIGH 分支**，行为与"绝不静默 push"等价。
-
-flags 覆盖：
-- `/no-push` 强制跳过任何 push
-- `/yolo` MEDIUM 自动通过（HIGH 仍 REFUSE）
-- `/safe` LOW 降级到 MEDIUM 询问
-
-详细规则 → `harness/harness-common/references/push-decision.md`
-
----
-
-## 6. 各 Skill 职责速查
+## 5. 各 Skill 职责速查
 
 | Skill | 角色 | 何时触发 |
 |-------|------|---------|
-| `task-dispatcher` | 外层任务分解（并行/串行编排） | 每条用户消息 |
-| `profile-entry` | 入口路由（profile / task_type / mode 解析） | task-dispatcher 派发代码任务时 |
+| `task-dispatcher` | 外层任务分解 | 每条用户消息 |
+| `profile-entry` | Tier-3 fallback router（markdown 解析） | 无 npm CLI 时兜底 |
 | `harness-quick` | 1 文件 / < 10 行 fast-path | fast-path 命中 / `/quick` flag |
-| `harness-bugfix` | investigate → reproduce → fix → 回归测试 | `/fix` flag / task-dispatcher 判定 bug 类型 |
-| `harness-feature` | 完整 8-Stage 主体 | profile 默认路由 / 复杂功能需求 |
-| `harness-refactor` | baseline capture → 增量 commit → verify | `/refactor` flag / 明确重构意图 |
-| `harness-common` | 共享基础设施（memory / 探测 / knowledge / Phase Init） | 各 sub-skill 内部引用，不独立使用 |
-| `strict-reviewer` | 4 硬门审稿（grounding / repro / coverage / knowledge） | Stage 4/5/6/7 自动调用 |
-| `harness-workflow` | profile 声明 + 老命令 passthrough | 用户使用老命令时 |
-| `team-pd` | 产品设计师 subagent（PRD / DESIGN 输出） | Stage 0 |
-| `team-architect` | 系统架构师 subagent（Torvalds 风格） | Stage 1 |
-| `team-senior-dev` | 资深开发 subagent（核心模块） | Stage 3 |
-| `team-junior-dev` | 初级开发 subagent（CRUD 业务） | Stage 3 |
-| `team-qa` | QA 测试工程师 subagent | Stage 6 |
-| `team-security` | SDL 安全工程师 subagent | Stage 7 |
-| `investigate` | 四阶段结构化调试方法论 | `harness-bugfix` Step 1 |
-| `office-hours` | 需求诊断教练（结构化提问验证需求真实性） | Stage 0 前置（可选） |
+| `harness-bugfix` | investigate → reproduce → fix → 回归 | `/fix` flag |
+| `harness-feature` | 完整 8-Stage 主体 | profile 默认路由 |
+| `harness-refactor` | baseline → 增量 → verify | `/refactor` flag |
+| `harness-common` | 14 contracts 集合 | 各 sub-skill 引用 |
+| `strict-reviewer` | 4 硬门审稿 | Stage 4/5/6/7 自动调用 |
+| `harness-workflow` | 老命令 passthrough | 用户用老命令时 |
+| `team-pd / team-architect / team-{senior,junior}-dev / team-qa / team-security` | 各角色 subagent | Stage 0~7 |
+| `investigate` | 调试方法论 | `harness-bugfix` Step 1 |
+| `office-hours` | 需求诊断教练 | Stage 0 前置 |
 
----
-
-## 7. 常见场景示例
-
-### 场景 1：个人项目快速修个 typo
-
-```
-cd ~/Music/myskills
-
-你：README 里 "profile-bsed" 拼错了，应该是 "profile-based"，帮我改一下
-
-→ profile-entry: 路径匹配 ~/Music/myskills/**，探测为 harness profile
-→ fast-path 检查: git diff --stat 仅 README.md，1 行改动
-→ 输出: "Fast-path: 单文件 1 行改动，路由到 harness-quick（/fix 覆盖）"
-→ harness-quick: 直接改 → lint → commit
-→ commit: "fix: typo in README.md (profile-bsed → profile-based)"
-→ 写轻量 memory observation，完成
-```
-
-无 Stage 规程，无 PRD，无 plan doc，30 秒内完成。
-
----
-
-### 场景 2：公司项目修 bug
-
-```
-cd ~/work/acme-corp/svc-x   # git remote 含 github.com/acme
-
-你：这个登录接口偶尔 500，能帮我查一下吗
-
-→ profile-entry: git remote 匹配 company-acme profile
-   Detected profile: company-acme (matched: git_remote github.com/acme, priority 10)
-→ 无 /fix flag，但 task-dispatcher 判定 "偶尔 500" 为 bug 类型 → harness-bugfix
-→ Step 1: Skill(investigate) 四阶段调试，定位根因
-→ Step 2: 写 failing test 证明 bug 可复现
-→ Step 3: Stage -0.5 读 exception-and-error-contracts knowledge
-→ Step 4: 按 knowledge rules 写修复代码，调 strict-reviewer 4 硬门
-→ Step 5: 回归测试全绿 → commit（不自动 push，hard_floor 保证）
-→ 等用户确认是否 push
-```
-
----
-
-### 场景 3：给老 Java 项目接入 harness
-
-```
-cd ~/work/legacy-java-project
-
-# 第一步：基础初始化（生成 docs/ STATE.json CLAUDE.md 等脚手架）
-/harness-workflow --adopt
-
-# 第二步：5-phase knowledge scan
-/harness-workflow --scan-project
-# 扫描 5 个 domain：style-and-structure / internal-components /
-# exception-and-error-contracts / integrations-and-sdk-usage / i18n-and-text-boundaries
-# 输出：docs/harness/knowledge/INDEX.md + 各 domain 的 manifest.md + TODO.md
-
-# 第三步：用户填 TODO.md，回答 scanner 发现的 8 个开放问题
-# 编辑 docs/harness/knowledge/TODO.md，补充团队规范和例外情况
-
-# 第四步：同步答案到 knowledge corpus
-/harness-workflow --apply-knowledge-answers
-
-# 完成后，新的 feature/bugfix/refactor 任务会自动走 Stage -0.5 读取该项目的 knowledge
-```
-
----
-
-### 场景 4：重构旧模块
-
-```
-cd ~/work/acme-corp/svc-x
-
-你：auth 模块这个 token 刷新逻辑太乱了，帮我重构一下，不要改接口行为
-
-→ profile-entry: 探测 company-acme profile，识别 /refactor 语义
-→ harness-refactor 触发
-→ 硬前置: 确认 mvn test 全部 PASS（无测试则停止，先补 characterization test）
-→ Step 1: baseline 捕获（测试快照 + git tag baseline/<timestamp>）
-→ Step 2: Stage -0.5 读 style-and-structure + internal-components manifests
-           （Binding Rules：token 操作必须走 InternalTokenService wrapper）
-→ Step 3: 生成增量重构计划（每步 < 100 行改动，小 commit）
-→ Step 4~N: 逐步执行，每步跑回归测试
-→ 每步调 strict-reviewer（重点验证：行为不变 + knowledge compliance）
-→ 最终对比 baseline，全绿后汇报完成
-```
-
----
-
-## 8. 和旧版（原 harness-workflow 单体）的对比
-
-| 维度 | 旧版单体 | 新分层架构 |
-|------|---------|-----------|
-| 入口 skill 规模 | 单体 `harness-workflow` 363 行，全量注入 | `profile-entry` ~80 行，按需加载 leaf sub-skill |
-| 场景分档 | 内部 if 判断 S/M/L/XL | profile × task_type × mode 三维正交 |
-| 小任务处理 | 走完整 Stage 规程 | 结构性 fast-path，`harness-quick` 4 步完成 |
-| 公司合规 | 无框架层面保证 | `hard_floor` 强制，flag 无法绕过 |
-| 知识库支持 | 无 | `docs/harness/knowledge/` + Stage -0.5 按需注入 |
-| Context 加载 | 每次全量注入 | 按场景 Skill load，只加载需要的 sub-skill |
-| 老命令支持 | 原生 | `harness-workflow` stub passthrough，完全兼容 |
-| 多项目 profile | 无 | `~/.claude/profiles/*.yml` 每项目独立配置 |
-
----
-
-## 9. 目录结构速查
+## 6. 目录结构
 
 ```
 harness/
-├── profile-entry/           入口路由 skill（~80 行，薄路由器）
-│   ├── SKILL.md
-│   └── references/
-│       ├── profiles.md      profile registry schema + matcher 规则
-│       ├── precedence.md    precedence 契约示例
-│       ├── fast-path.md     fast-path allowlist + 触发条件
-│       └── task-type-contract.md   跨 pack 契约
-│
-├── harness-common/          共享基础设施层（不独立使用）
-│   ├── SKILL.md
-│   ├── references/
-│   │   ├── memory-contract.md      memory 完整 schema
-│   │   ├── project-detection.md    技术栈自动探测
-│   │   ├── phase-init.md           Phase 1-4 初始化流程
-│   │   ├── knowledge-retrieval.md  Stage -0.5 完整规范
-│   │   ├── reviewer-integration.md strict-reviewer 调用协议
-│   │   └── maintenance.md          --maintain 12 项审计
-│   └── templates/project-knowledge/   knowledge scanner 脚手架模板
-│       ├── INDEX.md.template
-│       ├── TODO.md.template
-│       └── <5 domain 目录>/        manifest / evidence / gaps 模板
-│
-├── harness-quick/           fast-path sub-skill（4 步）
-├── harness-bugfix/          bugfix sub-skill（5 步）
-├── harness-feature/         8-Stage 主体 sub-skill
-│   └── prompts/             各角色 + scanner subagent prompts
-├── harness-refactor/        重构 sub-skill
-│
-├── harness-workflow/        profile stub + 老命令 passthrough
-├── strict-reviewer/         4 硬门审稿 skill（含 knowledge gate）
-│
-├── task-dispatcher/         外层任务分解编排
-├── team-pd/ team-architect/ team-senior-dev/ team-junior-dev/
-├── team-qa/ team-security/  各角色 subagent
-├── investigate/             四阶段调试方法论
-├── office-hours/            需求诊断教练
-│
-├── hooks/
-│   └── context-monitor.sh   Stop Hook（context 占用监控）
-├── setup/
-│   └── setup-harness.sh     一次性交互配置脚本
-├── tools/
-│   └── harness-pack-test    skill pack 契约校验脚本
-│
-├── README.md                本文档（使用指南）
-└── DESIGN.md                设计思路（演化历史 / 架构决策）
+├── profile-bootstrap/lib/    Tier-3 fallback bash 算法 + test oracle（保留）
+├── profile-entry/references/ Profile / precedence / fast-path 历史档案
+├── harness-common/contracts/ 14 narrative contract 的本地副本（如有）
+├── harness-feature/prompts/  Feature scanner prompts 档案
+├── harness-workflow/         specs/ + plans/ 历史档案
+├── docs/                     历史 narrative 档案
+├── README.md                 本文档
+└── DESIGN.md                 早期设计思路（archived）
 ```
 
----
+> **保留原则**：`profile-bootstrap/lib/` 是活的（Tier-3 fallback bash + oracle）；其余目录是历史档案。
+> 完整规则源在仓库顶层 `harness-common/contracts/`，这里只做接入入口和历史档案。
 
-## 10. 故障排除
+## 7. 故障排除
 
 ### Skill 不加载
 
@@ -468,104 +176,30 @@ ls -la ~/.claude/skills/profile-entry
 ls -la ~/.claude/skills/harness-feature
 ```
 
-若是死链（指向不存在路径），重新执行 Step 1 的 `ln -sf` 命令。
+若是死链，重新执行 Step 1 的 `ln -sf` 命令。
 
 ### Profile 探测不对
-
-查看当前 turn 首行输出的探测公告。若探测结果不是期望的 profile：
 
 1. 在项目根目录手动创建 marker：`echo "harness" > .harness-profile`
 2. 检查 `~/.claude/profiles/` 下的 YAML 文件是否存在：`ls ~/.claude/profiles/`
 3. 检查 YAML 中 `detection.matchers` 是否覆盖当前项目路径
 
-### Setup 脚本失败
-
-手动创建最小 profile YAML：
-
-```bash
-mkdir -p ~/.claude/profiles
-
-cat > ~/.claude/profiles/harness.yml << 'EOF'
-name: harness
-description: "harness default profile"
-default_mode: standard
-
-task_types:
-  quick:    harness-quick
-  bugfix:   harness-bugfix
-  feature:  harness-feature
-  refactor: harness-refactor
-EOF
-```
-
 ### Knowledge 不生效
 
-按以下顺序排查：
-
-1. 确认 `docs/harness/knowledge/INDEX.md` 存在（不存在表示项目未接入 knowledge）
+1. 确认 `docs/harness/knowledge/INDEX.md` 存在
 2. 检查项目 `CLAUDE.md` 中无 `harness-knowledge: disabled` 标记
 3. 若 INDEX.md 存在但 Stage -0.5 跳过，检查 `.harness-status.json` 里 `knowledgeCheck.effective_index_status` 字段值
 
-### harness-pack-test 校验失败
-
-```bash
-~/Music/myskills/harness/tools/harness-pack-test ~/.claude/profiles/harness.yml
-```
-
-常见原因：YAML 格式错误、`task_types` 字段缺少某个 key、skill 名称拼写不符合 registry。根据脚本输出逐项修复。
-
----
-
-## 11. 贡献新 Skill Pack
-
-如果需要为特定公司或项目类型创建专属 skill pack：
-
-**第一步**：创建 profile YAML（参照 `~/.claude/profiles/harness.yml` 格式）：
-
-```yaml
-name: my-company
-description: "My company workspace profile"
-default_mode: standard
-
-detection:
-  priority: 10
-  matchers:
-    - type: git_remote_regex
-      pattern: "github\\.com/my-company"
-
-hard_floor:
-  - auto_merge    # 禁止自动 merge
-
-task_types:
-  quick:    harness-quick       # 可指向通用 harness-* 作为兜底
-  bugfix:   harness-bugfix
-  feature:  my-company-feature  # 自定义 sub-skill
-  refactor: harness-refactor
-```
-
-**第二步**：实现自定义 sub-skill（4 个 task_type，或复用 `harness-*` 兜底）。
-
-**第三步**：运行契约校验：
-
-```bash
-~/Music/myskills/harness/tools/harness-pack-test ~/.claude/profiles/my-company.yml
-```
-
-校验通过（零退出码）后，新 profile 即生效。
-
----
-
-## 12. 参考文档
+## 8. 参考文档
 
 | 文档 | 说明 |
 |------|------|
-| `harness/DESIGN.md` | 设计思路（演化历史、架构决策、权衡分析） |
-| `harness/IMPLEMENTATION-PLAN.md` | 实施计划（24 tasks / 8 phases 全览） |
-| `docs/superpowers/specs/2026-04-24-profile-based-dispatch-redesign-design.md` | Profile-based dispatch 架构 spec |
-| `harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md` | Knowledge scanner 设计 spec |
-| `harness/profile-entry/references/` | Profile schema / precedence / fast-path 契约 |
-| `harness/harness-common/references/` | Memory 契约 / Phase Init / Knowledge Retrieval 规范 |
+| `harness-common/contracts/` | 14 份 narrative contract |
+| `docs/superpowers/specs/2026-04-26-unified-fusion-design.md` | 当前架构 spec |
+| `docs/superpowers/plans/2026-04-26-unified-fusion-implementation.md` | 实施计划 |
+| `packages/harness-cli/README.md` | CLI 详细命令文档 |
+| `harness/DESIGN.md` | 早期设计思路 |
 
 ---
 
-*harness 是 myskills 的活跃开发分支。如遇行为与文档不符，以各 skill 的 `SKILL.md` 为准。*
+*完整规则源 = 仓库顶层 `harness-common/contracts/` 下的 14 份 narrative contract。本目录是 markdown-only 接入路径 + Tier-3 fallback + 历史档案。*

@@ -1,80 +1,100 @@
 # myskills
 
-个人 Claude Code Skills 集合 + Harness 体系 monorepo —— 仓库里**两套并存的独立 harness 实现**，可以分别接入。
+个人 Claude Code Skills 集合 + Harness 工程体系 monorepo —— **一套核心规则 + 两种使用方式 + 跨工具兼容**。
 
-## ⚠ 仓库结构（读之前先看这段）
+## 仓库定位
 
-仓库**同时容纳两套完全独立的 harness 工作流实现**，互不依赖、互不导入：
-
-| 套别 | 位置 | 入口 | 特点 |
-|------|------|------|------|
-| **A 套** | `harness/` 子目录 | `harness/harness-workflow/SKILL.md` + `harness/setup/setup-harness.sh`（bash） | profile-entry 嵌套在 `harness/profile-entry/` 下；4 leaf skill 在 `harness/harness-{quick,bugfix,feature,refactor}/SKILL.md`；纯 markdown + bash 脚本，无 npm 依赖 |
-| **B 套** | 仓库**顶层** + `packages/harness-cli/` | 顶层 `harness-init/SKILL.md` + `harness` npm CLI | 顶层 skill 平铺（`profile-entry/`、`harness-{quick,bugfix,feature,refactor}/`、`harness-common/`、`harness-init/` 等）；TypeScript CLI 提供 8 个命令；`hooks/context-monitor.sh` 自适应阈值；`scripts/regen-schema.ts` 守门 |
-
-**怎么选**：
-- 想要**完全无 node 环境**也能跑 → 用 A 套（symlink `harness/` 下的 skill 到 `~/.claude/skills/`）
-- 想要 **CLI 工程化 + jest 测试 + GitHub workflow CI** → 用 B 套（`harness install` 一键接入）
-- 不要**两套混链**到 `~/.claude/skills/`——会 skill name 撞名
-
-旧版单体 harness-workflow 的备份快照在 `harness-workflow.legacy-backup-2026-04/`（属于 archived，不再开发）。
-
-## 项目概览
-
-下面所有架构图、命令清单、push 决策表 **默认描述 B 套**（顶层 + CLI 那一套）。A 套的对应文档在 [`harness/README.md`](harness/README.md)。
-
-定位：一次配置，所有项目共享；profile × task_type × aggression 三维正交，硬底线（hard floor）不可绕过。
-
-## 架构一图
+harness 是一套 profile-driven、四层分层的 AI 工程协作框架：核心规则（routing / push-decision / drift / memory / hard-floor / knowledge / reviewer-gates / ...）写一遍，所有支持的工具（Claude Code / Codex / Cursor / Aider / Copilot）共用同一份契约。两种使用方式（直接 markdown 接入 vs `harness` npm CLI 工程化）共享同一个核心，contract test 守门保证一致性。
 
 ```text
                        ┌────────────────────────────┐
-   每条用户消息 ─────▶  │      task-dispatcher        │  通用并行编排
+   每条用户消息 ─────▶  │      task-dispatcher        │  通用并行编排（外层）
                        └─────────────┬──────────────┘
                                      │ 涉及代码任务时
                                      ▼
                        ┌────────────────────────────┐
-                       │       profile-entry         │  探测 profile + task_type
+                       │  harness route (CLI)        │  Tier 1 路由：profile + task_type + mode
+                       │  profile-entry (markdown)   │  Tier 3 fallback：纯 markdown 解析
                        └─────────────┬──────────────┘
-                                     │
+                                     │ exactly ONE leaf
                 ┌────────────────────┼────────────────────┐
                 ▼                    ▼                    ▼
        harness-quick        harness-bugfix        harness-feature / harness-refactor
        (S 级 trivial)       (定位 + 修)          (M/L/XL 级新功能 / 重构)
-                │                    │                    │
-                └────────────────────┴────────────────────┘
-                                     │ 共享
+                                     │
                                      ▼
                               harness-common
-                       (push-decision / drift / memory / ...)
-
-   生命周期入口：harness-init           （首次接入项目）
-   兼容老命令： /harness-workflow --init|--adopt|--maintain|--scan
-   底层 CLI：   packages/harness-cli/   8 命令
-   Stop Hook：  hooks/context-monitor.sh （task_type 自适应阈值）
+                       (14 narrative contracts in contracts/)
 ```
 
-## 三个核心组件
+## 4 层架构
 
-### Harness Workflow（自治开发流）
+| 层 | 内容 | 入口 |
+|----|------|------|
+| **Layer 0 — Schema / 类型** | TypeScript constants + JSON Schema（12 份），CI `schema-drift.yml` 守门 | `packages/harness-cli/src/types/constants.ts` |
+| **Layer 1 — 持久化文件契约** | `docs/memory/*.md`（项目级长期 memory）/ `docs/harness/knowledge/`（5-domain 项目知识）/ `.harness-profile`（YAML marker）/ `.harness-status.json` | `harness-common/contracts/memory.md`、`harness-common/contracts/knowledge.md` |
+| **Layer 2 — 14 narrative contracts** | profile / routing / push-decision / drift / memory / knowledge / hard-floor-enforcement / aggression-mode / autonomy / reviewer-gates / phase-init / hooks / doctor-protocol / task-type | `harness-common/contracts/`（14 份 .md，每份顶部 source-of-truth header） |
+| **Layer 3 — Skill / Adapter** | leaf skills（4 task-type）+ team-* agents + Tier-1/2/3 adapters | 顶层 SKILL.md 文件 |
 
-profile-entry 路由到 4 个 leaf skill，按 task_type 选执行路径：
+## 14 能力清单（精炼版）
 
-| Leaf skill | 适用 | Stage 路径 |
-|------------|-----|-----------|
-| `harness-quick` | trivial 编辑、1-3 文件、无架构变更 | 2 → 3 → 5 → 8 |
-| `harness-bugfix` | 已知 bug 定位 + 修复 | investigate → 3 → 5 → 6 → 8 |
-| `harness-feature` | 新功能 / M/L/XL 级 | 0 → 1 → 2 → 3 → 4 → 5 → 6 → (7) → 8 |
-| `harness-refactor` | 跨模块重构、行为不变 | 1 → 2 → 3 → 5 → 6 → 8 |
+| # | 能力 | 契约文档 |
+|---|------|---------|
+| 1 | profile 解析（marker / matcher / precedence） | `harness-common/contracts/profile.md` |
+| 2 | routing（task_type 派发 + tie-break） | `harness-common/contracts/routing.md` |
+| 3 | task-type 输入契约 | `harness-common/contracts/task-type.md` |
+| 4 | push 决策（HIGH/MEDIUM/LOW 三档） | `harness-common/contracts/push-decision.md` |
+| 5 | hard-floor 强制（flag 不可绕过） | `harness-common/contracts/hard-floor-enforcement.md` |
+| 6 | aggression mode（conservative/standard/aggressive） | `harness-common/contracts/aggression-mode.md` |
+| 7 | autonomy（用户介入边界） | `harness-common/contracts/autonomy.md` |
+| 8 | drift 检测（managed file 漂移） | `harness-common/contracts/drift.md` |
+| 9 | memory（三层写入权限） | `harness-common/contracts/memory.md` |
+| 10 | knowledge retrieval（Stage -0.5 注入） | `harness-common/contracts/knowledge.md` |
+| 11 | reviewer-gates（4 硬门：grounding / repro / coverage / knowledge） | `harness-common/contracts/reviewer-gates.md` |
+| 12 | phase-init（init / adopt / maintain） | `harness-common/contracts/phase-init.md` |
+| 13 | hooks（Stop Hook 自适应阈值） | `harness-common/contracts/hooks.md` |
+| 14 | doctor protocol（诊断输出契约） | `harness-common/contracts/doctor-protocol.md` |
 
-共享基础设施在 `harness-common/contracts/`（push-decision / drift / memory / doctor-protocol / profile / task-type / aggression-mode / knowledge / autonomy / reviewer-gates / phase-init / hooks / hard-floor-enforcement / routing — 14 个 narrative contract）。
+完整 narrative spec → 参 `docs/superpowers/specs/2026-04-26-unified-fusion-design.md`。
 
-### Task Dispatcher（通用并行编排）
+## 7 kernel（精炼版）
 
-`task-dispatcher/` 在每条用户消息上自动评估并行化机会，派发 sub-agent 处理独立子任务并汇总。不限于代码 —— research、ops、Q&A、debugging 都可用。与 harness-workflow 互补：dispatcher 做外层任务拆分，harness-* 做内层代码开发流程。
+跨工具复用的核心 kernel（每条规则在每个 Tier-1/2 wrapper 中以 AGENTS.md 重复出现，保持 byte-equal）：
 
-### Harness CLI（`packages/harness-cli/`）
+1. **profile-resolve** — 项目侧探测 profile 唯一性
+2. **task-type detect** — 结构性 fast-path + LLM fallback
+3. **push-decision** — 三档 risk 裁决
+4. **hard-floor enforcement** — flag 不可绕过
+5. **memory write** — `docs/memory/*.md` 为主，cross-session memory 为 optional
+6. **drift check** — managed file 漂移检测
+7. **knowledge retrieval** — Stage -0.5 注入
 
-TypeScript 写的 `harness` 二进制，所有 enum/type 来自 `src/types/constants.ts`（schema 由 `scripts/regen-schema.ts` 派生，CI `.github/workflows/schema-drift.yml` 守门）。8 个命令见下方「常见命令」段。
+详见各 wrapper 下 `AGENTS.md` 文件（Tier-1: Claude Code / Codex；Tier-2: Cursor / Aider / Copilot）。
+
+## 跨工具 adapter map
+
+| Tier | 工具 | 入口 / 形态 |
+|------|------|------------|
+| **Tier 1** | Claude Code | 顶层 skill + `harness install` symlink + `hooks/context-monitor.sh` |
+| **Tier 1** | Codex CLI | `wrappers/codex/AGENTS.md` + `harness-init` kernel duplicated |
+| **Tier 2** | Cursor | `wrappers/cursor/AGENTS.md` |
+| **Tier 2** | Aider | `wrappers/aider/AGENTS.md` |
+| **Tier 2** | GitHub Copilot | `wrappers/copilot/AGENTS.md` |
+| **Tier 3** | 任何不带 npm 的环境 | `harness/profile-bootstrap/lib/` 纯 bash fallback + `profile-entry/` markdown 解析 |
+
+## 两种使用方式
+
+### 方式 A：`harness` npm CLI（工程化路线）
+
+```bash
+cd ~/myskills/packages/harness-cli && npm install && npm run build && npm link
+harness install            # 零问题 user-global setup
+harness doctor             # 验收
+```
+
+### 方式 B：纯 markdown / Tier 3 fallback（无 npm）
+
+直接 symlink 顶层 skill 到 `~/.claude/skills/`，用 `harness/profile-bootstrap/lib/` 提供的 bash 算法派生 profile。完整接入文档见 [`harness/README.md`](harness/README.md)。
 
 ## 快速开始
 
@@ -98,8 +118,6 @@ cd ~/myskills && git submodule update --init --recursive
 
 ### Step 2 —— 装到 user-global
 
-推荐 Tier 1（npm 已就绪）：
-
 ```bash
 cd ~/myskills/packages/harness-cli && npm install && npm run build && npm link
 harness install            # 零问题 setup：symlink skills + 注册 hook
@@ -113,7 +131,7 @@ harness doctor             # 验收
 ```bash
 cd ~/your-project
 # 直接说：「帮我加一个用户登录接口」
-# task-dispatcher → profile-entry 自动路由到 harness-feature
+# task-dispatcher → harness route 自动派发到 harness-feature
 ```
 
 公司内部项目首次接入要派生 profile：
@@ -122,16 +140,34 @@ cd ~/your-project
 harness profile-bootstrap <slug>   # 派生 company/<slug> profile（含 hard_floor）
 ```
 
+## 8 命令（CLI）
+
+| 命令 | 用途 |
+|------|------|
+| `harness install` | 零问题 user-global setup（symlink skills + hook 注册） |
+| `harness doctor` | 验收当前接入是否健康 |
+| `harness profile-bootstrap <slug>` | 派生 company/<slug> profile，含 `hard_floor` |
+| `harness profile-resolve --json` | 解析当前项目 profile（marker / matcher / precedence 全链路输出） |
+| `harness scan --json` | 项目知识扫描（5-domain pipeline 入口） |
+| `harness route --json` | 统一路由：profile × task_type × aggression → 唯一 leaf skill |
+| `harness memory check --json` | memory 三层写入权限 + claude-mem optional 状态 |
+| `harness push-check --hard-floor=auto_push,force_push` | push 决策裁决（HIGH/MEDIUM/LOW） |
+| `harness init` | 新项目初始化（生成 docs/、STATE.json、CLAUDE.md） |
+| `harness adopt` | 现有项目接入 |
+| `harness maintain` | 检查持久化文件是否与代码同步 |
+
+兼容老命令：`/harness-workflow --init / --adopt / --maintain / --scan`。
+
 ## 目录结构速查
 
 ```text
 harness-init/                项目首次接入入口（外部用户只装这一个）
-profile-entry/               项目侧路由器：探测 profile + 加载 leaf skill
+profile-entry/               Tier-3 fallback router（纯 markdown 路由）
 harness-quick/               S 级 trivial 任务
 harness-bugfix/              bug 定位 + 修复
 harness-feature/             新功能（M/L/XL）
 harness-refactor/            跨模块重构
-harness-common/              共享基础设施（push-decision / drift / memory layers）
+harness-common/              共享基础设施 + contracts/（14 份 narrative contract）
 harness-workflow/            老命令兼容入口（--init/--adopt/--maintain/--scan）+ references
 task-dispatcher/             通用并行任务编排
 strict-reviewer/             反谄媚审稿（schema-driven）
@@ -140,10 +176,10 @@ team-init/                   harness-init alias（向后兼容）
 team-commander/              team-* 工作流指挥官
 investigate/                 系统调试 4-阶段方法论
 office-hours/                需求诊断教练（Stage 0 前置）
-packages/harness-cli/        TypeScript CLI（harness 二进制 + 8 命令）
+packages/harness-cli/        TypeScript CLI（harness 二进制 + 多命令）
 hooks/context-monitor.sh     Stop Hook，task_type 自适应阈值
-harness/                     沙盒：profile-bootstrap/lib/ + 历史档案 + symlink
-harness-workflow.legacy-backup-2026-04/  旧版单体 harness-workflow 快照
+wrappers/                    跨工具 adapter（codex / cursor / aider / copilot）
+harness/                     直接接入文档 + Tier-3 fallback bash + 历史档案
 gstack/                      AI Skills 框架（git submodule）
 docs/superpowers/{specs,plans}/  设计文档 + 实施计划
 ```
@@ -152,28 +188,12 @@ docs/superpowers/{specs,plans}/  设计文档 + 实施计划
 
 | 文档 | 说明 |
 |------|------|
-| `docs/superpowers/specs/2026-04-26-harness-fusion-design.md` | 当前架构 design（最新） |
-| `docs/superpowers/specs/2026-04-25-setup-zero-questionnaire-design.md` | 零问题 setup 设计 |
-| `docs/superpowers/specs/2026-04-24-profile-based-dispatch-redesign-design.md` | profile-based dispatch 设计 |
-| `docs/superpowers/plans/2026-04-26-harness-fusion-implementation.md` | fusion 实施计划 |
-| `harness-common/contracts/push-decision.md` | push 决策三档 markdown 契约 |
-| `harness-common/contracts/drift.md` | 状态漂移检测 |
-| `harness-init/SKILL.md` / `profile-entry/SKILL.md` | 接入入口 + 路由器 |
-| 各 leaf 的 `SKILL.md` | 4 个 task-type leaf 的执行 spec |
-
-## 常见命令
-
-| 命令 | 用途 |
-|------|------|
-| `harness install` | 零问题 user-global setup（symlink skills + hook 注册） |
-| `harness doctor` | 验收当前接入是否健康 |
-| `harness profile-bootstrap <slug>` | 派生 company/<slug> profile，含 `hard_floor` |
-| `harness push-check --hard-floor=auto_push,force_push` | push 决策裁决（HIGH/MEDIUM/LOW） |
-| `harness init` | 新项目初始化（生成 docs/、STATE.json、CLAUDE.md） |
-| `harness adopt` | 现有项目接入 |
-| `harness maintain` | 检查持久化文件是否与代码同步 |
-| `harness scan` | 项目知识扫描 |
-| `/harness-workflow --init / --adopt / --maintain / --scan` | 老命令兼容入口（仍可用） |
+| `docs/superpowers/specs/2026-04-26-unified-fusion-design.md` | 当前架构 design（最新） |
+| `docs/superpowers/plans/2026-04-26-unified-fusion-implementation.md` | 实施计划 |
+| `harness-common/contracts/` | 14 份 narrative contract（push-decision / drift / memory / ...） |
+| `harness-init/SKILL.md` | 接入入口 |
+| `harness/README.md` | 直接用法接入文档（Tier-3 fallback） |
+| `packages/harness-cli/README.md` | CLI 详细命令文档 |
 
 ## Push 决策（risk-based）
 
@@ -199,47 +219,6 @@ aggression mode：`conservative`（默认）/ `standard` / `aggressive`，与 pr
 
 避免 quick 任务被过度提醒、feature 任务过晚提醒。
 
-## 在 A / B 两套之间切换
+## 历史档案
 
-`~/.claude/skills/` 同时只链一套，避免 skill 名撞名。
-
-**切到 A 套**（纯 bash，无 node 依赖）：
-
-```bash
-# 清掉顶层 B 套 symlink
-for s in harness-init profile-entry harness-quick harness-bugfix harness-feature \
-         harness-refactor harness-common harness-workflow strict-reviewer \
-         task-dispatcher; do rm -f ~/.claude/skills/$s; done
-
-# 软链 A 套 (harness/ 子目录) 各 skill
-for s in harness-quick harness-bugfix harness-feature harness-refactor \
-         profile-entry harness-common harness-workflow profile-bootstrap; do
-  ln -sf $(pwd)/harness/$s ~/.claude/skills/$s
-done
-~/Music/myskills/harness/setup/setup-harness.sh
-```
-
-**切到 B 套**（npm CLI 工程化）：
-
-```bash
-# 清掉 A 套 symlink，重新链顶层
-for s in harness-quick harness-bugfix harness-feature harness-refactor \
-         profile-entry harness-common harness-workflow profile-bootstrap; do
-  rm -f ~/.claude/skills/$s
-done
-
-# 装/链 B 套
-npm install -g harness-workflow-cli   # 或用 packages/harness-cli/ 本地 build
-harness install
-```
-
-## 旧版完全单体备份
-
-`harness-workflow.legacy-backup-2026-04/` 是融合前**旧版单体 harness-workflow** 的快照（archived，不再开发）。如果想回到完全的老体验：
-
-```bash
-rm ~/.claude/skills/harness-workflow
-ln -s $(pwd)/harness-workflow.legacy-backup-2026-04 ~/.claude/skills/harness-workflow
-```
-
-旧版用 `/harness-workflow --init / --adopt / --maintain / --next` 命令；A/B 两套都兼容这些命令名。
+`harness-workflow.legacy-backup-2026-04/` 是融合前**旧版单体 harness-workflow** 的快照（archived，不再开发）。
