@@ -1,0 +1,44 @@
+---
+domain: i18n-and-text-boundaries
+snapshot_id: "{{snapshot_id}}"
+---
+
+# Evidence
+
+此文件由 scanner 生成，记录 `i18n-and-text-boundaries/manifest.md` 中每条 Rule 的代码证据。
+**用途**：仅供 audit 使用；Stage -0.5 不加载此文件（只加载 manifest.md）。
+**硬约束**：总行数 ≤ 220 行；超出时合并次要 example。
+
+**格式要求**（scanner 填充时必须遵守）：
+- 每个 anchor 必须与 manifest.md 中对应 Rule 的 `Evidence:` 字段锚点一致
+- 每个 example 必须包含 `**File**: <path>:<line>` 和 `**Interpretation**: <一句话解读>`
+- 禁止纯 path glob / 无 file:line 的引用 / 无来源代码块
+- 至少 1 个正例（核心模块）；反例可选（边界证据）
+
+<!-- EVIDENCE_BLOCKS_START -->
+{{evidence_blocks}}
+<!-- EVIDENCE_BLOCKS_END -->
+
+<!-- Evidence block 格式范例（scanner 填充 evidence_blocks 时使用此格式）：
+
+## message-source-usage
+
+Supporting "所有面向用户的文本必须通过 MessageSource 获取":
+
+### Example 1 (positive, central)
+- **File**: `src/main/java/com/acme/web/controller/OrderController.java:56`
+- **Interpretation**: messageSource.getMessage("order.created.success", null, locale) 获取响应消息，无硬编码字符串。
+
+### Example 2 (positive, central)
+- **File**: `src/main/java/com/acme/web/controller/UserController.java:83`
+- **Interpretation**: 错误响应通过 messageSource.getMessage("user.not.found", args, locale) 构建，key 在 messages_zh_CN.properties 中定义。
+
+### Counterexample (optional, boundary / deprecated)
+- **File**: `src/main/java/com/acme/legacy/OldAdminController.java:31`
+- **Interpretation**: 硬编码 "操作成功" 字符串返回，已在 i18n 迁移 sprint 中列入 backlog。
+
+---
+
+注意：anchor 名称（如 message-source-usage）必须与 manifest.md 对应 Rule 的
+**Evidence**: evidence.md#<anchor> 中的 anchor 完全一致（大小写、连字符均须匹配）。
+-->

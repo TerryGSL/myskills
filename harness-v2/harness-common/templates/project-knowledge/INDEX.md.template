@@ -1,0 +1,100 @@
+# Project Knowledge INDEX
+
+由 harness-workflow scanner 生成 — 仅限 scanner 写入；用户仅可编辑 `## User Overrides` 区块。
+
+## Scan Metadata
+
+- schema_version: "1.0.0"
+- snapshot_id: "{{snapshot_id}}"
+- scanner_version: "1.0.0"
+- last_full_scan: "{{last_full_scan_iso}}"
+- scan_duration_sec: {{scan_duration_sec}}
+- active_domains: {{active_domains_json}}
+- total_files_sampled: {{total_files_sampled}}
+- total_todos_surfaced: {{total_todos_surfaced}}
+- confidence_summary: {{confidence_summary_json}}
+- status: active
+
+<!-- status 枚举: active | stale | drifted
+     - active:  snapshot 新鲜，manifest 可信
+     - stale:   last_full_scan > 180 天，Stage -0.5 注入时加 warning
+     - drifted: 至少一个 manifest 或大量 rule 已漂移，建议 --partial-rescan
+     注意：disabled 不在此处表达；disable 由用户在 CLAUDE.md 写 harness-knowledge: disabled -->
+
+## Domain Map
+
+Stage -0.5 用此表判断哪些 manifest 命中当前任务的 changed_files。
+
+| domain | applies_to (glob) | confidence | last_verified | status |
+|--------|-------------------|------------|---------------|--------|
+{{domain_rows}}
+
+<!-- 每行格式示例:
+| internal-components | src/main/java/com/acme/core/** | high | 2026-04-21 | active |
+status 枚举 (manifest 级别): active | partial | drifted | superseded_by:<file> -->
+
+## Retrieval Routing Rules
+
+Stage -0.5 使用以下规则为当前任务选取 relevant_knowledge_files：
+
+### 路径 Glob 规则（主要，按 changed_files 匹配）
+
+{{path_glob_rules}}
+
+<!-- 格式示例:
+- glob: "src/main/java/com/acme/core/**"  → domain: internal-components
+- glob: "src/main/resources/**/*.properties" → domain: i18n-and-text-boundaries -->
+
+### 关键词触发规则（次要，按需求文本关键词匹配）
+
+{{keyword_trigger_rules}}
+
+<!-- 格式示例:
+- keyword: ["SDK", "HttpClient", "adapter"] → domain: integrations-and-sdk-usage
+- keyword: ["i18n", "MessageSource", "locale"] → domain: i18n-and-text-boundaries -->
+
+### Always-Load Domains（无条件加载，每轮必读）
+
+- `style-and-structure`
+- `internal-components`
+
+<!-- 以上两个 domain 无论任务类型，Stage -0.5 总是加载其 manifest.md -->
+
+## Open TODOs
+
+参见 TODO.md（当前条目数：{{todo_count}}）
+
+<!-- scanner 在 Phase 4 生成，用户一次性批量回答（≤ 8 条）；
+     回答完毕后运行 /harness-workflow --apply-knowledge-answers -->
+
+## User Overrides
+
+由 Phase 5 `--apply-knowledge-answers` 生成。
+当用户答案经 micro-rescan 未找到 ≥2 evidence 时，以此表形式保留约定。
+Stage -0.5 读取此处作为 Advisory Context 输入（不进 knowledge_requirements，reviewer 不以此 FAIL）。
+
+| gap_id | domain | summary | source_gap_anchor |
+|--------|--------|---------|-------------------|
+{{user_overrides_rows}}
+
+<!-- 格式示例:
+| internal-components/gap-2 | internal-components | 新 service 使用 constructor injection（用户声明，未核实） | internal-components/gaps.md#gap-2 |
+
+清理规则：当 micro-rescan 找到 ≥2 evidence 并升级为 manifest rule 时，
+按 gap_id 精确匹配移除对应行（禁止 text similarity 删除）。 -->
+
+## Expired Free-Form Rules
+
+由 `--maintain` 步骤 7 检测并移入此处。
+条件：manifest 中 violation_test: free_form_review 的 rule，且 now - last_verified > expiry_after_days。
+Stage -0.5 注入时作为 Advisory Context（不进 knowledge_requirements，reviewer 不以此 FAIL）。
+
+| rule_id | domain | last_verified | expiry_after_days | requirement_text |
+|---------|--------|---------------|-------------------|-----------------|
+{{expired_rules_rows}}
+
+<!-- 格式示例:
+| exception-and-error-contracts/rule-5 | exception-and-error-contracts | 2025-10-01 | 90 | 避免在 Controller 层直接 catch RuntimeException |
+
+恢复规则：运行 --partial-rescan <domain> 重采证据 或 用户手动 bump last_verified →
+从此表移除 + manifest 恢复 status: active。 -->

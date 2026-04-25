@@ -1,0 +1,44 @@
+---
+domain: integrations-and-sdk-usage
+snapshot_id: "{{snapshot_id}}"
+---
+
+# Evidence
+
+此文件由 scanner 生成，记录 `integrations-and-sdk-usage/manifest.md` 中每条 Rule 的代码证据。
+**用途**：仅供 audit 使用；Stage -0.5 不加载此文件（只加载 manifest.md）。
+**硬约束**：总行数 ≤ 220 行；超出时合并次要 example。
+
+**格式要求**（scanner 填充时必须遵守）：
+- 每个 anchor 必须与 manifest.md 中对应 Rule 的 `Evidence:` 字段锚点一致
+- 每个 example 必须包含 `**File**: <path>:<line>` 和 `**Interpretation**: <一句话解读>`
+- 禁止纯 path glob / 无 file:line 的引用 / 无来源代码块
+- 至少 1 个正例（核心模块）；反例可选（边界证据）
+
+<!-- EVIDENCE_BLOCKS_START -->
+{{evidence_blocks}}
+<!-- EVIDENCE_BLOCKS_END -->
+
+<!-- Evidence block 格式范例（scanner 填充 evidence_blocks 时使用此格式）：
+
+## http-client-wrapper-usage
+
+Supporting "外部 HTTP 调用必须通过统一 HttpClientWrapper":
+
+### Example 1 (positive, central)
+- **File**: `src/main/java/com/acme/infra/client/PaymentGatewayClient.java:29`
+- **Interpretation**: @Autowired HttpClientWrapper httpClient，通过 wrapper 发起 POST 请求，统一超时与 retry 配置。
+
+### Example 2 (positive, central)
+- **File**: `src/main/java/com/acme/infra/client/NotificationClient.java:41`
+- **Interpretation**: 同样注入 HttpClientWrapper，sendSms() 调用 httpClient.post()，无直接 RestTemplate 实例化。
+
+### Counterexample (optional, boundary / deprecated)
+- **File**: `src/main/java/com/acme/legacy/OldExternalApiCaller.java:15`
+- **Interpretation**: 直接 new RestTemplate() 调用外部接口，已标记 @Deprecated，迁移计划已建 ticket。
+
+---
+
+注意：anchor 名称（如 http-client-wrapper-usage）必须与 manifest.md 对应 Rule 的
+**Evidence**: evidence.md#<anchor> 中的 anchor 完全一致（大小写、连字符均须匹配）。
+-->

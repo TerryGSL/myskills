@@ -1,0 +1,44 @@
+---
+domain: style-and-structure
+snapshot_id: "{{snapshot_id}}"
+---
+
+# Evidence
+
+此文件由 scanner 生成，记录 `style-and-structure/manifest.md` 中每条 Rule 的代码证据。
+**用途**：仅供 audit 使用；Stage -0.5 不加载此文件（只加载 manifest.md）。
+**硬约束**：总行数 ≤ 220 行；超出时合并次要 example。
+
+**格式要求**（scanner 填充时必须遵守）：
+- 每个 anchor 必须与 manifest.md 中对应 Rule 的 `Evidence:` 字段锚点一致
+- 每个 example 必须包含 `**File**: <path>:<line>` 和 `**Interpretation**: <一句话解读>`
+- 禁止纯 path glob / 无 file:line 的引用 / 无来源代码块
+- 至少 1 个正例（核心模块）；反例可选（边界证据）
+
+<!-- EVIDENCE_BLOCKS_START -->
+{{evidence_blocks}}
+<!-- EVIDENCE_BLOCKS_END -->
+
+<!-- Evidence block 格式范例（scanner 填充 evidence_blocks 时使用此格式）：
+
+## layered-package-structure
+
+Supporting "业务类文件按功能模块分层放置":
+
+### Example 1 (positive, central)
+- **File**: `src/main/java/com/acme/core/service/OrderService.java:12`
+- **Interpretation**: service 层文件位于 core/service 目录，仅 import repository 层，未跨层引用 controller。
+
+### Example 2 (positive, central)
+- **File**: `src/main/java/com/acme/core/repository/OrderRepository.java:8`
+- **Interpretation**: repository 层只 import domain 对象，无任何 service 层引用，证明三层分离约定被遵守。
+
+### Counterexample (optional, boundary / deprecated)
+- **File**: `src/main/java/com/acme/legacy/OldController.java:45`
+- **Interpretation**: 遗留文件中直接调用 repository，已标记 @Deprecated，不代表当前约定。
+
+---
+
+注意：anchor 名称（如 layered-package-structure）必须与 manifest.md 对应 Rule 的
+**Evidence**: evidence.md#<anchor> 中的 anchor 完全一致（大小写、连字符均须匹配）。
+-->

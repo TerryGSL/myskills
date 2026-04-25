@@ -1,0 +1,54 @@
+---
+domain: style-and-structure
+snapshot_id: "{{snapshot_id}}"
+applies_to:
+  paths: {{applies_to_paths_json}}
+last_verified: "{{last_verified}}"
+status: active
+---
+
+# Style and Structure — Rules
+
+此文件由 harness-workflow scanner 生成，包含代码风格与项目结构约定的 high-confidence rules。
+**硬约束**：manifest 总行数 ≤ 140 行；超出时 scanner 必须挤掉 low-impact 规则。
+仅 `Status: active` 的 rule 进入 Stage -0.5 的 Binding Rules（reviewer 违反则 FAIL）。
+
+<!-- RULES_BLOCK_START -->
+{{rules_block}}
+<!-- RULES_BLOCK_END -->
+
+<!-- Rule 格式范例（scanner 填充 rules_block 时使用此格式）：
+
+## Rule: 业务类文件按功能模块分层放置
+
+**Rule ID**: style-and-structure/rule-1
+**规则**: controller / service / repository 三层目录严格分离，禁止跨层直接依赖。
+Service 层不得 import controller 包；repository 层不得 import service 包。
+**适用**: src/main/java/com/acme/**
+**Evidence**: evidence.md#layered-package-structure
+**Confidence**: high
+**Status**: active
+**Supersedes Gap ID**: （若此 rule 由用户 override 升级，填写 style-and-structure/gap-N；否则省略此行）
+**Supersedes Rule ID**: （若此 rule 取代旧 rule，填写 style-and-structure/rule-N；否则省略此行）
+**violation_test**: must_not_use_pattern
+**pattern**: "import com\\.acme\\.controller\\."
+
+---
+
+Rule Status 四态行为：
+| Status      | Stage -0.5 处理                        | reviewer 行为      |
+|-------------|----------------------------------------|--------------------|
+| active      | 进 knowledge_requirements（binding）   | 违反 → FAIL        |
+| expired     | 进 advisory_knowledge（非 binding）    | 不 FAIL，仅提示    |
+| drifted     | 不进任何 context；记 knownIssue        | 不触发             |
+| superseded  | 不进任何 context；保留作历史记录       | 不触发             |
+
+violation_test 枚举（选一填写）：
+- must_use_wrapper        配套: wrapper_type: <ClassName>
+- must_call_component     配套: component: <package.ClassName>
+- must_not_throw_raw_exception  配套: exception_types: [<ClassName>]
+- must_use_package        配套: package: <prefix>
+- must_not_use_pattern    配套: pattern: <regex>
+- must_annotate_with      配套: annotation: <ClassName>
+- free_form_review        配套: requirement_text + manual_review_reason + expiry_after_days（默认 90）
+-->

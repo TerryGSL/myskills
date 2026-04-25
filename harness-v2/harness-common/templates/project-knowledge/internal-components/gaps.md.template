@@ -1,0 +1,55 @@
+---
+domain: internal-components
+snapshot_id: "{{snapshot_id}}"
+---
+
+# Unresolved Gaps
+
+Scanner 在扫描 `internal-components` domain 时发现的未解条目——无法仅凭代码证据达到 high confidence。
+详见 `TODO.md` 对应条目（用户在 TODO.md 填写答案后运行 `--apply-knowledge-answers`）。
+
+**micro-rescan 处理规则**：
+- 用户答案 → 写入此文件对应 gap 的 `resolved_by_user` 块（保留原话作 override 声明）
+- 立即执行 micro-rescan：搜索 ≥2 个支持该约定的 file:line 正例
+- **找到 ≥2 正例** 或 **1 正 + 1 反** → 升级为 high confidence rule，写入 manifest.md + evidence.md；此 gap 标记为 `superseded_by_rule: <new_rule_id>`；从 INDEX.md `## User Overrides` 按 gap_id 精确移除对应行
+- **证据不足** → 保留此文件作 explicit user override；Stage -0.5 注入时作 Advisory Context（非 FAIL 依据）；INDEX.md `## User Overrides` 保留对应行
+
+<!-- GAPS_BLOCKS_START -->
+{{gaps_blocks}}
+<!-- GAPS_BLOCKS_END -->
+
+<!-- Gap block 格式范例（scanner 填充 gaps_blocks 时使用此格式）：
+
+### gap-1
+
+**问题描述**: 发现部分 service 使用 field injection (@Autowired)，部分使用 constructor injection，无法确定首选方式。
+- **分裂证据 A**: `src/main/java/com/acme/core/service/OrderService.java:15`（@Autowired field injection）
+- **分裂证据 B**: `src/main/java/com/acme/core/service/UserService.java:12`（constructor injection via @RequiredArgsConstructor）
+- **用户回答位置**: TODO.md#todo-1
+- **status**: open
+
+---
+
+### gap-2（已用户回答，等待 micro-rescan）
+
+**问题描述**: EventPublisher 组件是否在所有异步事件场景中强制使用？仅发现 2 处使用，难以判断是否为强制约定。
+- **分裂证据 A**: `src/main/java/com/acme/core/service/OrderService.java:89`（使用 EventPublisher）
+- **分裂证据 B**: `src/main/java/com/acme/core/service/InventoryService.java:134`（直接 @Async 方法调用）
+- **用户回答位置**: TODO.md#todo-2
+- **resolved_by_user**: 新写的异步事件必须通过 EventPublisher，@Async 是遗留用法，逐步迁移中。
+- **status**: open
+
+---
+
+### gap-3（已升级为 rule，无需用户再处理）
+
+**问题描述**: （已由 micro-rescan 找到足够证据并升级）
+- **status**: superseded_by_rule: internal-components/rule-3
+
+---
+
+Gap status 枚举：
+- open:               scanner 发现，等待用户回答
+- resolved_by_user:   用户已填写 TODO.md 答案，--apply-knowledge-answers 已处理（可能仍在 advisory 阶段）
+- superseded_by_rule: micro-rescan 找到足够证据，gap 已升级为 manifest rule（按 rule_id 精确引用）
+-->

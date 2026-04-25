@@ -1,0 +1,31 @@
+# invalid-pack.yml — fixture for harness-pack-test contract validation tests.
+# This file deliberately violates several contract rules to exercise error reporting.
+#
+# Violations present:
+#   1. hard_floor contains "bad_thing"  (illegal value)
+#   2. detection.priority is "high"     (not an integer)
+#   3. task_types.refactor is missing
+#   4. default_mode is "yolo"           (not an allowed mode)
+
+name: broken-pack
+description: "Deliberately broken pack for negative fixture testing"
+
+detection:
+  priority: high
+  matchers:
+    - type: repo_path
+      pattern: "~/nowhere"
+
+entry_skill: profile-entry
+
+task_types:
+  quick:    harness-quick
+  bugfix:   harness-bugfix
+  feature:  harness-feature
+  # refactor is intentionally omitted
+
+default_mode: yolo
+
+hard_floor:
+  - auto_merge
+  - bad_thing

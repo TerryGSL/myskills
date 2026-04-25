@@ -1,0 +1,54 @@
+---
+domain: exception-and-error-contracts
+snapshot_id: "{{snapshot_id}}"
+applies_to:
+  paths: {{applies_to_paths_json}}
+last_verified: "{{last_verified}}"
+status: active
+---
+
+# Exception and Error Contracts — Rules
+
+此文件由 harness-workflow scanner 生成，包含异常处理与错误契约约定的 high-confidence rules。
+**硬约束**：manifest 总行数 ≤ 140 行；超出时 scanner 必须挤掉 low-impact 规则。
+仅 `Status: active` 的 rule 进入 Stage -0.5 的 Binding Rules（reviewer 违反则 FAIL）。
+
+<!-- RULES_BLOCK_START -->
+{{rules_block}}
+<!-- RULES_BLOCK_END -->
+
+<!-- Rule 格式范例（scanner 填充 rules_block 时使用此格式）：
+
+## Rule: 禁止直接抛裸类型 RuntimeException
+
+**Rule ID**: exception-and-error-contracts/rule-1
+**规则**: 代码中禁止直接 throw new RuntimeException(...) 或 throw new Exception(...)。
+必须抛项目内定义的语义化异常（如 BizException / SystemException），以便全局 ExceptionHandler 统一处理。
+**适用**: src/main/java/**
+**Evidence**: evidence.md#no-raw-runtime-exception
+**Confidence**: high
+**Status**: active
+**Supersedes Gap ID**: （若此 rule 由用户 override 升级，填写 exception-and-error-contracts/gap-N；否则省略此行）
+**Supersedes Rule ID**: （若此 rule 取代旧 rule，填写 exception-and-error-contracts/rule-N；否则省略此行）
+**violation_test**: must_not_throw_raw_exception
+**exception_types**: ["RuntimeException", "Exception"]
+
+---
+
+Rule Status 四态行为：
+| Status      | Stage -0.5 处理                        | reviewer 行为      |
+|-------------|----------------------------------------|--------------------|
+| active      | 进 knowledge_requirements（binding）   | 违反 → FAIL        |
+| expired     | 进 advisory_knowledge（非 binding）    | 不 FAIL，仅提示    |
+| drifted     | 不进任何 context；记 knownIssue        | 不触发             |
+| superseded  | 不进任何 context；保留作历史记录       | 不触发             |
+
+violation_test 枚举（选一填写）：
+- must_use_wrapper        配套: wrapper_type: <ClassName>
+- must_call_component     配套: component: <package.ClassName>
+- must_not_throw_raw_exception  配套: exception_types: [<ClassName>]
+- must_use_package        配套: package: <prefix>
+- must_not_use_pattern    配套: pattern: <regex>
+- must_annotate_with      配套: annotation: <ClassName>
+- free_form_review        配套: requirement_text + manual_review_reason + expiry_after_days（默认 90）
+-->
