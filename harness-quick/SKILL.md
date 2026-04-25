@@ -52,3 +52,10 @@ description: >
 - 不触发 claude-mem observation（只 learnings.md append）
 - 不修改 `docs/harness/knowledge/*`（只读）
 - 不修改 `docs/memory/*`（只读）
+
+## 引用（rule expansion 不在本 skill 内嵌）
+
+- [`harness-common/contracts/push-decision.md`](../harness-common/contracts/push-decision.md) — push 决策（Step 4 调用）
+- [`harness-common/contracts/hard-floor-enforcement.md`](../harness-common/contracts/hard-floor-enforcement.md) — hard_floor 6 flags
+- [`harness-common/contracts/knowledge.md`](../harness-common/contracts/knowledge.md) — knowledge manifest 只读约束
+- [`harness-common/contracts/memory.md`](../harness-common/contracts/memory.md) — learnings 写入权限

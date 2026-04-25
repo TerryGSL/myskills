@@ -78,8 +78,21 @@ FAIL → **立即 revert 该步**（`git reset --hard HEAD~1`），回到 plan �
 | 测试 | baseline 对比 | 新测试 + 回归 |
 | 覆盖率 | 不允许下降 | 允许短期下降（后续补） |
 
-## 引用
+## 引用（rule expansion 不在本 skill 内嵌）
 
-- Baseline 四件套：[references/baseline-contract.md](references/baseline-contract.md)
-- Step 纪律：[references/step-discipline.md](references/step-discipline.md)
+### 本 skill references/（leaf-specific progressive disclosure）
+
+- [references/baseline-contract.md](references/baseline-contract.md) — Baseline 四件套契约
+- [references/step-discipline.md](references/step-discipline.md) — Step 纪律 + revert 策略
+
+### Cross-skill canonical contracts
+
+- [`harness-common/contracts/push-decision.md`](../harness-common/contracts/push-decision.md) — Phase 3 push 决策
+- [`harness-common/contracts/hard-floor-enforcement.md`](../harness-common/contracts/hard-floor-enforcement.md) — hard_floor 6 flags
+- [`harness-common/contracts/reviewer-gates.md`](../harness-common/contracts/reviewer-gates.md) — Phase 2 plan strict-reviewer
+- [`harness-common/contracts/memory.md`](../harness-common/contracts/memory.md) — learnings 写入权限
+- [`harness-common/contracts/knowledge.md`](../harness-common/contracts/knowledge.md) — manifest 只读约束
+
+### 其他
+
 - strict-reviewer 审稿模板：`strict-reviewer/SKILL.md`

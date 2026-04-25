@@ -87,6 +87,18 @@ hard_floor > aggression_mode > 用户 flag > 默认行为
 
 唯一解除路径：用户**手动**编辑 profile YAML 移除该 flag，或显式临时 override（如 `harness route --override-hard-floor=force_push`，需登录 + audit 记录）。
 
+## 用户 explicit 授权（per-round）
+
+用户可通过明示语句对单次 round 授权一个 hard_floor 动作：
+
+```
+用户："这次 force push 我授权"
+```
+
+执法点仍执行 hard_floor 检查，但额外记录"explicit user override"作为授权证据；该证据写 learnings + scorecard。
+
+**不允许 sticky override**：每轮需要新授权；上一轮的授权不会沿用到下一轮。Stage 8 / push-check / hook 在新 round 启动时一律重新检查 hard_floor。
+
 ## hard_floor 与 push-decision 的接口
 
 push-decision 收到 `profile_hard_floor` 列表（来自 resolved profile）。Step 1 公司硬底优先：

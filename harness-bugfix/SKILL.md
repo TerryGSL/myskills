@@ -50,8 +50,17 @@ description: >
 - `harness-common` — 读 `.harness/current.json` / 写 `.harness/learnings/`
 - `harness-feature` — Round 升级（连续失败时）
 
-## 引用
+## 引用（rule expansion 不在本 skill 内嵌）
 
-- Case frontmatter schema：`harness-common/contracts/memory.md`
+### Cross-skill canonical contracts
+
+- [`harness-common/contracts/memory.md`](../harness-common/contracts/memory.md) — case frontmatter schema + 三层权限
+- [`harness-common/contracts/push-decision.md`](../harness-common/contracts/push-decision.md) — Step 5 push 决策
+- [`harness-common/contracts/hard-floor-enforcement.md`](../harness-common/contracts/hard-floor-enforcement.md) — hard_floor 6 flags
+- [`harness-common/contracts/reviewer-gates.md`](../harness-common/contracts/reviewer-gates.md) — Step 4 strict-reviewer 4 硬门
+- [`harness-common/contracts/knowledge.md`](../harness-common/contracts/knowledge.md) — manifest 只读约束
+
+### 其他
+
 - errors_collection 阈值配置：`docs/memory/.harness-memory.yml`
 - Workflow 详细契约：`harness-workflow/references/workflow.md`

@@ -57,7 +57,7 @@ Stage -0.5 注入 `.harness-status.json.knowledgeCheck`（8 字段）给下游 S
 
 `profile.hard_floor` 六种动作（`auto_push` / `force_push` / `destructive_ops` / `auto_merge` / `rewrite_history` / `network_install`）在 Stage 8 **强制禁止**，纵深防御（profile-entry 已剔除，Stage 8 再验证一次）。
 
-**违反处理 + 用户 explicit 授权机制** → [references/hard-floor-enforcement.md](references/hard-floor-enforcement.md)
+**6 flags 完整语义 + 5 处执法点 + 优先级表 + 用户 explicit 授权机制** → [`harness-common/contracts/hard-floor-enforcement.md`](../harness-common/contracts/hard-floor-enforcement.md)
 
 ## Stage 8 Commit + Push 评估
 
@@ -104,8 +104,18 @@ Stage 8 完成 → 检查 `pendingRounds`：
 
 - [references/stages.md](references/stages.md) — 8-Stage 详解
 - [references/round-sizing.md](references/round-sizing.md) — S/M/L/XL 分级 + XL 拆轮
-- [references/hard-floor-enforcement.md](references/hard-floor-enforcement.md) — Stage 8 hard_floor 执法
-- [references/knowledge-integration.md](references/knowledge-integration.md) — knowledge scanner 集成
+- [references/knowledge-integration.md](references/knowledge-integration.md) — knowledge scanner 集成（Stage -0.5 / Stage 4 Late Recovery）
+
+### Cross-skill canonical contracts（rule expansion 不在本 skill 内嵌）
+
+- [`harness-common/contracts/hard-floor-enforcement.md`](../harness-common/contracts/hard-floor-enforcement.md) — Stage 8 hard_floor 6 flags 执法
+- [`harness-common/contracts/push-decision.md`](../harness-common/contracts/push-decision.md) — push 决策规则
+- [`harness-common/contracts/knowledge.md`](../harness-common/contracts/knowledge.md) — Stage -0.5 / Stage 4 知识合规
+- [`harness-common/contracts/reviewer-gates.md`](../harness-common/contracts/reviewer-gates.md) — Stage 4 reviewer 4 硬门
+- [`harness-common/contracts/autonomy.md`](../harness-common/contracts/autonomy.md) — autonomy 决策树
+- [`harness-common/contracts/memory.md`](../harness-common/contracts/memory.md) — memory 三层权限
+- [`harness-common/contracts/drift.md`](../harness-common/contracts/drift.md) — drift detection
+- [`harness-common/contracts/phase-init.md`](../harness-common/contracts/phase-init.md) — phase init
 
 ### Canonical reference bank（harness 生态共享）
 
