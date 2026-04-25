@@ -43,7 +43,7 @@ target_hash  = sha256(<project_root>/<record.path>)
 
 ### 4. Learnings retention + promotion
 
-见 [references/memory-layers.md](memory-layers.md) 的 "Retention 规则" 章节。
+见 [memory.md](memory.md) 的 "Retention 规则" 章节。
 
 `harness maintain` 输出：
 - 可压缩的 learnings 条目计数
@@ -58,7 +58,7 @@ target_hash  = sha256(<project_root>/<record.path>)
 
 ### 6. Schema 版本哨兵（AD4 bidirectional）
 
-见 [references/doctor-protocol.md](doctor-protocol.md) 的 "Schema 版本双向哨兵" 章节。
+见 [doctor-protocol.md](doctor-protocol.md) 的 "Schema 版本双向哨兵" 章节。
 
 ## 叶子 skill 对接
 

@@ -32,7 +32,7 @@ references this file; read sections by demand.
 3. 按 Rule Status 过滤 render 两个视图：
    - **Binding Rules**（Status=active）→ 违反即 reviewer FAIL
    - **Advisory Context**（Status=expired / user_override）→ 仅风格参考
-4. 写 `.harness/status.json.knowledgeCheck`（8 字段全集，见 `harness-common/contracts/memory-layers.md`）
+4. 写 `.harness/status.json.knowledgeCheck`（8 字段全集，见 `harness-common/contracts/memory.md`）
 
 **disabled bypass**：CLAUDE.md 内含 `harness-knowledge: disabled` → 整个 Stage -0.5 跳过，但 `.harness-status.json.knowledgeCheck.effective_index_status = "disabled"` 仍写入（供下游 Stage 4 识别）。
 
@@ -81,7 +81,7 @@ Skill(team-architect) with:
 
 **产出**：
 - ADR（如涉及架构决策）→ 写 `docs/memory/decisions/harness_<date>_<slug>.md`
-  - Frontmatter schema 见 `harness-common/contracts/memory-layers.md`
+  - Frontmatter schema 见 `harness-common/contracts/memory.md`
 - 若无架构变更 → 输出"无需变更"
 
 ---
@@ -255,7 +255,7 @@ Stage 8 完成后：
 | `harness-workflow/references/protocols.md` | 跨 skill invoke 时 | skill 间参数传递约定 |
 | `harness-workflow/references/project-detection.md` | Phase 2 探测细节 | 各语言 / 框架的详细 detection rule |
 | `harness-workflow/references/reviewer-integration.md` | Stage 4/5 strict-reviewer invoke | review_target 完整字段 + Stage-specific 审稿点 |
-| `harness-workflow/references/memory.md` | docs/memory/ 深度使用 | memory doctrine 完整论证（本 skill 的 memory-layers.md 是摘要索引） |
+| `harness-workflow/references/memory.md` | docs/memory/ 深度使用 | memory doctrine 完整论证（本 skill 引用的 contracts/memory.md 是摘要索引） |
 | `harness-workflow/references/memory-migrations.md` | schema 版本升级 | memory 契约迁移步骤 |
 | `harness-workflow/references/migration-checklist.md` | R6/T3 验证 | Phase → CLI crosscheck 表（R5/T10 产出） |
 | `harness-workflow/templates/project-memory/*` | init/adopt 时（CLI 已打进 bundled） | 原 v1.0 memory 模板集 |

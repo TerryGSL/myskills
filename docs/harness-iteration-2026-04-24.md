@@ -56,9 +56,9 @@
 | XL 级自动拆轮 + pendingRounds | 同上 |
 | Round 间衔接 | 同上 |
 | Stage 8 自检清单 | `harness-feature/references/stages.md` Stage 8 |
-| Drift Red Flags 警示 | `harness-common/references/drift-detection.md`（扩展到 6 类）|
+| Drift Red Flags 警示 | `harness-common/contracts/drift.md`（扩展到 6 类）|
 | SessionStart hook 三层触发保障 | `harness-workflow/skill.md` 保留 `/harness-workflow` 触发词 |
-| `--maintain` 同步检查 | `harness maintain` CLI + `harness-common/references/drift-detection.md` |
+| `--maintain` 同步检查 | `harness maintain` CLI + `harness-common/contracts/drift.md` |
 | Stage 角色 Prompt 模板 | `harness-feature/prompts/{pd,architect,qa,security}-prompt.md` + `harness-workflow/prompts/` 原位置也保留 |
 | `.harness-memory.yml` 契约 + scorecard | `resources/templates/memory/*.template` + CLI init 自动投放 |
 | Skill 间关系表 | spec 附录 C（14 本地 skill + 3 外部 Java skill 完整矩阵）|

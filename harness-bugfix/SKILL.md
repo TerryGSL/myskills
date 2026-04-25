@@ -52,6 +52,6 @@ description: >
 
 ## 引用
 
-- Case frontmatter schema：`harness-common/contracts/memory-layers.md`
+- Case frontmatter schema：`harness-common/contracts/memory.md`
 - errors_collection 阈值配置：`docs/memory/.harness-memory.yml`
 - Workflow 详细契约：`harness-workflow/references/workflow.md`

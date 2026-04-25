@@ -45,7 +45,7 @@
                                      │ 共享
                                      ▼
                               harness-common
-                       (push-decision / drift-detection / ...)
+                       (push-decision / drift / memory / ...)
 
    生命周期入口：harness-init           （首次接入项目）
    兼容老命令： /harness-workflow --init|--adopt|--maintain|--scan
@@ -66,7 +66,7 @@ profile-entry 路由到 4 个 leaf skill，按 task_type 选执行路径：
 | `harness-feature` | 新功能 / M/L/XL 级 | 0 → 1 → 2 → 3 → 4 → 5 → 6 → (7) → 8 |
 | `harness-refactor` | 跨模块重构、行为不变 | 1 → 2 → 3 → 5 → 6 → 8 |
 
-共享基础设施在 `harness-common/contracts/`（push-decision、drift-detection、memory-layers、doctor-protocol）。
+共享基础设施在 `harness-common/contracts/`（push-decision / drift / memory / doctor-protocol / profile / task-type / aggression-mode / knowledge / autonomy / reviewer-gates / phase-init / hooks / hard-floor-enforcement / routing — 14 个 narrative contract）。
 
 ### Task Dispatcher（通用并行编排）
 
@@ -155,7 +155,7 @@ docs/superpowers/{specs,plans}/  设计文档 + 实施计划
 | `docs/superpowers/specs/2026-04-24-profile-based-dispatch-redesign-design.md` | profile-based dispatch 设计 |
 | `docs/superpowers/plans/2026-04-26-harness-fusion-implementation.md` | fusion 实施计划 |
 | `harness-common/contracts/push-decision.md` | push 决策三档 markdown 契约 |
-| `harness-common/contracts/drift-detection.md` | 状态漂移检测 |
+| `harness-common/contracts/drift.md` | 状态漂移检测 |
 | `harness-init/SKILL.md` / `profile-entry/SKILL.md` | 接入入口 + 路由器 |
 | 各 leaf 的 `SKILL.md` | 4 个 task-type leaf 的执行 spec |
 

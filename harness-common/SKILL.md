@@ -52,7 +52,7 @@ CLI 未装 → abort + 提示 `npm install -g harness-workflow-cli`。不允许�
 
 记忆有三层：`.harness/learnings/`（rolling inbox）→ `docs/memory/{cases,decisions,constraints}/`（长期）→ `docs/harness/knowledge/`（静态 inventory）。
 
-**谁写什么，什么时候写，按什么 schema** → [references/memory-layers.md](references/memory-layers.md)
+**谁写什么，什么时候写，按什么 schema** → [contracts/memory.md](contracts/memory.md)
 
 **违反权限 → strict-reviewer Step 5 立即 FAIL。**
 
@@ -77,7 +77,7 @@ Stage 3（实现）前读 `.harness/current.json.workflow_schema_version`：
 5. Knowledge 扫描新鲜度
 6. Schema 版本哨兵
 
-**完整检查清单** → [references/drift-detection.md](references/drift-detection.md)
+**完整检查清单** → [contracts/drift.md](contracts/drift.md)
 
 ## 硬边界
 

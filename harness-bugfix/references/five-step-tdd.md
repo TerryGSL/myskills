@@ -82,7 +82,7 @@ fix: session token not invalidated on refresh endpoint
 
 ### Case entry（docs/memory/cases/ frontmatter schema）
 
-按 `harness-common/contracts/memory-layers.md` 里的 case schema 写入
+按 `harness-common/contracts/memory.md` 里的 case schema 写入
 `docs/memory/cases/harness_<date>_<slug>.md`。
 
 ### 何时写 case（errors_collection 阈值）
