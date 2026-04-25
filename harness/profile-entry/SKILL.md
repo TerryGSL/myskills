@@ -38,6 +38,8 @@ description: Skill 体系的**入口路由器**。读 .harness-profile marker �
 
 ## Step 1 — 无 marker：跑 fallback matchers
 
+**CWD 规范化（必须）**：跑 fallback matchers 之前，先对当前 CWD 做 `realpath` 规范化，消除 symlink 抖动。例如 `~/src/api -> ~/work/acme/api` 时，统一用真实路径 `~/work/acme/api` 进行 path_glob 匹配，避免同一个 repo 在不同入口下命中不同 profile。
+
 适用于：无 `.harness-profile` 文件，或 marker 校验失败后用户选择切换。
 
 **执行顺序**：

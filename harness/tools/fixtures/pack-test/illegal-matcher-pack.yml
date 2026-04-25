@@ -1,0 +1,17 @@
+name: bad-matcher-pack
+description: 非法 matcher 类型
+detection:
+  priority: 10
+  matchers:
+    - type: repo_path
+      pattern: "/work/foo"
+    - type: git_remote
+      pattern: "github.com/foo"
+entry_skill: profile-entry
+task_types:
+  quick: harness-quick
+  bugfix: harness-bugfix
+  feature: harness-feature
+  refactor: harness-refactor
+default_mode: standard
+hard_floor: []

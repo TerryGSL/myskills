@@ -22,8 +22,10 @@ usage() {
   echo "Checks performed:"
   echo "  - YAML is parseable"
   echo "  - All required top-level fields present"
+  echo "  - No placeholder residue (REPLACE_ME / __X__)"
   echo "  - detection.priority is an integer"
   echo "  - detection.matchers has at least one entry"
+  echo "  - detection.matchers[*].type is one of: always / path_glob / git_remote_regex"
   echo "  - task_types contains: quick / bugfix / feature / refactor"
   echo "  - Each task_type value is a valid skill name [a-z0-9-]+"
   echo "  - default_mode is one of: conservative / standard / aggressive"
@@ -148,6 +150,24 @@ end
 " 2>/dev/null || echo "0"
 }
 
+# Helper: list matcher types as newline-separated items, prefixed by index.
+# Output format: "<index>\t<type>" per line. Missing/non-string types emit "<index>\t<NONE>".
+yaml_matcher_types() {
+  ruby -ryaml -e "
+begin
+  data = YAML.load_file('${PROFILE_FILE}')
+  matchers = data.is_a?(Hash) && data['detection'].is_a?(Hash) ? data['detection']['matchers'] : nil
+  if matchers.is_a?(Array)
+    matchers.each_with_index do |m, i|
+      t = m.is_a?(Hash) ? m['type'] : nil
+      puts \"#{i}\t#{t.nil? ? '<NONE>' : t}\"
+    end
+  end
+rescue
+end
+" 2>/dev/null || true
+}
+
 # ─── Accumulate violations ────────────────────────────────────────────────────
 
 violations=()
@@ -155,6 +175,13 @@ violations=()
 add_violation() {
   violations+=("${1}")
 }
+
+# ─── Check 0: Placeholder residue (REPLACE_ME / __X__) ───────────────────────
+# Runs against raw file text to catch unfilled template tokens.
+
+if grep -qE '(REPLACE_ME|__[A-Z_]+__)' "${PROFILE_FILE}"; then
+  add_violation "Placeholder residue: file contains REPLACE_ME or __X__ (template not fully rendered)"
+fi
 
 # ─── Check 1: Required top-level fields ───────────────────────────────────────
 
@@ -182,6 +209,21 @@ matchers_count="$(yaml_count "detection.matchers")"
 if [[ "${matchers_count}" -lt 1 ]]; then
   add_violation "detection.matchers must contain at least one entry (found ${matchers_count})"
 fi
+
+# ─── Check 3b: detection.matchers[*].type is in the allowed whitelist ────────
+
+readonly ALLOWED_MATCHER_TYPES=(always path_glob git_remote_regex)
+
+while IFS=$'\t' read -r m_idx m_type; do
+  [[ -z "${m_idx}" ]] && continue
+  type_valid="no"
+  for allowed in "${ALLOWED_MATCHER_TYPES[@]}"; do
+    [[ "${m_type}" == "${allowed}" ]] && type_valid="yes"
+  done
+  if [[ "${type_valid}" != "yes" ]]; then
+    add_violation "detection.matchers[${m_idx}].type is illegal: '${m_type}' (allowed: always / path_glob / git_remote_regex)"
+  fi
+done < <(yaml_matcher_types)
 
 # ─── Check 4: task_types contains all four required keys ──────────────────────
 

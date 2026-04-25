@@ -46,7 +46,7 @@ hard_floor:                   # 合规硬底操作列表（可为空列表 []）
 | type | 匹配对象 | pattern 语义 |
 |------|----------|--------------|
 | `always` | 无条件匹配 | 忽略（可写 `"*"`） |
-| `path_glob` | 当前 CWD 路径 | 标准 glob，支持 `**`；`~` 展开为 `$HOME` |
+| `path_glob` | 当前 CWD 路径（`realpath` 规范化后） | 标准 glob，支持 `**`；`~` 展开为 `$HOME` |
 | `git_remote_regex` | `git remote get-url origin` 输出 | Python/Go 风格正则（不含定界符） |
 
 ### Priority 与决胜规则

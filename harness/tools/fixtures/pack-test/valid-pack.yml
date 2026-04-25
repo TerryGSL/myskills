@@ -7,10 +7,10 @@ description: "Company profile for Acme Corp backend monorepo (Go + gRPC)"
 detection:
   priority: 10
   matchers:
-    - type: repo_path
-      pattern: "~/work/acme-api"
-    - type: git_remote
-      pattern: "github.com/acme"
+    - type: path_glob
+      pattern: "~/work/acme-api/**"
+    - type: git_remote_regex
+      pattern: "github.com/acme/.*"
 
 entry_skill: profile-entry
 
