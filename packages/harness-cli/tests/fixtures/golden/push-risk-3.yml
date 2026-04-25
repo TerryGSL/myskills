@@ -1,0 +1,14 @@
+# Push risk: single-file 100-line business change with tests passing → medium / ask.
+description: 'single-file business logic change → medium / ask'
+runner: 'push-check'
+status: 'active'
+input:
+  hard_floor: []
+  diff_stat: |
+     src/feature.ts  | 100 +++++++++++++++++++++++++++++++++
+     1 file changed, 100 insertions(+)
+  diff_full_pattern: '+ some business logic line\n (×100)'
+expected_output:
+  level: 'medium'
+  action: 'ask'
+  exit_code: 1

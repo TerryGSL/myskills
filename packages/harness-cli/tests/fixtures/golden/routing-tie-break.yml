@@ -1,0 +1,32 @@
+# Routing-as-CLI: same priority → tie-break by pattern specificity.
+description: 'route: same priority matchers → longest pattern wins'
+runner: 'route'
+status: 'pending_until_PR-C5'
+input:
+  cwd: '/Users/twelve/Music/myskills/packages/harness-cli'
+  marker_file: null
+  available_profiles:
+    - name: 'harness'
+      default_mode: 'standard'
+      hard_floor: []
+      detection:
+        priority: 10
+        matchers:
+          - type: 'path_glob'
+            pattern: '~/Music/myskills/**'
+    - name: 'harness-cli'
+      default_mode: 'standard'
+      hard_floor: []
+      detection:
+        priority: 10
+        matchers:
+          - type: 'path_glob'
+            pattern: '~/Music/myskills/packages/harness-cli/**'
+  task_description: '调整 schema'
+expected_output:
+  leaf_skill: 'harness-feature'
+  resolved_profile: 'harness-cli'
+  resolved_mode: 'standard'
+  task_description: '调整 schema'
+  hard_floor: []
+  fast_path_hit: false

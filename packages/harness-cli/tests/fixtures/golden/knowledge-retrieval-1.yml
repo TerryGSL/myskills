@@ -1,0 +1,18 @@
+# Knowledge retrieval: manifest present + status=ready → inject binding rules into context.
+description: 'knowledge manifest ready → bindings rules injected into leaf context'
+runner: 'manual'
+status: 'pending_until_PR-C3'
+input:
+  manifest_state: 'present'
+  manifest_status: 'ready'
+  domain: 'api'
+  rules:
+    - id: 'api-1'
+      text: 'all endpoints under /api/v1/'
+      status: 'active'
+expected_output:
+  retrieval_disabled: false
+  injected_rules:
+    - id: 'api-1'
+      text: 'all endpoints under /api/v1/'
+  warning: null

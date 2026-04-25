@@ -1,0 +1,11 @@
+# Knowledge retrieval: manifest missing → retrieval disabled, no rules injected.
+description: 'knowledge manifest missing → retrieval disabled, no rules injected'
+runner: 'manual'
+status: 'pending_until_PR-C3'
+input:
+  manifest_state: 'missing'
+  domain: 'api'
+expected_output:
+  retrieval_disabled: true
+  injected_rules: []
+  warning: 'no knowledge manifest for domain=api; skipping retrieval'

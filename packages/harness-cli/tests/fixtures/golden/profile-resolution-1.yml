@@ -1,0 +1,21 @@
+# Profile resolution: explicit marker file wins over matchers.
+description: 'profile-entry resolves harness profile via explicit .harness-profile marker'
+runner: 'profile-resolve'
+status: 'pending_until_PR-C1'
+input:
+  cwd: '/Users/twelve/Music/myskills'
+  marker_file:
+    profile: 'harness'
+    resolved_by: 'marker'
+    updated_at: '2026-04-26T10:00:00Z'
+  available_profiles:
+    - name: 'harness'
+      detection:
+        priority: 10
+        matchers:
+          - type: 'path_glob'
+            pattern: '~/Music/myskills/**'
+expected_output:
+  profile_name: 'harness'
+  resolved_by: 'marker'
+  matched_pattern: null

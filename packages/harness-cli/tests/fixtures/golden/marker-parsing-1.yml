@@ -1,0 +1,17 @@
+# Marker parsing: legal YAML marker with all required fields → parse OK.
+description: 'legal .harness-profile YAML marker → parse succeeds'
+runner: 'manual'
+status: 'active'
+input:
+  marker_text: |
+    profile: harness
+    resolved_by: marker
+    updated_at: 2026-04-26T10:00:00Z
+expected_output:
+  parse_ok: true
+  parsed:
+    profile: 'harness'
+    resolved_by: 'marker'
+    updated_at: '2026-04-26T10:00:00Z'
+  schema_valid: true
+  errors: []

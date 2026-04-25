@@ -1,0 +1,35 @@
+# Routing-as-CLI: marker explicit → skip fallback matchers entirely.
+description: 'route: explicit marker → matcher fallback skipped'
+runner: 'route'
+status: 'pending_until_PR-C5'
+input:
+  cwd: '/Users/twelve/Music/myskills'
+  marker_file:
+    profile: 'harness'
+    resolved_by: 'marker'
+    updated_at: '2026-04-26T10:00:00Z'
+  available_profiles:
+    - name: 'harness'
+      default_mode: 'standard'
+      hard_floor: []
+      detection:
+        priority: 10
+        matchers:
+          - type: 'path_glob'
+            pattern: '~/Music/myskills/**'
+    - name: 'company-foo'
+      default_mode: 'conservative'
+      hard_floor: ['auto_push', 'force_push']
+      detection:
+        priority: 100
+        matchers:
+          - type: 'path_glob'
+            pattern: '/**'
+  task_description: '加一个登录按钮'
+expected_output:
+  leaf_skill: 'harness-feature'
+  resolved_profile: 'harness'
+  resolved_mode: 'standard'
+  task_description: '加一个登录按钮'
+  hard_floor: []
+  fast_path_hit: false

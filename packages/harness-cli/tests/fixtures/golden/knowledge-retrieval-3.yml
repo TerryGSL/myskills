@@ -1,0 +1,19 @@
+# Knowledge retrieval: manifest drifted, late_recovered → flag warning, still inject rules.
+description: 'knowledge manifest drifted but late_recovered → inject + warn'
+runner: 'manual'
+status: 'pending_until_PR-C3'
+input:
+  manifest_state: 'present'
+  manifest_status: 'drifted'
+  recovery: 'late_recovered'
+  domain: 'business-rules'
+  rules:
+    - id: 'br-1'
+      text: 'all monetary values use cents (integer)'
+      status: 'drifted'
+expected_output:
+  retrieval_disabled: false
+  injected_rules:
+    - id: 'br-1'
+      text: 'all monetary values use cents (integer)'
+  warning: 'manifest for domain=business-rules drifted; use rules with caution'

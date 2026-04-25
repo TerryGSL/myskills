@@ -1,0 +1,32 @@
+# Routing-as-CLI: /yolo flag tries to enable auto_push but company hard_floor blocks it.
+description: 'route: /yolo conflicts with company hard_floor → hard_floor wins (auto_push refused)'
+runner: 'route'
+status: 'pending_until_PR-C5'
+input:
+  cwd: '/work/company-foo'
+  marker_file:
+    profile: 'company-foo'
+    resolved_by: 'marker'
+    updated_at: '2026-04-26T10:00:00Z'
+  available_profiles:
+    - name: 'company-foo'
+      default_mode: 'conservative'
+      hard_floor: ['auto_push', 'force_push']
+      detection:
+        priority: 100
+        matchers:
+          - type: 'path_glob'
+            pattern: '/work/company-foo/**'
+  task_description: '加 feature'
+  user_flag: '/yolo'
+expected_output:
+  leaf_skill: 'harness-feature'
+  resolved_profile: 'company-foo'
+  resolved_mode: 'conservative'
+  task_description: '加 feature'
+  hard_floor: ['auto_push', 'force_push']
+  fast_path_hit: false
+  hard_floor_violation:
+    requested_action: 'auto_push'
+    verdict: 'refuse'
+    reason: '/yolo cannot bypass company hard_floor'

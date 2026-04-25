@@ -1,0 +1,12 @@
+# Marker parsing: legacy bare-string marker → reject (new schema requires YAML object).
+description: 'bare-string .harness-profile (legacy) → parse fails (new schema requires YAML object)'
+runner: 'manual'
+status: 'active'
+input:
+  marker_text: |
+    harness
+expected_output:
+  parse_ok: false
+  schema_valid: false
+  errors:
+    - 'marker must be a YAML object with required fields { profile, resolved_by, updated_at }'

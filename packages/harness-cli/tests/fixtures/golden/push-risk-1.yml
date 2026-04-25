@@ -1,0 +1,18 @@
+# Push risk: docs-only change → low / auto / exit_code 0.
+description: 'docs-only diff (.md changes) → low risk / auto push'
+runner: 'push-check'
+status: 'active'
+input:
+  hard_floor: []
+  diff_stat: |
+     README.md       | 5 +++--
+     docs/guide.md   | 8 ++++----
+     2 files changed, 8 insertions(+), 5 deletions(-)
+  diff_full: |
+    + some doc text
+    - some doc text
+expected_output:
+  level: 'low'
+  action: 'auto'
+  exit_code: 0
+  reasons_match: 'md/txt/po/json'

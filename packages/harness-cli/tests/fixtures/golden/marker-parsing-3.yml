@@ -1,0 +1,13 @@
+# Marker parsing: YAML object missing resolved_by field → schema validation fails.
+description: 'marker missing resolved_by → schema validation fails'
+runner: 'manual'
+status: 'active'
+input:
+  marker_text: |
+    profile: harness
+    updated_at: 2026-04-26T10:00:00Z
+expected_output:
+  parse_ok: true
+  schema_valid: false
+  errors:
+    - "missing required property 'resolved_by'"

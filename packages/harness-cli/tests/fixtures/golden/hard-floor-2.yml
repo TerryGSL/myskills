@@ -1,0 +1,13 @@
+# Hard-floor enforcement: empty floor + standard mode → action allowed.
+description: 'empty hard_floor + standard mode → action allowed'
+runner: 'manual'
+status: 'active'
+input:
+  profile_floor: []
+  requested_action: 'auto_push'
+  user_flag: null
+  resolved_mode: 'standard'
+expected_output:
+  profile_floor: []
+  requested_action: 'auto_push'
+  verdict: 'allow'

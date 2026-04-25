@@ -1,0 +1,27 @@
+# Routing-as-CLI: task_description includes "修...bug" → leaf=harness-bugfix.
+description: 'route: bugfix keyword in task_description → leaf=harness-bugfix'
+runner: 'route'
+status: 'pending_until_PR-C5'
+input:
+  cwd: '/Users/twelve/Music/myskills'
+  marker_file:
+    profile: 'harness'
+    resolved_by: 'marker'
+    updated_at: '2026-04-26T10:00:00Z'
+  available_profiles:
+    - name: 'harness'
+      default_mode: 'standard'
+      hard_floor: []
+      detection:
+        priority: 10
+        matchers:
+          - type: 'path_glob'
+            pattern: '~/Music/myskills/**'
+  task_description: '修登录 bug'
+expected_output:
+  leaf_skill: 'harness-bugfix'
+  resolved_profile: 'harness'
+  resolved_mode: 'standard'
+  task_description: '修登录 bug'
+  hard_floor: []
+  fast_path_hit: false

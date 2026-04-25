@@ -1,0 +1,24 @@
+# Profile resolution: same priority → tie-break by pattern specificity (longer / more literal wins).
+description: 'profile-entry tie-breaks same-priority matchers by specificity (longest pattern wins)'
+runner: 'profile-resolve'
+status: 'pending_until_PR-C1'
+input:
+  cwd: '/Users/twelve/Music/myskills/packages/harness-cli'
+  marker_file: null
+  available_profiles:
+    - name: 'harness'
+      detection:
+        priority: 10
+        matchers:
+          - type: 'path_glob'
+            pattern: '~/Music/myskills/**'
+    - name: 'harness-cli'
+      detection:
+        priority: 10
+        matchers:
+          - type: 'path_glob'
+            pattern: '~/Music/myskills/packages/harness-cli/**'
+expected_output:
+  profile_name: 'harness-cli'
+  resolved_by: 'matcher'
+  matched_pattern: '~/Music/myskills/packages/harness-cli/**'

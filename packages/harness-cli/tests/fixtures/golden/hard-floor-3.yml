@@ -1,0 +1,13 @@
+# Hard-floor enforcement: floor includes force_push, user attempts push --force → refuse.
+description: 'hard_floor includes force_push → push --force refused'
+runner: 'manual'
+status: 'active'
+input:
+  profile_floor: ['force_push', 'rewrite_history']
+  requested_action: 'force_push'
+  user_flag: null
+expected_output:
+  profile_floor: ['force_push', 'rewrite_history']
+  requested_action: 'force_push'
+  verdict: 'refuse'
+  reason: 'force_push is in profile hard_floor'

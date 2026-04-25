@@ -1,0 +1,19 @@
+# Push risk: package.json dependency changes → high / refuse.
+description: 'package.json dependencies changes → high risk / refuse'
+runner: 'push-check'
+status: 'active'
+input:
+  hard_floor: []
+  diff_stat: |
+     package.json    | 3 ++-
+     1 file changed, 2 insertions(+), 1 deletion(-)
+  diff_full: |
+    diff --git a/package.json b/package.json
+       "dependencies": {
+    +    "lodash": "^4.17.0",
+       }
+expected_output:
+  level: 'high'
+  action: 'refuse'
+  exit_code: 2
+  reasons_match: 'dependencies'

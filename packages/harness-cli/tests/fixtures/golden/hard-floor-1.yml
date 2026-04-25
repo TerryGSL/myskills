@@ -1,0 +1,14 @@
+# Hard-floor enforcement: company profile floor includes auto_push, user passes /yolo flag.
+# Hard floor is non-negotiable — even /yolo cannot bypass it.
+description: 'company hard_floor includes auto_push → /yolo refused'
+runner: 'manual'
+status: 'active'
+input:
+  profile_floor: ['auto_push', 'force_push']
+  requested_action: 'auto_push'
+  user_flag: '/yolo'
+expected_output:
+  profile_floor: ['auto_push', 'force_push']
+  requested_action: 'auto_push'
+  verdict: 'refuse'
+  reason: 'auto_push is in company hard_floor; /yolo cannot bypass'
