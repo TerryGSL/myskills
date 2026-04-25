@@ -1,0 +1,84 @@
+# DESIGN — {{project_name}}
+
+按项目类型装载：
+
+- **有 UI（前端 / 桌面 / 移动）** → VI 系统：色彩 / 字体 / 间距 / 组件 token
+- **纯后端 API** → API 规范：命名 / 版本 / 错误码 / 分页 / 鉴权
+- **CLI 工具** → 交互规范：输出格式 / 颜色 / 进度条 / 错误提示
+- **库 / SDK** → 公共 API 设计：命名 / 类型 / 错误处理 / 异步约定
+
+当前项目类型：`{{project_type}}`
+
+---
+
+## 设计系统
+
+<!-- 按项目类型填写具体规范，下面是占位骨架 -->
+
+### Color Tokens
+
+_TODO: 填色阶（primary / secondary / success / warning / danger / 灰度 N 级）_
+
+### Typography
+
+_TODO: 字体族 / 字号阶 / 行高 / 字重_
+
+### Spacing Scale
+
+_TODO: 4px / 8px 基线或 8pt grid_
+
+### Components
+
+_TODO: 按钮 / 输入 / 卡片 / Modal / Toast / Table 等 component token_
+
+---
+
+## API 规范（后端 / SDK 项目使用）
+
+### 命名
+
+- URL 路径：kebab-case，名词为主（`/users/{id}/orders` 而非 `/getUserOrders`）
+- 字段名：camelCase（JSON body）或 snake_case（如项目约定）
+
+### 版本
+
+- URL 前缀：`/api/v1/...`
+- 破坏性变更必须 bump 大版本
+
+### 错误码
+
+- HTTP 标准码 + body `{code, message, traceId}`
+- 自定义错误码：`<module>.<category>.<detail>`（如 `order.payment.insufficient_balance`）
+
+### 分页
+
+- `page` / `pageSize` query params
+- 响应 body 含 `total` / `page` / `pageSize` / `items`
+
+### 鉴权
+
+- `Authorization: Bearer <token>` header
+- 内部服务用 mTLS 或签名头
+
+---
+
+## CLI 交互规范（CLI 项目使用）
+
+### 输出格式
+
+- 默认人类可读；`--json` 切 JSON
+- 错误到 stderr，正常到 stdout
+
+### 颜色
+
+- 错误：red；警告：yellow；成功：green；info：默认
+- 检测 `NO_COLOR` env + 非 TTY 自动关
+
+### 进度
+
+- 长任务显示 spinner + 当前 step 描述
+- `--quiet` / `--verbose` 控制详尽度
+
+---
+
+本文件由人工维护（`team-pd` / `team-architect` 在 Stage 0-1 可建议更新）。

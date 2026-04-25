@@ -1,0 +1,5 @@
+# archive/
+
+Retired cases/decisions/constraints (superseded or archived). `harness maintain`
+moves entries here when `status in {superseded, archived}` or
+`last_used > archive_after_days_unused` (default 180d).

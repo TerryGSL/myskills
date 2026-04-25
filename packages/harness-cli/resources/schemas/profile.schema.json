@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-workflow-cli/profile.schema.json",
+  "title": "Profile",
+  "type": "object",
+  "required": ["name", "description", "detection", "entry_skill", "task_types", "default_mode", "hard_floor"],
+  "properties": {
+    "name": { "type": "string", "minLength": 1 },
+    "description": { "type": "string" },
+    "detection": {
+      "type": "object",
+      "required": ["priority", "matchers"],
+      "properties": {
+        "priority": { "type": "integer", "minimum": 0 },
+        "matchers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["type", "pattern"],
+            "properties": {
+              "type": { "enum": ["path_glob", "git_remote_regex", "file_exists"] },
+              "pattern": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "entry_skill": { "const": "profile-entry" },
+    "task_types": {
+      "type": "object",
+      "required": ["quick", "bugfix", "feature", "refactor"],
+      "properties": {
+        "quick": { "type": "string" },
+        "bugfix": { "type": "string" },
+        "feature": { "type": "string" },
+        "refactor": { "type": "string" }
+      }
+    },
+    "default_mode": { "enum": ["conservative", "standard", "aggressive"] },
+    "hard_floor": {
+      "type": "array",
+      "items": {
+        "enum": ["auto_push", "force_push", "destructive_ops", "auto_merge", "rewrite_history", "network_install"]
+      },
+      "uniqueItems": true
+    },
+    "repo_conventions": { "type": "object" },
+    "compliance_hooks": { "type": "object" }
+  }
+}

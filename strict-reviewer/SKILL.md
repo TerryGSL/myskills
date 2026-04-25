@@ -21,13 +21,37 @@ If coverage is incomplete, verdict is BLOCKED — not PASS.
 
 这不是自我激励辞，是**契约**。违反任一硬门的 PASS 等同于误放行，未来会被 false-pass-correction 机制追溯。
 
-## Input（caller 必须传入的 YAML 字符串）
+## Input（caller 必须传入的 YAML 字符串；R10 新增 knowledge 字段）
+
+完整 schema 真源：`packages/harness-cli/resources/schemas/review-target.schema.json`（JSON Schema draft 2020-12）。
 
 ```yaml
 review_target:
+  # ── 审稿目标核心字段 ──
   changed_files:          # required, array of strings
     - "src/auth/session.ts"
   diff_summary: "..."     # required, string
+  stage: "quality"        # required, enum: qa | security | spec | quality
+  claims_to_verify: [...] # optional
+  memory_cases: [...]     # optional
+  prior_verdict: null     # optional
+
+  # ── R10 新增：Spec 1 Stage -0.5 知识注入 ──
+  relevant_knowledge_files:
+    - "docs/harness/knowledge/style-and-structure/manifest.md"
+  knowledge_snapshot_id: "scan-2026-04-24T10:00Z"
+  retrieval_outcome: "success"  # success | coordinator_miss | all_candidates_filtered
+  known_issues:                 # drifted/superseded/filtered，不 binding 但要透传
+    - source: "drifted_rule"
+      id: "internal-components/rule-5"
+      domain: "internal-components"
+      reason: "violation rate 40%"
+  knowledge_requirements:       # Stage 4 Step 5 必须逐条检查
+    - rule_id: "style-and-structure/rule-1"
+      manifest_file: "docs/harness/knowledge/style-and-structure/manifest.md"
+      applies_to: ["src/**"]
+      requirement_text: "services return Result<T>"
+      violation_test: "must_use_wrapper"
   stage: "qa"             # required, enum: qa | security | spec | quality
   claims_to_verify:       # optional, array of strings
     - "code handles expired refresh cookie"
@@ -50,6 +74,44 @@ review_target:
    - **Grounding 闸门**：每个 finding 必须带 `file:line` 或 `符号` 或 `命令输出` 或 `repro 步骤`。纯口头 finding 不计数
    - **Reproduction 闸门**：任何声称的 bug 必须有 repro steps / failing test / trace，或者 `reproduction: "not reproducible because <reason>"`
    - **Coverage 闸门**：`coverage.inspected_files` 必须包含所有 `changed_files` 里的关键文件（非测试文件、非 generated）。未读关键变更文件 → verdict 不得为 PASS，应为 BLOCKED
+
+5. **Step 5 — Knowledge Compliance Check（Spec 1 第 4 硬门 / R10 落地）**：
+
+   若 `review_target` 含 `knowledge_requirements`（Stage -0.5 注入），逐条验证 diff 是否违反：
+
+   a. 读每条 `knowledge_requirement`：
+      ```yaml
+      rule_id: "style-and-structure/rule-1"
+      manifest_file: "docs/harness/knowledge/style-and-structure/manifest.md"
+      applies_to: ["src/**"]
+      requirement_text: "services return Result<T>"
+      violation_test: "must_use_wrapper"   # 或其他 6 种 + free_form_review
+      ```
+
+   b. 对 `applies_to` glob 命中的 diff 文件，按 `violation_test` 枚举检测：
+      - `must_use_wrapper` / `must_call_component` / `must_use_package` / `must_annotate_with` → grep 调用/导入
+      - `must_not_throw_raw_exception` / `must_not_use_pattern` → grep 禁用模式
+      - `free_form_review` → LLM 判断 + 记 `manual_review_reason`
+
+   c. 发现违反 → 追加 finding：
+      ```yaml
+      severity: "high"
+      file: <违规文件:line>
+      grounded_by: "read:file"
+      message: "violated knowledge rule [<rule_id>]: <requirement_text>"
+      knowledge_rule_id: <rule_id>
+      ```
+
+   d. 读 `review_target.retrieval_outcome` 校正 verdict（R10/T3 双向哨兵）：
+      - `coordinator_miss`（Stage -0.5 本该跑但漏了）→ verdict=BLOCKED（系统错误，不是代码错）
+      - `all_candidates_filtered`（所有 manifest 都 non-renderable）→ verdict 维持 + finding 记 knownIssue "考虑 --partial-rescan"
+      - `success` 且 `knowledge_requirements` 全 PASS → 正常走 verdict 规则
+
+   e. `review_target.known_issues` 里的 drifted/superseded 条目**不追加 finding**（它们 non-binding），但写入 `scorecard_delta` 的 `known_issues_seen` 字段供审计。
+
+   **新增 verdict 规则**：
+   - 任一 `knowledge_requirement` 被违反 → **FAIL**（不论其他硬门状态）
+   - `retrieval_outcome = coordinator_miss` → **BLOCKED**
 
 ## Output（严格 YAML，供 caller 解析）
 
@@ -84,7 +146,7 @@ scorecard_delta:
   blocked_count: 0
 ```
 
-### Verdict 决定规则
+### Verdict 决定规则（R10 扩展含 Step 5 知识合规）
 
 | 条件 | verdict |
 |------|---------|
@@ -92,7 +154,10 @@ scorecard_delta:
 | 至少一个 `high` finding 且 stage ∈ {qa, security, spec} | **FAIL** |
 | `high` finding 仅出现在 stage=quality | **FAIL**（quality 阶段同样严格）|
 | 仅 `medium` findings | **FAIL**（但 caller 可接受为 "merge-with-knownissues"）|
-| 仅 `low` findings + 三硬门全过 + adversarial 3 条全论证 | **PASS** |
+| **任一 `knowledge_requirement` 被违反**（Step 5 捕获） | **FAIL** |
+| **`retrieval_outcome = coordinator_miss`**（Stage -0.5 漏跑 + 系统错误）| **BLOCKED** |
+| `retrieval_outcome = all_candidates_filtered` | 正常走其他规则 + 记 knownIssue 警示 `--partial-rescan` |
+| 仅 `low` findings + 三硬门全过 + adversarial 3 条全论证 + 知识合规全过 | **PASS** |
 | 任何硬门失败 | **BLOCKED** |
 | 输入格式错误 / 缺少 required 字段 | **BLOCKED** |
 
