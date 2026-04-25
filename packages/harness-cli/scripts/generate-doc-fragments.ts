@@ -57,10 +57,20 @@ function parseArgs(argv: string[]): Opts {
 }
 
 async function run(opts: Opts): Promise<number> {
-  const files = await globby(['resources/skills/**/*.md'], {
-    cwd: REPO,
-    absolute: true,
-  });
+  // Scan range:
+  //  1. resources/skills/**/*.md       — bundled skill templates inside CLI
+  //  2. resources/presets/**/skills/**/*.md — preset overlay skills (company-mt etc)
+  // Activated repo-root skill markdowns（profile-entry / harness-* / team-* / strict-reviewer）
+  // are not scanned here because they live outside the npm package boundary.
+  // If they ever adopt @generated anchors, run `npm run generate` from repo root with
+  // an explicit list (out of scope for this CLI's prepublish gate).
+  const files = await globby(
+    [
+      'resources/skills/**/*.md',
+      'resources/presets/**/skills/**/*.md',
+    ],
+    { cwd: REPO, absolute: true },
+  );
 
   let hasDiff = false;
   const errors: string[] = [];
