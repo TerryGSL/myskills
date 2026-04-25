@@ -2,6 +2,8 @@
 # context-monitor.sh — Stop Hook: monitors Claude session context usage and
 # recommends skill re-injection when context is running high.
 #
+# requires: bash >= 3.2, python3 (for JSON parsing), realpath
+#
 # Hook type: PostToolUse / Stop
 # Registration: see the settings.json snippet at the bottom of this file.
 #

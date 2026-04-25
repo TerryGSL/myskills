@@ -84,7 +84,7 @@ hard_floor:
 写文件**之前**先调 `harness/tools/harness-pack-test` 校验：
 - 占位符残留（REPLACE_ME / __X__）→ 拒绝
 - 必需字段（detection / entry_skill / default_mode / hard_floor）→ 拒绝
-- matcher 类型白名单（always / path_glob / git_remote_regex）→ 拒绝
+- matcher 类型白名单（path_glob / git_remote_regex）→ 拒绝
 
 校验通过才进入 Step 5。
 

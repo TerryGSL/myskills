@@ -62,15 +62,15 @@ check_or_write() {
 
 write_default_yml() {
   cat <<'YAML'
-# default.yml — 兜底 profile（priority 0，always 匹配）
+# default.yml — 兜底 profile（priority 0，path_glob ** 全匹配）
 name: default
 description: 默认 profile（无项目特定配置时使用）
 
 detection:
   priority: 0
   matchers:
-    - type: always
-      pattern: "*"
+    - type: path_glob
+      pattern: "**"
 
 entry_skill: profile-entry
 
@@ -187,7 +187,7 @@ print_hook_snippet() {
   bugfix   → warn 70% / crit 85%
   feature  → warn 60% / crit 80%
   refactor → warn 60% / crit 80%
-  无 task_type → 静默退出
+  无 task_type → default 70/85
 JSON
 }
 

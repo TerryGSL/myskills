@@ -21,8 +21,8 @@ description: string           # 人类可读描述，用于探测公告显示
 detection:
   priority: integer           # 整数，高优先级胜低优先级（无上限；0 = 最低）
   matchers:                   # 至少一个 matcher
-    - type: always | path_glob | git_remote_regex
-      pattern: string         # type=always 时可用 "*"；其他 type 见下方说明
+    - type: path_glob | git_remote_regex
+      pattern: string         # path_glob "**" 即全匹配；其他 type 见下方说明
 
 entry_skill: string           # 恒定为 "profile-entry"；预留扩展
 
@@ -65,13 +65,13 @@ hard_floor:                   # 合规硬底操作列表（可为空列表 []）
 
 ```yaml
 name: default
-description: Fallback profile. Always matches. Conservative defaults.
+description: Fallback profile. Matches all paths via path_glob "**". Conservative defaults.
 
 detection:
   priority: 0
   matchers:
-    - type: always
-      pattern: "*"
+    - type: path_glob
+      pattern: "**"
 
 entry_skill: profile-entry
 
