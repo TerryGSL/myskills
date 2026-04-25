@@ -1,19 +1,43 @@
-# Knowledge retrieval: manifest drifted, late_recovered → flag warning, still inject rules.
-description: 'knowledge manifest drifted but late_recovered → inject + warn'
+# Knowledge retrieval: drifted manifest + Stage 4 late_recovered=true.
+# Runner is `manual`; oracle asserted by tests/utils/knowledge-retrieval.test.ts
+# (Case 5). Demonstrates the late-recovery path where a drifted manifest is
+# salvaged via the diff-based fallback and the reviewer-facing flag flips.
+description: 'drifted manifest + lateRecovered=true → KnowledgeCheck.drifted=true, late_recovered=true'
 runner: 'manual'
-status: 'pending_until_PR-C3'
+status: 'active'
 input:
-  manifest_state: 'present'
-  manifest_status: 'drifted'
-  recovery: 'late_recovered'
-  domain: 'business-rules'
-  rules:
-    - id: 'br-1'
-      text: 'all monetary values use cents (integer)'
-      status: 'drifted'
+  project_root: '/tmp/golden-project'
+  task_type: 'feature'
+  task_description: 'add Stripe webhook handler'
+  filesystem:
+    'docs/harness/knowledge/INDEX.md': |
+      ---
+      last_full_scan: 2026-04-20
+      status: active
+      ---
+    'docs/harness/knowledge/exception-and-error-contracts/manifest.md': |
+      ---
+      domain: exception-and-error-contracts
+      status: drifted
+      ---
+      **Rule ID**: exc/rule-1
+      **rule**: no raw RuntimeException
+      **Evidence**: evidence.md#exc-rule-1
+      **Status**: drifted
+      **violation_test**: must_not_throw_raw_exception
+      **Rule ID**: exc/rule-2
+      **rule**: wrap in Result
+      **Evidence**: evidence.md#exc-rule-2
+      **Status**: active
+      **violation_test**: must_use_wrapper
+  late_recovered: true
+  now: '2026-04-25T12:00:00Z'
 expected_output:
-  retrieval_disabled: false
-  injected_rules:
-    - id: 'br-1'
-      text: 'all monetary values use cents (integer)'
-  warning: 'manifest for domain=business-rules drifted; use rules with caution'
+  disabled: false
+  present: true
+  status: 'ready'
+  drifted: true
+  late_recovered: true
+  rules_count: 2
+  examples_count: 2
+  retrieved_at: '2026-04-25T12:00:00Z'

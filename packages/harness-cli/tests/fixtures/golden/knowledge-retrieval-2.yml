@@ -1,11 +1,22 @@
-# Knowledge retrieval: manifest missing → retrieval disabled, no rules injected.
-description: 'knowledge manifest missing → retrieval disabled, no rules injected'
+# Knowledge retrieval: no INDEX.md → present=false, status=missing.
+# Runner is `manual`; oracle asserted by tests/utils/knowledge-retrieval.test.ts.
+description: 'no INDEX.md → KnowledgeCheck.present=false, status=missing (Stage -0.5 short-circuits cleanly)'
 runner: 'manual'
-status: 'pending_until_PR-C3'
+status: 'active'
 input:
-  manifest_state: 'missing'
-  domain: 'api'
+  project_root: '/tmp/golden-project'
+  task_type: 'bugfix'
+  task_description: 'fix payment race'
+  filesystem:
+    'CLAUDE.md': null
+    'docs/harness/knowledge/INDEX.md': null
+  now: '2026-04-25T12:00:00Z'
 expected_output:
-  retrieval_disabled: true
-  injected_rules: []
-  warning: 'no knowledge manifest for domain=api; skipping retrieval'
+  disabled: false
+  present: false
+  status: 'missing'
+  drifted: false
+  late_recovered: false
+  rules_count: 0
+  examples_count: 0
+  retrieved_at: '2026-04-25T12:00:00Z'

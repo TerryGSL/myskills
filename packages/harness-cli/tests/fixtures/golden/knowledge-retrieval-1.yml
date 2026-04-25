@@ -1,18 +1,45 @@
-# Knowledge retrieval: manifest present + status=ready → inject binding rules into context.
-description: 'knowledge manifest ready → bindings rules injected into leaf context'
+# Knowledge retrieval: INDEX present + fresh scan + all rules active → 8-field state.
+# This fixture exercises the happy path of `performRetrieval` (PR C3): a project
+# with `docs/harness/knowledge/INDEX.md`, one domain manifest with active rules,
+# and an evidence.md providing matching anchors. Runner is `manual` because the
+# 8-field oracle is asserted directly by tests/utils/knowledge-retrieval.test.ts;
+# this fixture is the documented golden shape for the active-ready path.
+description: 'INDEX present + fresh scan + active rules → KnowledgeCheck.status=ready, drifted=false'
 runner: 'manual'
-status: 'pending_until_PR-C3'
+status: 'active'
 input:
-  manifest_state: 'present'
-  manifest_status: 'ready'
-  domain: 'api'
-  rules:
-    - id: 'api-1'
-      text: 'all endpoints under /api/v1/'
-      status: 'active'
+  project_root: '/tmp/golden-project'
+  task_type: 'feature'
+  task_description: 'add new endpoint'
+  filesystem:
+    'CLAUDE.md': null
+    'docs/harness/knowledge/INDEX.md': |
+      ---
+      schema_version: 1
+      snapshot_id: "scan-2026-04-21T10:00Z"
+      last_full_scan: 2026-04-21
+      status: active
+      ---
+    'docs/harness/knowledge/style-and-structure/manifest.md': |
+      ---
+      domain: style-and-structure
+      status: active
+      ---
+      **Rule ID**: style/rule-1
+      **rule**: naming convention
+      **Evidence**: evidence.md#naming
+      **Status**: active
+      **violation_test**: free_form_review
+    'docs/harness/knowledge/style-and-structure/evidence.md': |
+      ## naming
+      file.ts:10
+  now: '2026-04-25T12:00:00Z'
 expected_output:
-  retrieval_disabled: false
-  injected_rules:
-    - id: 'api-1'
-      text: 'all endpoints under /api/v1/'
-  warning: null
+  disabled: false
+  present: true
+  status: 'ready'
+  drifted: false
+  late_recovered: false
+  rules_count: 1
+  examples_count: 1
+  retrieved_at: '2026-04-25T12:00:00Z'
