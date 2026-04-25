@@ -45,6 +45,14 @@ interface ProfileResolveFixtureInput {
   available_profiles: Array<Record<string, unknown>>;
 }
 
+interface RouteFixtureInput {
+  cwd: string;
+  marker_file: { profile: string; resolved_by: string; updated_at: string } | null;
+  available_profiles: Array<Record<string, unknown>>;
+  task_description: string;
+  flags?: string[];
+}
+
 const fixtureFiles = fs
   .readdirSync(FIXTURES_DIR)
   .filter((f) => f.endsWith('.yml'))
@@ -57,6 +65,56 @@ function profileToYaml(p: Record<string, unknown>): string {
 
 function tmpDir(): string {
   return fsx.mkdtempSync(path.join(os.tmpdir(), 'harness-cli-golden-'));
+}
+
+function runRouteFixture(fixturePath: string, input: RouteFixtureInput): Record<string, unknown> {
+  const home = tmpDir();
+  try {
+    const cwd = input.cwd.replace(/\{HOME\}/g, home);
+    fsx.ensureDirSync(cwd);
+
+    const profilesDir = path.join(home, '.claude', 'profiles');
+    fsx.ensureDirSync(profilesDir);
+    for (const p of input.available_profiles) {
+      const name = String((p as { name?: unknown }).name ?? 'unnamed');
+      fs.writeFileSync(path.join(profilesDir, `${name}.yml`), profileToYaml(p));
+    }
+
+    if (input.marker_file) {
+      const m = input.marker_file;
+      const body = `profile: ${m.profile}\nresolved_by: ${m.resolved_by}\nupdated_at: ${m.updated_at}\n`;
+      fs.writeFileSync(path.join(cwd, '.harness-profile'), body);
+    }
+
+    const flagsCsv = (input.flags ?? []).join(',');
+    const args = [
+      CLI_BIN,
+      'route',
+      '--task',
+      input.task_description,
+      '--flags',
+      flagsCsv,
+      '--profiles-dir',
+      profilesDir,
+      '--git-remote',
+      '',
+      '--skip-git',
+      cwd,
+    ];
+    const result = spawnSync('node', args, {
+      encoding: 'utf8',
+      env: { ...process.env, HOME: home },
+      cwd: REPO_ROOT,
+    });
+    if (result.status !== 0) {
+      throw new Error(
+        `CLI failed (fixture=${path.basename(fixturePath)}, exit=${result.status}): ${result.stderr}`,
+      );
+    }
+    return JSON.parse(result.stdout) as Record<string, unknown>;
+  } finally {
+    fsx.removeSync(home);
+  }
 }
 
 function runProfileResolveFixture(fixturePath: string, input: ProfileResolveFixtureInput): unknown {
@@ -142,7 +200,20 @@ describe('golden conformance fixtures', () => {
         return;
       }
 
-      // Other active runners (push-check / route) get wired up in their respective C-series PRs.
+      if (fixture.runner === 'route') {
+        const actual = runRouteFixture(fixturePath, fixture.input as RouteFixtureInput);
+        // Partial match: every key in expected_output must equal the
+        // corresponding key in actual. Dynamic fields (task_description,
+        // knowledge_manifest, context_to_inject) are not asserted unless the
+        // fixture lists them explicitly.
+        const expected = fixture.expected_output as Record<string, unknown>;
+        for (const k of Object.keys(expected)) {
+          expect({ key: k, value: actual[k] }).toEqual({ key: k, value: expected[k] });
+        }
+        return;
+      }
+
+      // Other active runners (push-check) get wired up in their respective C-series PRs.
       const knownRunners = new Set(['manual', 'profile-resolve', 'push-check', 'route']);
       expect(knownRunners.has(fixture.runner ?? '')).toBe(true);
     });

@@ -15,6 +15,7 @@ import {
 import { runPushCheck } from './commands/push-check.js';
 import { runProfileResolve } from './commands/profile-resolve.js';
 import { runMemoryCheck } from './commands/memory.js';
+import { runRoute } from './commands/route.js';
 
 const program = new Command();
 
@@ -258,6 +259,47 @@ memory
     const { exitCode, ...payload } = r;
     process.stdout.write(JSON.stringify(payload, null, 2) + '\n');
     process.exit(exitCode);
+  });
+
+program
+  .command('route')
+  .description('Unified routing: profile + fast-path + mode + hard-floor + knowledge → JSON')
+  .requiredOption('--task <text>', 'Verbatim user message (task description)')
+  .option('--flags <list>', 'Comma-separated user flags (yolo,fix,quick,refactor,safe)', '')
+  .option('--profiles-dir <dir>', 'Override profiles directory (default ~/.claude/profiles)')
+  .option('--git-remote <url>', 'Override git remote (test hook; empty string forces null)')
+  .option('--now <iso>', 'Override "now" (ISO 8601) for deterministic tests')
+  .option('--skip-git', 'Skip git diff probing (tests / non-repo cwd)', false)
+  .option('--json', 'Machine-readable JSON output (default)', true)
+  .argument('[projectPath]', 'Project root (defaults to cwd)', '.')
+  .action((projectPath, opts) => {
+    const cwd = path.resolve(projectPath);
+    try {
+      const flags = (opts.flags ?? '')
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter((s: string) => s.length > 0);
+      const gitRemoteOpt =
+        opts.gitRemote === undefined
+          ? undefined
+          : opts.gitRemote === ''
+            ? null
+            : opts.gitRemote;
+      const r = runRoute({
+        task: opts.task,
+        flags,
+        cwd,
+        profilesDir: opts.profilesDir,
+        gitRemote: gitRemoteOpt,
+        now: opts.now,
+        skipGit: !!opts.skipGit,
+      });
+      process.stdout.write(JSON.stringify(r, null, 2) + '\n');
+      process.exit(0);
+    } catch (e) {
+      process.stderr.write(`route failed: ${(e as Error).message}\n`);
+      process.exit(1);
+    }
   });
 
 program.parse();

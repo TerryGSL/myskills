@@ -1,28 +1,34 @@
 # Routing-as-CLI: explicit /refactor flag → leaf=harness-refactor.
 description: 'route: /refactor flag → leaf=harness-refactor'
 runner: 'route'
-status: 'pending_until_PR-C5'
+status: 'active'
 input:
-  cwd: '/Users/twelve/Music/myskills'
+  cwd: '{HOME}/Music/myskills'
   marker_file:
     profile: 'harness'
     resolved_by: 'marker'
     updated_at: '2026-04-26T10:00:00Z'
   available_profiles:
     - name: 'harness'
-      default_mode: 'standard'
-      hard_floor: []
+      description: 'personal'
       detection:
         priority: 10
         matchers:
           - type: 'path_glob'
             pattern: '~/Music/myskills/**'
+      entry_skill: 'profile-entry'
+      task_types:
+        quick: 'harness-quick'
+        bugfix: 'harness-bugfix'
+        feature: 'harness-feature'
+        refactor: 'harness-refactor'
+      default_mode: 'standard'
+      hard_floor: []
   task_description: '把 push-check 拆成两个函数'
-  user_flag: '/refactor'
+  flags: ['refactor']
 expected_output:
   leaf_skill: 'harness-refactor'
   resolved_profile: 'harness'
   resolved_mode: 'standard'
-  task_description: '把 push-check 拆成两个函数'
   hard_floor: []
   fast_path_hit: false
