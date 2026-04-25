@@ -1,0 +1,15 @@
+# Aider 配置文件 — Harness 工作流入口
+# Aider 启动时自动从仓库根读取本文件。read: 列表中的所有文件作为只读上下文
+# 注入每次对话；与跨工具 wrapper 一致的 7 kernel + contracts 在 CONVENTIONS.md。
+#
+# 跨工具入口的关系：
+#   - Codex / Cross-tool: AGENTS.md
+#   - Claude Code:        harness-init/SKILL.md
+#   - Cursor:             .cursor/rules/harness.md
+#   - Aider:              CONVENTIONS.md（本文件 read 进去）
+#   - Copilot:            .github/copilot-instructions.md
+# Source-of-truth: harness-common/contracts/
+
+read:
+  - CONVENTIONS.md
+  - harness-common/contracts/routing.md
