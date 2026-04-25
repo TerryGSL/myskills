@@ -19,8 +19,8 @@ set -euo pipefail
 # Default file locations (can be overridden by environment)
 readonly STATUS_FILE="${HARNESS_STATUS_FILE:-.harness-status.json}"
 readonly CONTEXT_LIMIT="${HARNESS_CONTEXT_LIMIT:-200000}"   # tokens, Sonnet/Opus default
-readonly THRESHOLD_WARN=70   # percent — suggest re-injection
-readonly THRESHOLD_CRIT=85   # percent — strongly recommend new session
+# 阈值按 task_type 自适应（在主体逻辑里读取）
+# 用户可通过环境变量覆盖（例：HARNESS_QUICK_CRIT_THRESHOLD=85）
 
 # ANSI colours (disabled when not a TTY)
 if [[ -t 1 ]]; then
@@ -85,6 +85,28 @@ pct=$(( tokens_used * 100 / CONTEXT_LIMIT ))
 effective_task_type="$(json_get "${STATUS_FILE}" "effective_task_type")"
 current_phase="$(json_get "${STATUS_FILE}" "current_phase")"
 
+# ─── Adaptive thresholds by task_type ─────────────────────────────────────────
+# 用户可通过 env 覆盖（例：HARNESS_QUICK_CRIT_THRESHOLD=85）
+case "${effective_task_type:-}" in
+  quick)
+    threshold_warn="${HARNESS_QUICK_WARN_THRESHOLD:-80}"
+    threshold_crit="${HARNESS_QUICK_CRIT_THRESHOLD:-90}"
+    ;;
+  bugfix)
+    threshold_warn="${HARNESS_BUGFIX_WARN_THRESHOLD:-70}"
+    threshold_crit="${HARNESS_BUGFIX_CRIT_THRESHOLD:-85}"
+    ;;
+  feature|refactor)
+    threshold_warn="${HARNESS_LONG_WARN_THRESHOLD:-60}"
+    threshold_crit="${HARNESS_LONG_CRIT_THRESHOLD:-80}"
+    ;;
+  *)
+    # 无 task_type — 保守默认（与 bugfix 同）
+    threshold_warn="${HARNESS_DEFAULT_WARN_THRESHOLD:-70}"
+    threshold_crit="${HARNESS_DEFAULT_CRIT_THRESHOLD:-85}"
+    ;;
+esac
+
 # Map task_type → recommended skill to re-inject
 recommend_skill() {
   case "${1:-}" in
@@ -98,9 +120,9 @@ recommend_skill() {
 
 # ─── Emit advice based on thresholds ─────────────────────────────────────────
 
-if (( pct >= THRESHOLD_CRIT )); then
+if (( pct >= threshold_crit )); then
   echo -e ""
-  echo -e "${RED}⛔ Context 使用已超 ${pct}%（临界：${THRESHOLD_CRIT}%）${RESET}"
+  echo -e "${RED}⛔ Context 使用已超 ${pct}%（临界：${threshold_crit}%）${RESET}"
   echo -e "${RED}强烈建议：结束当前 round，开启新 session。${RESET}"
   echo -e ""
   echo -e "${CYAN}在切换前请确认以下状态已保存：${RESET}"
@@ -114,10 +136,10 @@ if (( pct >= THRESHOLD_CRIT )); then
   echo -e "  /$( recommend_skill "${effective_task_type}" )  → 恢复当前任务类型"
   echo -e ""
 
-elif (( pct >= THRESHOLD_WARN )); then
+elif (( pct >= threshold_warn )); then
   recommended="$( recommend_skill "${effective_task_type}" )"
   echo -e ""
-  echo -e "${YELLOW}⚠️  Context 使用已超 ${pct}%（警戒：${THRESHOLD_WARN}%）${RESET}"
+  echo -e "${YELLOW}⚠️  Context 使用已超 ${pct}%（警戒：${threshold_warn}%）${RESET}"
   echo -e "${YELLOW}建议：重新激活 skill 以刷新上下文并减少前缀压力。${RESET}"
   echo -e ""
 
