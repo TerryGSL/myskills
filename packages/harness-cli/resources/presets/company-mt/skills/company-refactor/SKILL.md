@@ -59,7 +59,7 @@ Phase 1 (baseline) / Phase 2 (incremental plan) / Phase 3 (执行) / Phase 4 (�
 
 ## 引用
 
-- 基础 skill：`harness-refactor/skill.md`
+- 基础 skill：`harness-refactor/SKILL.md`
 - Java 保护路径：[../../references/java-gates.md](../../references/java-gates.md)
   （company-refactor 禁止触碰 Category 1 的路径 —— 那里任何改动都是 feature scope）
 - Degraded fallback（若 mvn/jacoco 工具链缺失）：[../../references/degraded-fallback.md](../../references/degraded-fallback.md)

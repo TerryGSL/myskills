@@ -50,7 +50,7 @@ description: >
 
 ## 引用
 
-- 基础 skill：`harness-quick/skill.md`
+- 基础 skill：`harness-quick/SKILL.md`
 - Java 保护路径完整清单：[../../references/java-gates.md](../../references/java-gates.md)
 - Degraded fallback 协议：[../../references/degraded-fallback.md](../../references/degraded-fallback.md)
 - company-mt profile hard_floor：`../../profile/company-mt.yml.template`

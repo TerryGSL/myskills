@@ -128,15 +128,10 @@ export function runProfileBootstrap(input: BootstrapInput): BootstrapResult {
   const derived = deriveProfile(input.userSlug, input.remoteName);
 
   // 2. workspace classification → hard_floor
+  // Company workspaces get the full safety floor (all HARD_FLOOR_FLAGS).
+  // Source of truth is constants.HARD_FLOOR_FLAGS; never hard-code the list.
   const company = isCompanyWorkspace(derived.slug, input.workspace);
-  const hardFloor: string[] = company
-    ? [
-        HARD_FLOOR_FLAGS[0], // auto_push
-        HARD_FLOOR_FLAGS[1], // force_push
-        HARD_FLOOR_FLAGS[2], // destructive_ops
-        HARD_FLOOR_FLAGS[3], // auto_merge
-      ]
-    : [];
+  const hardFloor: string[] = company ? [...HARD_FLOOR_FLAGS] : [];
 
   // 3. assemble yaml
   const yamlText = renderProfileYaml({

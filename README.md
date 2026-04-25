@@ -8,7 +8,7 @@
 
 | 套别 | 位置 | 入口 | 特点 |
 |------|------|------|------|
-| **A 套** | `harness/` 子目录 | `harness/harness-workflow/skill.md` + `harness/setup/setup-harness.sh`（bash） | profile-entry 嵌套在 `harness/profile-entry/` 下；4 leaf skill 在 `harness/harness-{quick,bugfix,feature,refactor}/SKILL.md`；纯 markdown + bash 脚本，无 npm 依赖 |
+| **A 套** | `harness/` 子目录 | `harness/harness-workflow/SKILL.md` + `harness/setup/setup-harness.sh`（bash） | profile-entry 嵌套在 `harness/profile-entry/` 下；4 leaf skill 在 `harness/harness-{quick,bugfix,feature,refactor}/SKILL.md`；纯 markdown + bash 脚本，无 npm 依赖 |
 | **B 套** | 仓库**顶层** + `packages/harness-cli/` | 顶层 `harness-init/SKILL.md` + `harness` npm CLI | 顶层 skill 平铺（`profile-entry/`、`harness-{quick,bugfix,feature,refactor}/`、`harness-common/`、`harness-init/` 等）；TypeScript CLI 提供 8 个命令；`hooks/context-monitor.sh` 自适应阈值；`scripts/regen-schema.ts` 守门 |
 
 **怎么选**：
@@ -156,8 +156,8 @@ docs/superpowers/{specs,plans}/  设计文档 + 实施计划
 | `docs/superpowers/plans/2026-04-26-harness-fusion-implementation.md` | fusion 实施计划 |
 | `harness-common/references/push-decision.md` | push 决策三档 markdown 契约 |
 | `harness-common/references/drift-detection.md` | 状态漂移检测 |
-| `harness-init/SKILL.md` / `profile-entry/skill.md` | 接入入口 + 路由器 |
-| 各 leaf 的 `skill.md` | 4 个 task-type leaf 的执行 spec |
+| `harness-init/SKILL.md` / `profile-entry/SKILL.md` | 接入入口 + 路由器 |
+| 各 leaf 的 `SKILL.md` | 4 个 task-type leaf 的执行 spec |
 
 ## 常见命令
 

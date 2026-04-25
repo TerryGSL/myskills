@@ -18,7 +18,7 @@
 /harness-workflow --maintain
 ```
 
-`--maintain` 是 harness 模式的保留命令，通过 `harness-workflow/skill.md` passthrough 到 harness-common。所有 harness-* 子 skill 共用本文档定义的 audit 流程。
+`--maintain` 是 harness 模式的保留命令，通过 `harness-workflow/SKILL.md` passthrough 到 harness-common。所有 harness-* 子 skill 共用本文档定义的 audit 流程。
 
 ### 1.2 触发频率建议
 

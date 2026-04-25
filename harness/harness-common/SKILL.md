@@ -94,7 +94,7 @@ git commit -m "chore: initialize harness engineering environment"
 
 ## 引用本文档的方式
 
-子 skill 在其 skill.md 中通过如下方式引用共享规范：
+子 skill 在其 SKILL.md 中通过如下方式引用共享规范：
 
 ```markdown
 **项目初始化流程** → 见 [harness-common/references/phase-init.md](../harness-common/references/phase-init.md)

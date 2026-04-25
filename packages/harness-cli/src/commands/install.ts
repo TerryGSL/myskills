@@ -2,6 +2,7 @@ import fs from 'fs-extra';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { HARD_FLOOR_FLAGS } from '../types/constants.js';
 
 /**
  * harness install — user-global setup (~/.claude/profiles + settings.json hook + skills symlinks).
@@ -153,6 +154,9 @@ hard_floor: []
 }
 
 function companyTemplateContent(): string {
+  // hard_floor list is sourced from canonical HARD_FLOOR_FLAGS so the template
+  // always reflects the full safety floor (currently 6 items).
+  const hardFloorBlock = HARD_FLOOR_FLAGS.map((f) => `  - ${f}`).join('\n');
   return `# company.yml.template — copy + edit for company projects (use \`harness profile-bootstrap\`)
 # hard_floor list MUST NOT be empty for company projects (default safety floor).
 name: company-REPLACE_ME
@@ -177,10 +181,7 @@ task_types:
 default_mode: conservative
 
 hard_floor:
-  - auto_push
-  - force_push
-  - destructive_ops
-  - auto_merge
+${hardFloorBlock}
 `;
 }
 

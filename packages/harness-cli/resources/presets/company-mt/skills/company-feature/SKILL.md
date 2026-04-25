@@ -78,7 +78,7 @@ Stage 3 实现 + Stage 4 strict-reviewer 审查时，Java 警戒区代码要特�
 
 ## 引用
 
-- 基础 skill：`harness-feature/skill.md`
+- 基础 skill：`harness-feature/SKILL.md`
 - Java 企业硬规则：[../../references/java-gates.md](../../references/java-gates.md)
 - Degraded fallback：[../../references/degraded-fallback.md](../../references/degraded-fallback.md)
 - Java seed（init 投放）：[../../references/java-rules.md](../../references/java-rules.md)

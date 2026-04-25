@@ -124,4 +124,4 @@ Stage 8 完成 → 检查 `pendingRounds`：
 
 ### 共享基础设施
 
-- `harness-common/skill.md` + `harness-common/references/*`
+- `harness-common/SKILL.md` + `harness-common/references/*`

@@ -251,7 +251,8 @@ fi
 
 # ─── Check 6: hard_floor values are from the allowed set ─────────────────────
 
-readonly ALLOWED_HARD_FLOOR=(auto_push force_push destructive_ops auto_merge)
+# Mirror packages/harness-cli/src/types/constants.ts HARD_FLOOR_FLAGS (6 items)
+readonly ALLOWED_HARD_FLOOR=(auto_push force_push destructive_ops auto_merge rewrite_history network_install)
 
 while IFS= read -r hf_val; do
   [[ -z "${hf_val}" ]] && continue
@@ -260,7 +261,7 @@ while IFS= read -r hf_val; do
     [[ "${hf_val}" == "${allowed}" ]] && val_valid="yes"
   done
   if [[ "${val_valid}" != "yes" ]]; then
-    add_violation "hard_floor contains illegal value '${hf_val}' (allowed: auto_push / force_push / destructive_ops / auto_merge)"
+    add_violation "hard_floor contains illegal value '${hf_val}' (allowed: auto_push / force_push / destructive_ops / auto_merge / rewrite_history / network_install)"
   fi
 done < <(yaml_list "hard_floor")
 

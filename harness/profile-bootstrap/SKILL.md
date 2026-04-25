@@ -52,7 +52,7 @@ bash fallback 输出（环境变量）：
 
 | 条件 | hard_floor |
 |------|-----------|
-| slug 含 "company" / "work" / "corp" / 用户传 `--workspace company` | `[auto_push, force_push, destructive_ops, auto_merge]` |
+| slug 含 "company" / "work" / "corp" / 用户传 `--workspace company` | `[auto_push, force_push, destructive_ops, auto_merge, rewrite_history, network_install]`（全 6 项，源自 `packages/harness-cli/src/types/constants.ts` 的 `HARD_FLOOR_FLAGS`） |
 | 否则 | `[]` |
 
 **永远不替用户决定个人项目要 hard_floor**——这是 user feedback 明确的 boundary。
@@ -83,6 +83,8 @@ hard_floor:
   - force_push
   - destructive_ops
   - auto_merge
+  - rewrite_history
+  - network_install
 ```
 
 ---
@@ -107,9 +109,13 @@ tmp=$(mktemp ~/.claude/profiles/.tmp.XXXXXX)
 echo "${rendered_yaml}" > "${tmp}"
 mv "${tmp}" "${target_yml}"
 
-# 写 .harness-profile marker
+# 写 .harness-profile marker（YAML 格式 — 与 profile-bootstrap.ts 一致）
 marker="${DERIVED_REPO_ROOT}/.harness-profile"
-echo "company-${DERIVED_SLUG}" > "${marker}.tmp"
+cat > "${marker}.tmp" <<MARKER
+profile: company-${DERIVED_SLUG}
+resolved_by: marker
+updated_at: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+MARKER
 mv "${marker}.tmp" "${marker}"
 
 # 自动加 .gitignore
@@ -126,10 +132,10 @@ grep -qxF ".harness-profile" "${gitignore}" 2>/dev/null \
 Derived: profile=company-${DERIVED_SLUG}
   path_glob:        ${DERIVED_PATH_GLOB}
   git_remote_regex: ${DERIVED_REMOTE_REGEX}
-  hard_floor:       [auto_push, force_push, destructive_ops, auto_merge]
+  hard_floor:       [auto_push, force_push, destructive_ops, auto_merge, rewrite_history, network_install]
 Wrote:
   ${target_yml}
-  ${marker}  (added to .gitignore)
+  ${marker}  (YAML: profile / resolved_by / updated_at；added to .gitignore)
 ```
 
 下次进入该 repo，profile-entry Step 0 通过 marker 直接命中，无需重新派生。

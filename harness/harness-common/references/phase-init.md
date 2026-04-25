@@ -1,6 +1,6 @@
 # Phase Init — 项目一次性初始化四步骤
 
-> 本文档从 `harness-workflow/skill.md` 的 Phase 1-4 章节抽取整合（harness 架构重构），供所有 harness-* task-type sub-skill 共享引用。
+> 本文档从 `harness-workflow/SKILL.md` 的 Phase 1-4 章节抽取整合（harness 架构重构），供所有 harness-* task-type sub-skill 共享引用。
 
 **术语区分**：Phase 1-4 是**一次性初始化步骤**，仅在 `--init` 或 `--adopt` 时执行。Round 内的开发循环使用 Stage 0-8 编号。两者是不同层级，不冲突。
 

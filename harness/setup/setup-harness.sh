@@ -162,6 +162,8 @@ hard_floor:
   - force_push
   - destructive_ops
   - auto_merge
+  - rewrite_history
+  - network_install
 YAML
 }
 
@@ -246,7 +248,7 @@ fi
 section "下一步"
 echo -e "  • 切到公司项目时：${CYAN}/profile-bootstrap <slug>${RESET} 派生 company-*.yml"
 echo -e "  • 在任意 repo 内：直接说出任务，task-dispatcher → profile-entry 自动路由"
-echo -e "  • 若需手动指定 profile：在 repo 根写 ${CYAN}.harness-profile${RESET}（内容为 profile 名）"
+echo -e "  • 若需手动指定 profile：在 repo 根写 ${CYAN}.harness-profile${RESET}（YAML 格式：${CYAN}profile: <name>${RESET} / ${CYAN}resolved_by: marker${RESET} / ${CYAN}updated_at: <ISO ts>${RESET}）"
 echo -e "  • 推荐：装 harness CLI（\`npm install -g harness-workflow-cli\`）后跑 ${CYAN}harness install${RESET}"
 echo ""
 $DOCTOR && echo -e "${CYAN}本次为 doctor 模式（check only）。去掉 --doctor 才会写入。${RESET}"
