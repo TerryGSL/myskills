@@ -63,7 +63,7 @@ git diff -U3 HEAD
 
 测试或 lint 失败：修复后重新执行本步骤，不升级为 feature 路径（仍属 quick 范围内）。
 
-### Step 4：commit
+### Step 4：commit + push-decision
 
 ```bash
 git add <changed-file>
@@ -73,7 +73,12 @@ git commit -m "fix: <具体描述改动内容，一行>"
 # git commit -m "chore: update timeout value in config.yml (30s -> 60s)"
 ```
 
-commit 完成后，写一条轻量 memory observation（见第 4 节）。
+commit 完成后，调用 [push-decision](../harness-common/references/push-decision.md) 评估是否自动 push：
+
+- quick 任务通常评 LOW（单文件 < 10 行 typo / 注释 / md / 配置值），自动 push
+- 公司 profile 例外：strictness=strict 强制 HIGH → REFUSE，由用户手动 push
+
+push 决策完成后，写一条轻量 memory observation（见第 4 节）。
 
 ---
 
