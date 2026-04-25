@@ -14,6 +14,7 @@ import {
 } from './commands/profile-bootstrap.js';
 import { runPushCheck } from './commands/push-check.js';
 import { runProfileResolve } from './commands/profile-resolve.js';
+import { runMemoryCheck } from './commands/memory.js';
 
 const program = new Command();
 
@@ -240,6 +241,23 @@ program
       : [];
     const r = runPushCheck({ hardFloor: flags, json: opts.json });
     process.exit(r.exit_code);
+  });
+
+const memory = program
+  .command('memory')
+  .description('Project memory tooling (three-layer write-permission contract)');
+
+memory
+  .command('check')
+  .description('Check docs/memory tree against the three-layer matrix; emit JSON report')
+  .option('--json', 'Machine-readable JSON output (always JSON; flag for symmetry)', false)
+  .argument('[projectPath]', 'Project root (defaults to cwd)', '.')
+  .action((projectPath, opts) => {
+    const projectRoot = path.resolve(projectPath);
+    const r = runMemoryCheck({ projectRoot, json: !!opts.json });
+    const { exitCode, ...payload } = r;
+    process.stdout.write(JSON.stringify(payload, null, 2) + '\n');
+    process.exit(exitCode);
   });
 
 program.parse();
