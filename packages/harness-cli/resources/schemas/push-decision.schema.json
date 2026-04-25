@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-workflow-cli/push-decision.schema.json",
+  "title": "PushDecision",
+  "type": "object",
+  "required": [
+    "level",
+    "reasons",
+    "action",
+    "exit_code"
+  ],
+  "properties": {
+    "level": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "action": {
+      "enum": [
+        "refuse",
+        "ask",
+        "auto"
+      ]
+    },
+    "exit_code": {
+      "enum": [
+        0,
+        1,
+        2
+      ]
+    }
+  }
+}

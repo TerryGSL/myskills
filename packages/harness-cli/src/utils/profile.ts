@@ -5,6 +5,7 @@ import { parse as parseYaml } from 'yaml';
 import Ajv from 'ajv/dist/2020.js';
 import { fileURLToPath } from 'node:url';
 import { Profile } from '../types/profile.js';
+import { MATCHER_TYPES, type MatcherType } from '../types/constants.js';
 
 export const MARKER_PATH = '.harness-profile';
 
@@ -89,7 +90,9 @@ function matchScore(
 }
 
 function matchOne(type: string, pattern: string, ctx: MatchContext): number | null {
-  switch (type) {
+  if (!MATCHER_TYPES.includes(type as MatcherType)) return null;
+  const t = type as MatcherType;
+  switch (t) {
     case 'path_glob': {
       const expanded = pattern.replace(/^~\//, `${os.homedir()}/`);
       const prefix = expanded.replace(/\/\*\*$/, '');
@@ -106,8 +109,6 @@ function matchOne(type: string, pattern: string, ctx: MatchContext): number | nu
     case 'file_exists': {
       return fs.existsSync(path.join(ctx.cwd, pattern)) ? pattern.length : null;
     }
-    default:
-      return null;
   }
 }
 

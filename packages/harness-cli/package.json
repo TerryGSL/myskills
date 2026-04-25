@@ -38,6 +38,7 @@
     "build": "tsc && tsx scripts/verify-resources.ts",
     "dev": "tsc --watch",
     "generate": "tsx scripts/generate-doc-fragments.ts",
+    "regen:schema": "tsx scripts/regen-schema.ts",
     "test": "node --experimental-vm-modules ../../node_modules/.bin/jest",
     "check": "npm run build && npm run generate -- --check && npm run test",
     "prepack": "npm run build",

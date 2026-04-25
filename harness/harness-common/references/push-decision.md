@@ -1,5 +1,7 @@
 # push-decision — Git Push 风险评估规则
 
+> **Source of truth**: `packages/harness-cli/src/types/constants.ts`。如本文档与代码不一致，以代码为准。
+
 > 本文件由 leaf skill（harness-quick / harness-bugfix / harness-feature / harness-refactor）在 commit 之后调用。
 > 完全规则化，**不调用 LLM** 当场推理。
 

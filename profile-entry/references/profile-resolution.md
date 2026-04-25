@@ -1,5 +1,7 @@
 # Profile Resolution Algorithm
 
+> **Source of truth**: `packages/harness-cli/src/types/constants.ts`。如本文档与代码不一致，以代码为准。
+
 How profile-entry decides which profile applies to the current project.
 
 ## 算法（按顺序，短路 return）

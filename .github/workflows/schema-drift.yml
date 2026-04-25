@@ -1,0 +1,42 @@
+name: schema-drift
+
+on:
+  push:
+    paths:
+      - 'packages/harness-cli/src/types/constants.ts'
+      - 'packages/harness-cli/scripts/regen-schema.ts'
+      - 'packages/harness-cli/resources/schemas/**'
+  pull_request:
+    paths:
+      - 'packages/harness-cli/src/types/constants.ts'
+      - 'packages/harness-cli/scripts/regen-schema.ts'
+      - 'packages/harness-cli/resources/schemas/**'
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install (monorepo root)
+        run: npm ci
+
+      - name: Regenerate schemas from constants
+        working-directory: packages/harness-cli
+        run: npx tsx scripts/regen-schema.ts
+
+      - name: Check for schema drift
+        working-directory: packages/harness-cli
+        run: |
+          if ! git diff --exit-code resources/schemas/; then
+            echo ""
+            echo "::error::Schema drift detected: constants.ts and resources/schemas/ are out of sync."
+            echo "::error::Run 'cd packages/harness-cli && npx tsx scripts/regen-schema.ts' locally and commit the changes."
+            exit 1
+          fi
