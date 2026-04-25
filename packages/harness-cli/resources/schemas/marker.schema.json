@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-workflow-cli/marker.schema.json",
+  "title": "HarnessProfileMarker",
+  "description": "YAML marker file `.harness-profile` resolving repo to a profile.",
+  "type": "object",
+  "required": [
+    "profile",
+    "resolved_by",
+    "updated_at"
+  ],
+  "properties": {
+    "profile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "resolved_by": {
+      "enum": [
+        "marker",
+        "matcher",
+        "user_override"
+      ]
+    },
+    "updated_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    }
+  },
+  "additionalProperties": false
+}

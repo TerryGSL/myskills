@@ -1,82 +1,70 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "harness-workflow-cli/knowledge.schema.json",
-  "title": "KnowledgeCheck",
-  "description": "Runtime state object written to .harness-status.json.knowledgeCheck by Stage -0.5.",
+  "title": "KnowledgeManifest",
+  "description": "Per-domain manifest produced by `harness scan` (project-scanner). Each manifest belongs to one of the 5 domains.",
   "type": "object",
   "required": [
-    "effective_index_status",
-    "snapshot_id",
-    "retrieval_outcome",
-    "filtered_candidates",
-    "known_issues",
-    "relevant_knowledge_files",
-    "advisory_knowledge",
-    "knowledge_requirements"
+    "domain",
+    "manifest",
+    "rules",
+    "examples"
   ],
   "properties": {
-    "effective_index_status": { "enum": ["active", "stale", "drifted", "disabled"] },
-    "snapshot_id": { "type": ["string", "null"] },
-    "retrieval_outcome": { "enum": ["success", "coordinator_miss", "all_candidates_filtered"] },
-    "filtered_candidates": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["manifest", "reason"],
-        "properties": {
-          "manifest": { "type": "string" },
-          "reason": { "type": "string" }
-        }
-      }
+    "domain": {
+      "enum": [
+        "api",
+        "db",
+        "business-rules",
+        "config",
+        "deployment"
+      ]
     },
-    "known_issues": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["source", "id", "domain", "reason"],
-        "properties": {
-          "source": { "enum": ["drifted_rule", "superseded_rule", "filtered_manifest"] },
-          "id": { "type": "string" },
-          "domain": { "type": "string" },
-          "reason": { "type": "string" }
-        }
-      }
+    "manifest": {
+      "type": "string",
+      "description": "Path to manifest.md file relative to repo root.",
+      "minLength": 1
     },
-    "relevant_knowledge_files": { "type": "array", "items": { "type": "string" } },
-    "advisory_knowledge": {
+    "rules": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["source", "id", "domain", "text", "weight"],
+        "required": [
+          "id",
+          "text"
+        ],
         "properties": {
-          "source": { "enum": ["user_override", "expired_rule"] },
-          "id": { "type": "string" },
-          "domain": { "type": "string" },
-          "text": { "type": "string" },
-          "weight": { "const": "advisory" }
-        }
-      }
-    },
-    "knowledge_requirements": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": ["rule_id", "manifest_file", "applies_to", "requirement_text", "violation_test"],
-        "properties": {
-          "rule_id": { "type": "string" },
-          "manifest_file": { "type": "string" },
-          "applies_to": { "type": "array", "items": { "type": "string" } },
-          "requirement_text": { "type": "string" },
-          "violation_test": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "text": {
+            "type": "string"
+          },
+          "status": {
             "enum": [
-              "must_use_wrapper",
-              "must_call_component",
-              "must_not_throw_raw_exception",
-              "must_use_package",
-              "must_not_use_pattern",
-              "must_annotate_with",
-              "free_form_review"
+              "active",
+              "expired",
+              "drifted",
+              "superseded"
             ]
+          }
+        }
+      }
+    },
+    "examples": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "ref"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
           }
         }
       }

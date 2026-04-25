@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-workflow-cli/reviewer-gates.schema.json",
+  "title": "ReviewerGate",
+  "description": "Strict reviewer hard-gate verdict (one of 4 gates: grounding / reproduction / coverage / knowledge-grounding).",
+  "type": "object",
+  "required": [
+    "gate",
+    "verdict",
+    "evidence"
+  ],
+  "properties": {
+    "gate": {
+      "enum": [
+        "grounding",
+        "reproduction",
+        "coverage",
+        "knowledge-grounding"
+      ]
+    },
+    "verdict": {
+      "enum": [
+        "pass",
+        "fail"
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "feedback": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

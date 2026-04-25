@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-workflow-cli/memory.schema.json",
+  "title": "MemoryLayer",
+  "description": "Three-layer memory write-permission matrix entry: which writer may write to which layer at which stage.",
+  "type": "object",
+  "required": [
+    "layer",
+    "writer",
+    "file_path",
+    "allowed_stages"
+  ],
+  "properties": {
+    "layer": {
+      "enum": [
+        "project",
+        "workflow",
+        "session"
+      ]
+    },
+    "writer": {
+      "enum": [
+        "leaf",
+        "reviewer",
+        "user"
+      ]
+    },
+    "file_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "allowed_stages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-workflow-cli/route-output.schema.json",
+  "title": "RouteOutput",
+  "description": "Output of `harness route --json` (Routing-as-CLI). Carries leaf decision + resolved profile + injected context.",
+  "type": "object",
+  "required": [
+    "leaf_skill",
+    "resolved_profile",
+    "resolved_mode",
+    "task_description",
+    "hard_floor",
+    "fast_path_hit",
+    "context_to_inject"
+  ],
+  "properties": {
+    "leaf_skill": {
+      "enum": [
+        "harness-quick",
+        "harness-bugfix",
+        "harness-feature",
+        "harness-refactor"
+      ]
+    },
+    "resolved_profile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "resolved_mode": {
+      "enum": [
+        "conservative",
+        "standard",
+        "aggressive"
+      ]
+    },
+    "task_description": {
+      "type": "string"
+    },
+    "hard_floor": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "auto_push",
+          "force_push",
+          "destructive_ops",
+          "auto_merge",
+          "rewrite_history",
+          "network_install"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "knowledge_manifest": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "fast_path_hit": {
+      "type": "boolean"
+    },
+    "context_to_inject": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

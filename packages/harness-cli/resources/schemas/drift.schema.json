@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-workflow-cli/drift.schema.json",
+  "title": "DriftDetection",
+  "description": "A single drift event detected by maintenance.md across the 6 categories.",
+  "type": "object",
+  "required": [
+    "drift_type",
+    "detected_at",
+    "target_file",
+    "severity"
+  ],
+  "properties": {
+    "drift_type": {
+      "enum": [
+        "schema_drift",
+        "reference_drift",
+        "manifest_drift",
+        "memory_drift",
+        "profile_drift",
+        "config_drift"
+      ]
+    },
+    "detected_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    },
+    "target_file": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expected": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "actual": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "severity": {
+      "enum": [
+        "info",
+        "warn",
+        "error"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

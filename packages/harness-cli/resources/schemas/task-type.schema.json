@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-workflow-cli/task-type.schema.json",
+  "title": "TaskTypeResolution",
+  "description": "Input + output of structured fast-path task-type judgement that selects a leaf skill.",
+  "type": "object",
+  "required": [
+    "task_description",
+    "flags",
+    "fast_path_hit",
+    "leaf_skill"
+  ],
+  "properties": {
+    "task_description": {
+      "type": "string"
+    },
+    "flags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "git_diff_stat": {
+      "type": "object",
+      "required": [
+        "files_changed",
+        "lines_added",
+        "lines_deleted"
+      ],
+      "properties": {
+        "files_changed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lines_added": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lines_deleted": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "fast_path_hit": {
+      "type": "boolean"
+    },
+    "leaf_skill": {
+      "enum": [
+        "harness-quick",
+        "harness-bugfix",
+        "harness-feature",
+        "harness-refactor"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

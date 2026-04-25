@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-workflow-cli/hard-floor.schema.json",
+  "title": "HardFloorEnforcement",
+  "description": "Verdict produced when checking a requested action against a profile hard_floor list.",
+  "type": "object",
+  "required": [
+    "profile_floor",
+    "requested_action",
+    "verdict"
+  ],
+  "properties": {
+    "profile_floor": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "auto_push",
+          "force_push",
+          "destructive_ops",
+          "auto_merge",
+          "rewrite_history",
+          "network_install"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "requested_action": {
+      "enum": [
+        "auto_push",
+        "force_push",
+        "destructive_ops",
+        "auto_merge",
+        "rewrite_history",
+        "network_install"
+      ]
+    },
+    "verdict": {
+      "enum": [
+        "allow",
+        "refuse"
+      ]
+    },
+    "reason": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

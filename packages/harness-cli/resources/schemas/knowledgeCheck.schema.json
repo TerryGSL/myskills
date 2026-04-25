@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "harness-workflow-cli/knowledgeCheck.schema.json",
+  "title": "KnowledgeCheck",
+  "description": "Runtime state object written to `.harness-status.json.knowledgeCheck` by Stage -0.5. 8 fields per knowledge-retrieval.md.",
+  "type": "object",
+  "required": [
+    "disabled",
+    "present",
+    "status",
+    "drifted",
+    "late_recovered",
+    "rules_count",
+    "examples_count",
+    "retrieved_at"
+  ],
+  "properties": {
+    "disabled": {
+      "type": "boolean"
+    },
+    "present": {
+      "type": "boolean"
+    },
+    "status": {
+      "enum": [
+        "ready",
+        "stale",
+        "missing"
+      ]
+    },
+    "drifted": {
+      "type": "boolean"
+    },
+    "late_recovered": {
+      "type": "boolean"
+    },
+    "rules_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "examples_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "retrieved_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}"
+    }
+  },
+  "additionalProperties": false
+}
