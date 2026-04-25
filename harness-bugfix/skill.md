@@ -24,7 +24,9 @@ description: >
 2. **Reproduce** — 写失败测试（**硬要求**：必须 FAIL 才进 Step 3）
 3. **Fix** — 最小侵入，只让 Step 2 测试 PASS
 4. **Regression** — 全量测试 + `harness doctor`，都 PASS 才算 fix
-5. **Commit + Case entry**（满足 errors_collection.min_criteria 阈值才写 case）
+5. **Commit + Case entry + Push 评估**（满足 errors_collection.min_criteria 阈值才写 case）
+   commit 后调用 `harness push-check`；不可用时按 `harness-common/references/push-decision.md` 规则手算。
+   Tier 3 fallback rules: see harness-init/SKILL.md#第二步
 
 **每步详细契约 + degraded fallback + 升级条件** → [references/five-step-tdd.md](references/five-step-tdd.md)
 

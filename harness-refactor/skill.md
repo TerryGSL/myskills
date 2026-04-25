@@ -38,7 +38,9 @@ description: >
 1. 做 diff
 2. 跑全量测试 → 必须 PASS
 3. 对比 baseline fixture → 输入输出一致
-4. commit（`refactor: <描述>`）
+4. commit（`refactor: <描述>`）+ Push 评估
+   commit 后调用 `harness push-check`；不可用时按 `harness-common/references/push-decision.md` 规则手算。
+   Tier 3 fallback rules: see harness-init/SKILL.md#第二步
 
 FAIL → **立即 revert 该步**（`git reset --hard HEAD~1`），回到 plan 重新拆更小。
 

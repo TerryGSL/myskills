@@ -28,8 +28,10 @@ description: >
 3. **测试**
    只跑和本文件相关的测试。全量 `npm test` 不必要 — fast-path 前提是不动 schema/export。
 
-4. **Commit**
+4. **Commit + Push 评估**
    Conventional Commits 格式。
+   commit 后调用 `harness push-check`；不可用时按 `harness-common/references/push-decision.md` 规则手算。
+   Tier 3 fallback rules: see harness-init/SKILL.md#第二步
 
 5. **Learnings observation**（可选）
    `.harness/learnings/LEARNINGS.md` 追加一条，仅当发现非平凡 insight。

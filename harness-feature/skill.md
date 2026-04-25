@@ -59,6 +59,11 @@ Stage -0.5 注入 `.harness-status.json.knowledgeCheck`（8 字段）给下游 S
 
 **违反处理 + 用户 explicit 授权机制** → [references/hard-floor-enforcement.md](references/hard-floor-enforcement.md)
 
+## Stage 8 Commit + Push 评估
+
+commit 后调用 `harness push-check`；不可用时按 `harness-common/references/push-decision.md` 规则手算。
+Tier 3 fallback rules: see harness-init/SKILL.md#第二步
+
 ## Stage Prompt 模板
 
 各 Stage 的 subagent invoke prompt 模板：

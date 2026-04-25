@@ -12,6 +12,7 @@ import {
   runProfileBootstrap,
   printBootstrapSummary,
 } from './commands/profile-bootstrap.js';
+import { runPushCheck } from './commands/push-check.js';
 
 const program = new Command();
 
@@ -183,6 +184,22 @@ program
       process.stderr.write(`profile-bootstrap failed: ${(e as Error).message}\n`);
       process.exit(1);
     }
+  });
+
+program
+  .command('push-check')
+  .description('Assess push risk based on git diff + hard_floor')
+  .option('--hard-floor <flags>', 'Comma-separated hard_floor flags', '')
+  .option('--json', 'Machine-readable output')
+  .action((opts) => {
+    const flags = opts.hardFloor
+      ? opts.hardFloor
+          .split(',')
+          .map((s: string) => s.trim())
+          .filter(Boolean)
+      : [];
+    const r = runPushCheck({ hardFloor: flags, json: opts.json });
+    process.exit(r.exit_code);
   });
 
 program.parse();

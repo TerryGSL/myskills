@@ -94,6 +94,10 @@ MEDIUM:
 - message 含 `wip` / `WIP` / `temp` → 强制 MEDIUM（即使 risk 算 low）
 - message 含 `revert` / `rollback` → 强制 HIGH（拒绝 auto push，要求人工确认）
 
+## §6 Tier 3 fallback
+
+Tier 3 fallback rules: see harness-init/SKILL.md#第二步
+
 ## codex 反对意见（已记录）
 
 codex strict reviewer 反对“个人项目低 risk 自动 push”，理由：
