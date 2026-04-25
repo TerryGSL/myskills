@@ -219,7 +219,13 @@ Skill(team-security) with:
    - `network_install`（不跑 mvn install 等触发外部 repo download）
 5. `git commit`（message Conventional Commits 格式）
 6. **不 auto push**（用户必须显式授权）
-7. 写 `claude-mem` observation 记录本 Round 要点
+7. **项目级 memory 写入（必需，跨工具契约）**：
+   - 按三层权限矩阵写 `docs/memory/decisions/`（Stage 2 ADR）/ `docs/memory/cases/`（达 errors_collection 阈值时）/ `.harness/learnings/*`（rolling inbox），详见 `harness-common/contracts/memory.md`
+   - 这是 Layer 1 强约束：任何工具（Claude Code / Codex / Cursor / Aider / Copilot）跨会话协作的 single source of truth
+8. **工具自带 cross-session 加速器（可选，不强制）**：
+   - 在 Claude Code 内可写一条 `claude-mem` observation 记录本 Round 要点（语义搜索回溯加速器）
+   - 在其他工具内同等位置使用工具自带能力（codex resume / cursor history 等）
+   - 缺失/未装时跳过即可，不影响 Stage 8 完成判定
 
 **硬约束**：hard_floor 违反 → `harness doctor` 立即 BLOCKED，要求人工接管。
 

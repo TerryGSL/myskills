@@ -253,11 +253,11 @@ SCRIPT_PATH 固定为 `$REPO_ROOT/hooks/context-monitor.sh`（注册到 `~/.clau
 
 ## Plugins
 
-| 插件 | Marketplace | 工作流用途 |
-|------|-------------|-----------|
-| `claude-mem@thedotmack` | thedotmack/claude-mem | 每 Round 写 observation；新会话 mem-search 回溯 |
-| `codex@openai-codex` | openai/codex-plugin-cc | Stage 5 跨模型 Code Review |
-| `superpowers@claude-plugins-official` | Anthropic 官方 | Stage 2 writing-plans + Stage 3-4 subagent-driven-development + code-review |
+| 插件 | 必需性 | Marketplace | 工作流用途 |
+|------|-------|-------------|-----------|
+| `superpowers@claude-plugins-official` | **必需** | Anthropic 官方 | Stage 2 writing-plans + Stage 3-4 subagent-driven-development + code-review |
+| `codex@openai-codex` | 可选 | openai/codex-plugin-cc | Stage 5 跨模型 Code Review |
+| `claude-mem@thedotmack` | **可选 acceleration layer** | thedotmack/claude-mem | 每 Round 在 Claude Code 内写 observation 加速 mem-search 回溯（仅 Claude Code 体系内有效）；项目级 memory 已通过 `docs/memory/*.md` 跨工具持久化，不依赖此插件 |
 
 ### Codex Setup
 

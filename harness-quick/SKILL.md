@@ -63,7 +63,8 @@ description: >
 - 不调 team-pd / team-architect / strict-reviewer（quick 不值得）
 - 不写 ADR
 - 不启动完整 Round
-- 不触发 claude-mem observation（只 learnings.md append）
+- 项目级 memory 写入仅限 `.harness/learnings/LEARNINGS.md` append（Step 5 可选，非平凡 insight 才写）；不写 `docs/memory/decisions/` / `cases/`（quick 路径不达阈值）
+- 工具自带 cross-session 加速器（claude-mem observation / codex resume / cursor history）一律不触发（quick 路径不值得）
 - 不修改 `docs/harness/knowledge/*`（只读）
 - 不修改 `docs/memory/*`（只读）
 

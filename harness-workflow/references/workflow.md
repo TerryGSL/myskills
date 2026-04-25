@@ -322,14 +322,15 @@ Same pattern as Stage 6 but `stage: "security"`. Claims are OWASP-style concrete
 1. **STATE.json** — 追加 completedRound，更新 features/knownIssues
 2. **WALKTHROUGH.md** — 追加本轮记录
 3. **CLAUDE.md** — 如有新 ADR 或 gotcha，更新
-4. **claude-mem** — 写本轮 observation
-5. **CronDelete** — 无条件删除心跳 cron job
-6. **删除 .harness-status.json** — 清理临时状态文件
-7. **git commit**（仅 commit，**不自动 push**）
+4. **项目级 memory 写入（必需，跨工具契约）** — 按三层权限矩阵写 `docs/memory/decisions/` / `docs/memory/cases/` / `.harness/learnings/*`，详见 `harness-common/contracts/memory.md`
+5. **工具自带 cross-session 加速器（可选）** — Claude Code 用 `claude-mem` observation；其他工具用各自的 resume/history 能力；缺失即跳过，不阻塞 Stage 8
+6. **CronDelete** — 无条件删除心跳 cron job
+7. **删除 .harness-status.json** — 清理临时状态文件
+8. **git commit**（仅 commit，**不自动 push**）
    - 在最终报告输出**之后**，可以问一句「要推送到远程吗？」
    - 用户同意才 push，不同意就保留本地
    - 绝不静默自动 push
-8. **检查 pendingRounds** — 有则自动启动下一轮，无则输出最终报告
+9. **检查 pendingRounds** — 有则自动启动下一轮，无则输出最终报告
 
 ### 最终报告格式
 
@@ -387,7 +388,8 @@ Same pattern as Stage 6 but `stage: "security"`. Claims are OWASP-style concrete
 - [ ] STATE.json 已更新
 - [ ] WALKTHROUGH.md 已追加
 - [ ] CLAUDE.md 已更新（如有 ADR）
-- [ ] claude-mem observation 已写入
+- [ ] 项目级 memory 已写入（必需：`docs/memory/*` / `.harness/learnings/*`）
+- [ ] 工具自带 cross-session memory（可选：claude-mem observation / codex resume / cursor history；不强制）
 - [ ] CronDelete 已执行
 - [ ] .harness-status.json 已删除
 - [ ] git commit 完成（push 需用户确认）

@@ -14,7 +14,7 @@ harness 管"项目长期记忆"（跟随 repo / git 追踪 / 团队共享）；�
 | 工具自带 cross-session memory | 用户级 | 工具账户 |
 | 用户偏好 / 工作流规则 | 用户级 | 工具账户 |
 
-工具自带的 cross-session 能力（如 claude-mem / codex resume）是**可选加速层**，本契约不依赖；项目级记忆是 Layer 1 强约束。
+工具自带的 cross-session 能力（claude-mem / codex resume / cursor history 等）是**可选 acceleration layer**——只能在各自工具内做检索加速，**不跨工具可见**，所以不可作为 cross-tool 真相源；本契约不依赖任何工具自带能力。**项目级记忆 = `docs/memory/*.md` 是 Layer 1 强约束**（任何工具都能读写、git 跟踪、跨会话/跨工具持久），跨工具协作时所有"上次决定 / 上次踩坑"必须落盘到这里才算共享知识。
 
 ## 三层结构概览
 

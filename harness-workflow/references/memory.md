@@ -7,15 +7,18 @@
 
 ## 1. 两类记忆的分工
 
-harness-workflow 管理的是**项目长期记忆**，与两种账户级记忆系统明确分工、互补。
+harness-workflow 管理的是**项目长期记忆**（Layer 1 强约束），与各工具自带的账户级记忆系统明确分工。
 
-**harness `docs/memory/`（本规范范围）**：跟随 repo 走。git 追踪、团队共享、跨设备。目标是 3 个月/1 年后新人打开仓库也能读懂的案例、决策、约束。由 `.harness-memory.yml` 作为机器可读 contract 锚定所有权与行为。
+**harness `docs/memory/`（本规范范围，必需）**：跟随 repo 走。git 追踪、团队共享、跨设备、**跨工具**（任何工具都能读写）。目标是 3 个月/1 年后新人打开仓库也能读懂的案例、决策、约束。由 `.harness-memory.yml` 作为机器可读 contract 锚定所有权与行为。**这是 harness 在跨工具协作下唯一的项目级 memory single-source-of-truth**。
 
-**claude-mem 插件**：负责每轮 observation 的语义搜索（SQLite + embedding）。适合每轮变更记录、技术发现、按需语义搜索。不跟随 repo，不被 git 追踪。两者互补：claude-mem 管"每轮发生了什么"，`docs/memory/` 管"项目级沉淀的知识"。
+**工具自带 cross-session 能力（可选 acceleration layer）**：
+- `claude-mem` 插件（仅 Claude Code）：每轮 observation 的语义搜索（SQLite + embedding），加速 mem-search 回溯
+- `codex resume` / `cursor history` 等：各工具自身的会话续写能力
+- 共同特征：不跟随 repo、不被 git 追踪、**不跨工具可见**（A 工具看不到 B 工具的 session 历史）。所以**不能用作 cross-tool 真相源**，只能作为各工具内的检索加速。harness 工作流不强制依赖任何一个；缺失/未装时跳过即可，不阻塞 Stage 完成判定。
 
 **Claude Code auto-memory**：账户级，跟着用户账户走，换设备/换用户/多人协作全丢。适合用户偏好、工作流规则、用户个人的项目上下文。**本规范不涉及 auto-memory**，harness 不读写也不依赖该层。
 
-三者职责无交叉：harness 写 `docs/memory/`，claude-mem 记 observation，auto-memory 保用户偏好。
+职责无交叉：harness 写 `docs/memory/`（必需）；工具自带能力（claude-mem observation / codex resume / cursor history）按需用作可选检索加速；auto-memory 保用户偏好。
 
 ## 2. `.harness-memory.yml` Contract
 

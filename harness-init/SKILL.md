@@ -54,17 +54,19 @@ CLI 也修不了（它只管项目内文件），必须提示用户先装。
 
 ### 必须就位的全局依赖
 
-| 依赖 | 检查方式 | 缺失时 |
-|------|---------|-------|
-| `claude-mem@thedotmack` 插件 | `ls ~/.claude/plugins/claude-mem 2>/dev/null` | 通过 Claude Code marketplace 安装 |
-| `codex@openai-codex` 插件 | `ls ~/.claude/plugins/cache/openai-codex 2>/dev/null` | 同上（可选；Stage 5 跨模型审查用）|
-| `superpowers@claude-plugins-official` 插件 | `ls ~/.claude/plugins/cache/claude-plugins-official 2>/dev/null` | 同上（Stage 2 writing-plans + Stage 3-4 审查） |
-| MCP: `context7` | `grep context7 ~/.claude/mcp.json` | 加到 `~/.claude/mcp.json` |
-| MCP: `playwright` | `grep playwright ~/.claude/mcp.json` | 同上（前端 QA 用） |
-| 7 hooks | `ls ~/.claude/hooks/` | 见 `harness-workflow/references/hooks.md` 完整 settings.json + 7 脚本模板 |
-| `/codex:setup` 验证 Codex CLI | `node "/Users/<you>/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs" setup --json` | 验证 Codex CLI + 登录就绪（用于 Stage 5 跨模型审稿） |
+| 依赖 | 必需性 | 检查方式 | 缺失时 |
+|------|-------|---------|-------|
+| `superpowers@claude-plugins-official` 插件 | 必需（Claude Code） | `ls ~/.claude/plugins/cache/claude-plugins-official 2>/dev/null` | 通过 Claude Code marketplace 安装（Stage 2 writing-plans + Stage 3-4 审查） |
+| MCP: `context7` | 必需 | `grep context7 ~/.claude/mcp.json` | 加到 `~/.claude/mcp.json` |
+| MCP: `playwright` | 必需（前端 QA） | `grep playwright ~/.claude/mcp.json` | 同上 |
+| 7 hooks | 必需（Claude Code） | `ls ~/.claude/hooks/` | 见 `harness-workflow/references/hooks.md` 完整 settings.json + 7 脚本模板 |
+| `codex@openai-codex` 插件 | 可选 | `ls ~/.claude/plugins/cache/openai-codex 2>/dev/null` | 通过 Claude Code marketplace 安装（Stage 5 跨模型审查用） |
+| `/codex:setup` 验证 Codex CLI | 可选（装了 codex 才用） | `node "/Users/<you>/.claude/plugins/cache/openai-codex/codex/*/scripts/codex-companion.mjs" setup --json` | 验证 Codex CLI + 登录就绪 |
+| `claude-mem@thedotmack` 插件 | **可选 acceleration layer**（仅 Claude Code 内有效；非跨工具契约） | `ls ~/.claude/plugins/claude-mem 2>/dev/null` | 通过 Claude Code marketplace 安装（跨会话 observation 加速回溯；项目级 memory 已通过 `docs/memory/*.md` 跨工具持久化，不依赖 claude-mem） |
 
-三大插件 + 2 MCP + 7 hooks + Codex setup 是 harness 工作流的**全局基础**，每个用户只配一次，跨项目共享。
+必需项是 harness 工作流的**全局基础**，每个用户只配一次，跨项目共享。可选项仅 Claude Code 体系内增益，缺失不阻塞工作流（Tier 1+2 跨工具均不依赖）。
+
+> **跨工具 memory 契约**：项目级长期 memory 落 `docs/memory/*.md`（任何工具都能读写、git 跟踪、跨会话/跨工具持久），是 Layer 1 强约束。跨会话 memory 由各工具自带能力（claude-mem / codex resume / cursor history）兜底，可选不强制；详见 `harness-common/contracts/memory.md`。
 
 **完整安装说明 + hook 脚本模板** → `harness-workflow/references/hooks.md`
 

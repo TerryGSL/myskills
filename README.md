@@ -80,11 +80,13 @@ TypeScript 写的 `harness` 二进制，所有 enum/type 来自 `src/types/const
 
 ### 前置依赖
 
-| 类别 | 名单 |
-|------|------|
-| Claude Code 插件 | `claude-mem@thedotmack`、`codex@openai-codex`、`superpowers@claude-plugins-official` |
-| MCP server | `context7`、`playwright` |
-| Hooks | 7 个标准 hook（含 Stop Hook → `hooks/context-monitor.sh`） |
+| 类别 | 必需 | 可选（acceleration / 跨模型审查）|
+|------|------|------|
+| Claude Code 插件 | `superpowers@claude-plugins-official` | `codex@openai-codex`（Stage 5 跨模型审查）、`claude-mem@thedotmack`（仅 Claude Code 内的跨会话语义搜索加速；项目级 memory 不依赖它）|
+| MCP server | `context7`、`playwright` | — |
+| Hooks | 7 个标准 hook（含 Stop Hook → `hooks/context-monitor.sh`） | — |
+
+> **跨工具 memory 契约**：项目级长期 memory = `docs/memory/*.md`（Layer 1 强约束，任何工具都能读写、git 跟踪）。跨会话 memory 由各工具自带能力（claude-mem / codex resume / cursor history）兜底，可选不强制。详见 `harness-common/contracts/memory.md`。
 
 ### Step 1 —— clone 仓库（含 submodule）
 

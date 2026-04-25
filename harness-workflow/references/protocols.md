@@ -69,13 +69,26 @@ AI 在审查、分析、决策时必须直接表态，禁止和稀泥。
 - 有没有走了弯路后来才发现更好的路？
 - 有没有发现项目特有的坑（构建顺序、环境变量、时序问题、认证方式）？
 
-如果有，通过 `claude-mem` 记录一条 operational-learning：
+如果有，按以下分层落盘：
+
+**项目级（必需，跨工具契约）** — 追加到 `.harness/learnings/LEARNINGS.md`（rolling inbox）：
 ```
-类型: operational-learning
-关键词: [简短标签]
-内容: [描述发现]
-置信度: [1-10]
-来源: Stage N / Round N
+## [LRN-YYYYMMDD-XXX] operational-learning
+**Logged**: <ISO-8601>
+**Priority**: medium
+**Status**: pending
+**Area**: workflow
+### Summary
+[简短标签 + 描述发现]
+### Suggested Action
+[下一次怎么做]
+### Metadata
+- Source: Stage N / Round N
+- Tags: [关键词]
 ```
+
+跨轮稳定 + 高价值时由 `harness maintain` 升格到 `docs/memory/decisions/` 或 `cases/`。详见 `harness-common/contracts/memory.md`。
+
+**工具自带加速器（可选，不强制）** — 在 Claude Code 内可同步写一条 `claude-mem` observation（语义搜索回溯加速）；其他工具按各自的 resume / history 能力处理。缺失时跳过即可。
 
 下次执行相关 Stage 时，自动搜索已有经验并应用。
