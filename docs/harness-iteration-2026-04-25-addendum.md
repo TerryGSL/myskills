@@ -147,7 +147,7 @@ Layer 4: harness-{quick|bugfix|feature|refactor} 或 company-*
 
 ## 本轮数据
 
-- commits：6+（015073a 为 final batch commit，含 6 文件 +515/-250 行）
+- commits：6+（015073a 为 P0-P4 fix batch commit，含 6 文件 +515/-250 行）
 - 测试：87 PASS（未 regress）
 - npm pack：44.9+ kB / 113+ files
 - harness-init 150 行 + team-init alias 31 行
@@ -156,8 +156,39 @@ Layer 4: harness-{quick|bugfix|feature|refactor} 或 company-*
 
 ---
 
+## 收尾轮（commit 7d3c1b8）— 关闭最后 2 个 acceptable gap
+
+第二次 Codex fresh audit 在 P0-P4 全 PASS 基础上，标了 2 个非 must-fix 但建议补的 gap：
+
+| Gap | 证据 | 修复 |
+|----|------|------|
+| 缺 canonical 运行态 skill 索引 | spec 附录 C 是设计论证，运行时找不到一处汇总所有公开 / 内部 skill + 调用关系 | 新增 `harness-workflow/references/skill-registry.md`（130 行）：公开触发词表 / 内部 only 表 / Stage 角色表 / 外部依赖表 + 调用关系图 + 退化降级矩阵 |
+| `generate-doc-fragments.ts` 扫描遗漏 preset overlay | globby 仅扫 `resources/skills/**/*.md`，未来 company-mt overlay skill 用 `<!-- @generated -->` 锚点会被静默跳过 | globby pattern 扩展为 `[resources/skills/**/*.md, resources/presets/**/skills/**/*.md]` |
+
+**最终验证（独立 Codex audit）**：12/12 检查全 PASS
+
+- A. P0-P4 fixes (5/5)：forced_profile=null / planFiles 部署 knowledge+company-mt seeds / 7 hook 完整 body / harness-init+team-init alias / 三层 trigger guarantee 文档
+- B. 收尾轮 gaps (2/2)：skill-registry.md 6 表+图齐全 / generate-doc-fragments.ts 双路径扫描
+- C. Quality gates (3/3)：HEAD = 7d3c1b8 / **87/87 tests PASS** / **npm pack OK (48.5 kB / 116 files)**
+- D. Capability preservation (2/2)：13-file canonical reference bank 仍从公开入口可达 / v0 archive 保留
+
+> 注：Codex 自报 FAIL 原因仅是 sandbox read-only 阻塞了 npm test/pack 写文件，源代码层面零缺陷。本会话 normal shell 复跑 PASS。
+
+**最终 commit chain**：
+
+```
+7d3c1b8 feat(harness): 补 2 个 acceptable gap — canonical skill registry + doc-gen 扫描范围扩展
+41f6950 docs: 完善迭代文档 + 分享文档 (2026-04-25 补丁轮)
+015073a feat(skills): harness-init 新命名入口 + 补齐 7 hooks 模板 + 三层保障文档 + P0-P4 Codex FAIL 修复
+283a03e docs: 本次 harness 工作流迭代总结文档
+fcc01b9 refactor(skills): 全面去历史话语 + 补齐缺失模板 + 补 clone 降级路径
+```
+
+---
+
 ## 参考
 
 - 主迭代总结：`docs/harness-iteration-2026-04-24.md`
 - 向新用户分享文档：`docs/harness-workflow-sharing.md`（v0 深度介绍）+ `docs/harness-workflow-v1-addendum.md`（v1 升级）
+- 运行态 skill 清单：`harness-workflow/references/skill-registry.md`
 - Spec：`harness-workflow/specs/2026-04-24-harness-cli-integration-design.md`
