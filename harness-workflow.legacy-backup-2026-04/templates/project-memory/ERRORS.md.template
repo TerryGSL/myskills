@@ -1,0 +1,39 @@
+# ERRORS.md
+
+> 错误案例库 —— 每一个越过 `errors_collection.min_criteria` 阈值的真实 bug
+> 都会在 `cases/` 下生成一份带日期的文件，并在此建立索引。
+>
+> 目的：后续 session 在触碰高风险模块之前，先按路径 / 符号 / 关键词在此文件 +
+> `cases/*` 中进行 grep。一道真实的伤疤胜过一千条原则。
+>
+> Spec 参考：`harness-workflow/specs/2026-04-22-memory-reviewer-upgrade.md`
+
+## Index
+
+<!-- harness-errors:start id="error-index" schema="1.0.0" -->
+<!-- harness 会为每个案例追加一行：- [<case-id>](cases/harness_<date>_<slug>.md) — <一句话摘要> -->
+<!-- harness-errors:end id="error-index" -->
+
+## 手动新增案例（面向人类）
+
+如果你想手工记录一个案例（不带 `harness_` 前缀），请创建
+`cases/<your-slug>.md`。harness 会 grep 到它，但不会编辑它。
+
+harness 自动收集的最低阈值：案例至少满足以下 2 条：
+- 诊断耗时超过 30 分钟
+- 跨越模块边界
+- 至少复发过一次
+- 平台 / 浏览器 / provider 特定
+- 对终端用户或生产环境可见
+- 推翻了此前的某个假设
+
+## 阅读案例（面向 agent）
+
+在编辑 `src/` 下的代码之前，先按以下维度 grep 本文件 + `cases/*.md`：
+- 变更的文件路径与模块名
+- 即将修改的导出符号
+- 栈追踪中的错误消息
+- 浏览器 / 依赖名
+
+匹配类型：`applies_to.paths` glob = 强；两条弱信号 = 弱。
+在响应中输出一行 `Memory check:` 引用命中结果。
