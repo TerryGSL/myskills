@@ -1,3 +1,22 @@
+> ## ⚠ DEPRECATED — 仅供参考
+>
+> **本目录已不是主线代码位置**。所有 skill 已经迁到仓库**顶层**：
+>
+> - 接入入口：[`/harness-init/SKILL.md`](../harness-init/SKILL.md)
+> - 全局 README：[`/README.md`](../README.md)
+> - CLI：[`/packages/harness-cli/`](../packages/harness-cli/)
+>
+> 本目录仅保留：
+> - `profile-bootstrap/lib/` — Tier 3 fallback bash 派生算法（无 node 时使用）+ 测试 oracle
+> - `hooks/context-monitor.sh` — symlink → `../../hooks/context-monitor.sh`
+> - `docs/`、`harness-workflow/specs|plans/` — 历史档案（spec / plan 演进过程）
+>
+> 下面的内容是**融合前**这份 README 的快照，仅供历史参考。新用户请直接看顶层 README。
+>
+> ---
+>
+> （以下为旧 README 原文）
+
 # harness — 个人 Skill 体系
 
 ## 1. 项目概览
