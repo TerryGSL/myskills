@@ -128,7 +128,8 @@ program
   .description('Request knowledge scan (AI pipeline runs via harness-workflow Stage -0.5)')
   .option('--apply-answers', 'Apply user answers in TODO.md', false)
   .option('--budget <min>', 'Time budget in minutes', '28')
-  .option('--domain <name>', 'Limit to one domain')
+  .option('--domain <name>', 'Limit to one domain (or comma-separated list for --json)')
+  .option('--json', 'Run local 5-domain heuristic scanner and emit manifest JSON', false)
   .argument('[projectPath]', 'Project root', '.')
   .action((projectPath, opts) => {
     const projectRoot = path.resolve(projectPath);
@@ -137,9 +138,18 @@ program
       applyAnswers: opts.applyAnswers,
       budgetMin: opts.budget ? Number(opts.budget) : undefined,
       domain: opts.domain,
+      json: !!opts.json,
     });
-    process.stdout.write(`scan: ${r.action}\n`);
-    if (r.reason) process.stderr.write(`${r.reason}\n`);
+    if (opts.json) {
+      if (r.knowledge) {
+        process.stdout.write(JSON.stringify(r.knowledge, null, 2) + '\n');
+      } else if (r.reason) {
+        process.stderr.write(`${r.reason}\n`);
+      }
+    } else {
+      process.stdout.write(`scan: ${r.action}\n`);
+      if (r.reason) process.stderr.write(`${r.reason}\n`);
+    }
     process.exit(r.exitCode);
   });
 
