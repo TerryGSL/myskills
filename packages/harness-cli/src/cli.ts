@@ -8,6 +8,10 @@ import { runDoctor } from './commands/doctor.js';
 import { runMaintain } from './commands/maintain.js';
 import { runScan } from './commands/scan.js';
 import { runInstall, printHumanSummary as printInstallSummary } from './commands/install.js';
+import {
+  runProfileBootstrap,
+  printBootstrapSummary,
+} from './commands/profile-bootstrap.js';
 
 const program = new Command();
 
@@ -155,6 +159,30 @@ program
       printInstallSummary(r);
     }
     process.exit(r.status === 'error' ? 1 : 0);
+  });
+
+program
+  .command('profile-bootstrap')
+  .description('Derive + write a company-* profile from the current git repo')
+  .argument('[slug]', 'Slug for the new profile (default: derived from git remote)')
+  .option('--remote <name>', 'Force a specific remote (origin / upstream)')
+  .option('--workspace <kind>', 'company | personal (default: company)', 'company')
+  .option('--yes', 'Skip confirmation prompt (for scripting)', false)
+  .action((slug, opts) => {
+    const workspace = opts.workspace === 'personal' ? 'personal' : 'company';
+    try {
+      const r = runProfileBootstrap({
+        userSlug: slug,
+        remoteName: opts.remote,
+        workspace,
+        yes: !!opts.yes,
+      });
+      printBootstrapSummary(r);
+      process.exit(0);
+    } catch (e) {
+      process.stderr.write(`profile-bootstrap failed: ${(e as Error).message}\n`);
+      process.exit(1);
+    }
   });
 
 program.parse();

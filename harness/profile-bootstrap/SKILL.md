@@ -21,11 +21,19 @@ description: 从当前 git repo 自动派生 profile（path_glob + git_remote_re
 ## Step 1：派生
 
 ```bash
+# 优先调 harness profile-bootstrap CLI（推荐路径，spec §A PR 4）
+harness profile-bootstrap [<slug>] [--remote origin|upstream] [--workspace company|personal] [--yes]
+
+# Tier 3 fallback rules: see harness-init/SKILL.md#第二步
+# 无 CLI（断网 / 无 node）→ source bash 算法 oracle：
 source harness/profile-bootstrap/lib/derive.sh
 derive_profile "${user_slug}"
 ```
 
-输出（环境变量）：
+CLI 路径会一站式跑 Step 1-6（派生 + hard_floor + 拼装 + 校验 + 落盘 + .gitignore），
+bash fallback 仅做 Step 1 派生，Step 2-6 由调用者手工补齐。
+
+bash fallback 输出（环境变量）：
 - `DERIVED_PATH_GLOB`（如 `~/work/acme-api/**`）
 - `DERIVED_REMOTE_REGEX`（如 `github\.com[:/]acme/api(\.git)?$`，空字符串表示无 remote）
 - `DERIVED_SLUG`（如 `acme`）
@@ -139,7 +147,8 @@ Wrote:
 
 ## 引用
 
-- 派生算法：[lib/derive.sh](lib/derive.sh)
-- 单元测试：[lib/test-derive.sh](lib/test-derive.sh)
+- TS port + CLI 实现：`packages/harness-cli/src/utils/derive.ts` + `src/commands/profile-bootstrap.ts`
+- bash 派生算法（Tier 3 fallback + test oracle）：[lib/derive.sh](lib/derive.sh)
+- bash 单元测试（与 jest derive.test 双轨同步）：[lib/test-derive.sh](lib/test-derive.sh)
 - 上游消费者（profile-entry）：[../profile-entry/SKILL.md](../profile-entry/SKILL.md)
 - Profile schema：[../profile-entry/references/profiles.md](../profile-entry/references/profiles.md)
