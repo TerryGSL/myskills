@@ -1,8 +1,9 @@
 # harness-workflow-cli
 
-CLI for the [harness-workflow](https://github.com/TerryGSL/myskills) skill ecosystem.
-Provides determistic file scaffolding (init / adopt / maintain / doctor / scan) so the
-Claude Code skills can focus on intelligence instead of hand-writing files.
+CLI for the **B 套** harness workflow（顶层 skill 平铺路线）of [myskills](https://github.com/TerryGSL/myskills).
+Provides deterministic file scaffolding (init / adopt / maintain / doctor / scan / install / profile-bootstrap / push-check) so the Claude Code skills can focus on intelligence instead of hand-writing files.
+
+> **注意**：本 CLI 仅服务于 myskills 仓库**顶层**的 harness skill 套（B 套）。仓库内还有另一套**完全独立**的纯 bash 实现在 `harness/` 目录下（A 套），两者互不依赖。详见仓库根 README 的"仓库结构"段。
 
 ## Install
 

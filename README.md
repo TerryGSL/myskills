@@ -1,14 +1,26 @@
 # myskills
 
-个人 Claude Code Skills 集合 + Harness CLI monorepo —— 让 Claude Code 在不同项目里以一致的「自治开发流」工作。
+个人 Claude Code Skills 集合 + Harness 体系 monorepo —— 仓库里**两套并存的独立 harness 实现**，可以分别接入。
+
+## ⚠ 仓库结构（读之前先看这段）
+
+仓库**同时容纳两套完全独立的 harness 工作流实现**，互不依赖、互不导入：
+
+| 套别 | 位置 | 入口 | 特点 |
+|------|------|------|------|
+| **A 套** | `harness/` 子目录 | `harness/harness-workflow/skill.md` + `harness/setup/setup-harness.sh`（bash） | profile-entry 嵌套在 `harness/profile-entry/` 下；4 leaf skill 在 `harness/harness-{quick,bugfix,feature,refactor}/SKILL.md`；纯 markdown + bash 脚本，无 npm 依赖 |
+| **B 套** | 仓库**顶层** + `packages/harness-cli/` | 顶层 `harness-init/SKILL.md` + `harness` npm CLI | 顶层 skill 平铺（`profile-entry/`、`harness-{quick,bugfix,feature,refactor}/`、`harness-common/`、`harness-init/` 等）；TypeScript CLI 提供 8 个命令；`hooks/context-monitor.sh` 自适应阈值；`scripts/regen-schema.ts` 守门 |
+
+**怎么选**：
+- 想要**完全无 node 环境**也能跑 → 用 A 套（symlink `harness/` 下的 skill 到 `~/.claude/skills/`）
+- 想要 **CLI 工程化 + jest 测试 + GitHub workflow CI** → 用 B 套（`harness install` 一键接入）
+- 不要**两套混链**到 `~/.claude/skills/`——会 skill name 撞名
+
+旧版单体 harness-workflow 的备份快照在 `harness-workflow.legacy-backup-2026-04/`（属于 archived，不再开发）。
 
 ## 项目概览
 
-myskills 把三件事打成一个仓库：
-
-- **顶层 skill 平铺** —— 每个 skill 一个独立目录（`skill.md` 入口），按用途分组：harness 工作流、team-* agent、task-dispatcher、辅助工具。
-- **Harness CLI** —— `packages/harness-cli/` 下的 TypeScript npm 包，提供 `harness` 二进制（`init / adopt / maintain / doctor / scan / install / profile-bootstrap / push-check`）。
-- **Hooks + 沙盒** —— `hooks/context-monitor.sh` 自适应 context 阈值；`harness/` 已降级为沙盒（仅留 lib + 历史档案）。
+下面所有架构图、命令清单、push 决策表 **默认描述 B 套**（顶层 + CLI 那一套）。A 套的对应文档在 [`harness/README.md`](harness/README.md)。
 
 定位：一次配置，所有项目共享；profile × task_type × aggression 三维正交，硬底线（hard floor）不可绕过。
 
@@ -185,14 +197,47 @@ aggression mode：`conservative`（默认）/ `standard` / `aggressive`，与 pr
 
 避免 quick 任务被过度提醒、feature 任务过晚提醒。
 
-## 回退到旧版
+## 在 A / B 两套之间切换
 
-如果新流程出问题，旧版单体 `harness-workflow` 快照在 `harness-workflow.legacy-backup-2026-04/`。回退方法：
+`~/.claude/skills/` 同时只链一套，避免 skill 名撞名。
+
+**切到 A 套**（纯 bash，无 node 依赖）：
 
 ```bash
-# 撤掉新 skill 的 symlink，把 legacy 软链回 ~/.claude/skills/
-rm ~/.claude/skills/harness-workflow
-ln -s ~/myskills/harness-workflow.legacy-backup-2026-04 ~/.claude/skills/harness-workflow
+# 清掉顶层 B 套 symlink
+for s in harness-init profile-entry harness-quick harness-bugfix harness-feature \
+         harness-refactor harness-common harness-workflow strict-reviewer \
+         task-dispatcher; do rm -f ~/.claude/skills/$s; done
+
+# 软链 A 套 (harness/ 子目录) 各 skill
+for s in harness-quick harness-bugfix harness-feature harness-refactor \
+         profile-entry harness-common harness-workflow profile-bootstrap; do
+  ln -sf $(pwd)/harness/$s ~/.claude/skills/$s
+done
+~/Music/myskills/harness/setup/setup-harness.sh
 ```
 
-旧版用 `/harness-workflow --init / --adopt / --maintain / --next` 命令，行为与现在的兼容入口一致，但内部是单体 8-Stage 实现。
+**切到 B 套**（npm CLI 工程化）：
+
+```bash
+# 清掉 A 套 symlink，重新链顶层
+for s in harness-quick harness-bugfix harness-feature harness-refactor \
+         profile-entry harness-common harness-workflow profile-bootstrap; do
+  rm -f ~/.claude/skills/$s
+done
+
+# 装/链 B 套
+npm install -g harness-workflow-cli   # 或用 packages/harness-cli/ 本地 build
+harness install
+```
+
+## 旧版完全单体备份
+
+`harness-workflow.legacy-backup-2026-04/` 是融合前**旧版单体 harness-workflow** 的快照（archived，不再开发）。如果想回到完全的老体验：
+
+```bash
+rm ~/.claude/skills/harness-workflow
+ln -s $(pwd)/harness-workflow.legacy-backup-2026-04 ~/.claude/skills/harness-workflow
+```
+
+旧版用 `/harness-workflow --init / --adopt / --maintain / --next` 命令；A/B 两套都兼容这些命令名。

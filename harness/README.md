@@ -1,23 +1,17 @@
-> ## ⚠ DEPRECATED — 仅供参考
+> ## ⓘ A 套（本目录）— 完整独立实现
 >
-> **本目录已不是主线代码位置**。所有 skill 已经迁到仓库**顶层**：
+> 本仓库容纳**两套独立的 harness 工作流实现**：
 >
-> - 接入入口：[`/harness-init/SKILL.md`](../harness-init/SKILL.md)
-> - 全局 README：[`/README.md`](../README.md)
-> - CLI：[`/packages/harness-cli/`](../packages/harness-cli/)
+> - **A 套（本目录 `harness/`）** — 纯 markdown + bash，无 node 依赖；`profile-entry` / 4 个 leaf skill / `setup-harness.sh` 都在本目录里完整自包含
+> - **B 套（仓库顶层 + `packages/harness-cli/`）** — TypeScript npm CLI 工程化路线；入口是顶层 `harness-init/SKILL.md` + `harness` 二进制
 >
-> 本目录仅保留：
-> - `profile-bootstrap/lib/` — Tier 3 fallback bash 派生算法（无 node 时使用）+ 测试 oracle
-> - `hooks/context-monitor.sh` — symlink → `../../hooks/context-monitor.sh`
-> - `docs/`、`harness-workflow/specs|plans/` — 历史档案（spec / plan 演进过程）
+> 两套**互不依赖、互不导入**，可以分别接入。具体差异和选用建议见 [`/README.md`](../README.md) 的"仓库结构"段。
 >
-> 下面的内容是**融合前**这份 README 的快照，仅供历史参考。新用户请直接看顶层 README。
+> 下面的内容是 **A 套**的完整接入文档（融合 brainstorm 阶段写定）。
 >
 > ---
->
-> （以下为旧 README 原文）
 
-# harness — 个人 Skill 体系
+# harness — 个人 Skill 体系（A 套）
 
 ## 1. 项目概览
 
