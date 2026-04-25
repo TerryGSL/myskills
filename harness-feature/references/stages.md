@@ -32,7 +32,7 @@ references this file; read sections by demand.
 3. 按 Rule Status 过滤 render 两个视图：
    - **Binding Rules**（Status=active）→ 违反即 reviewer FAIL
    - **Advisory Context**（Status=expired / user_override）→ 仅风格参考
-4. 写 `.harness/status.json.knowledgeCheck`（8 字段全集，见 `harness-common/references/memory-layers.md`）
+4. 写 `.harness/status.json.knowledgeCheck`（8 字段全集，见 `harness-common/contracts/memory-layers.md`）
 
 **disabled bypass**：CLAUDE.md 内含 `harness-knowledge: disabled` → 整个 Stage -0.5 跳过，但 `.harness-status.json.knowledgeCheck.effective_index_status = "disabled"` 仍写入（供下游 Stage 4 识别）。
 
@@ -81,7 +81,7 @@ Skill(team-architect) with:
 
 **产出**：
 - ADR（如涉及架构决策）→ 写 `docs/memory/decisions/harness_<date>_<slug>.md`
-  - Frontmatter schema 见 `harness-common/references/memory-layers.md`
+  - Frontmatter schema 见 `harness-common/contracts/memory-layers.md`
 - 若无架构变更 → 输出"无需变更"
 
 ---

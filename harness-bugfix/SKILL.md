@@ -25,7 +25,7 @@ description: >
 3. **Fix** — 最小侵入，只让 Step 2 测试 PASS
 4. **Regression** — 全量测试 + `harness doctor`，都 PASS 才算 fix
 5. **Commit + Case entry + Push 评估**（满足 errors_collection.min_criteria 阈值才写 case）
-   commit 后调用 `harness push-check`；不可用时按 `harness-common/references/push-decision.md` 规则手算。
+   commit 后调用 `harness push-check`；不可用时按 `harness-common/contracts/push-decision.md` 规则手算。
    Tier 3 fallback rules: see harness-init/SKILL.md#第二步
 
 **每步详细契约 + degraded fallback + 升级条件** → [references/five-step-tdd.md](references/five-step-tdd.md)
@@ -52,6 +52,6 @@ description: >
 
 ## 引用
 
-- Case frontmatter schema：`harness-common/references/memory-layers.md`
+- Case frontmatter schema：`harness-common/contracts/memory-layers.md`
 - errors_collection 阈值配置：`docs/memory/.harness-memory.yml`
 - Workflow 详细契约：`harness-workflow/references/workflow.md`

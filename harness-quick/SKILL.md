@@ -30,7 +30,7 @@ description: >
 
 4. **Commit + Push 评估**
    Conventional Commits 格式。
-   commit 后调用 `harness push-check`；不可用时按 `harness-common/references/push-decision.md` 规则手算。
+   commit 后调用 `harness push-check`；不可用时按 `harness-common/contracts/push-decision.md` 规则手算。
    Tier 3 fallback rules: see harness-init/SKILL.md#第二步
 
 5. **Learnings observation**（可选）

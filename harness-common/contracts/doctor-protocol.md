@@ -1,5 +1,7 @@
 # `harness doctor --json` 握手契约
 
+> **Source of truth**: `packages/harness-cli/src/types/constants.ts`（或对应 `doctor-protocol.schema.json`）。如本文档与代码不一致，以代码为准。
+
 Canonical schema for what `harness doctor --json` returns and how skills must consume it.
 
 ## 输出 schema（5 必填 + 3 辅助字段）

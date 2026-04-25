@@ -195,6 +195,6 @@ harness-init 不参与后续开发 Round。
 
 ## 引用
 
-- CLI doctor --json 完整握手契约：`harness-common/references/doctor-protocol.md`
+- CLI doctor --json 完整握手契约：`harness-common/contracts/doctor-protocol.md`
 - 全局 hooks / MCP / plugins 安装步骤 + 7 脚本模板：`harness-workflow/references/hooks.md`
 - spec：`harness-workflow/specs/2026-04-24-harness-cli-integration-design.md`

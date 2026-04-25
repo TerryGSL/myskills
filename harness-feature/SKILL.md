@@ -61,7 +61,7 @@ Stage -0.5 注入 `.harness-status.json.knowledgeCheck`（8 字段）给下游 S
 
 ## Stage 8 Commit + Push 评估
 
-commit 后调用 `harness push-check`；不可用时按 `harness-common/references/push-decision.md` 规则手算。
+commit 后调用 `harness push-check`；不可用时按 `harness-common/contracts/push-decision.md` 规则手算。
 Tier 3 fallback rules: see harness-init/SKILL.md#第二步
 
 ## Stage Prompt 模板
@@ -124,4 +124,4 @@ Stage 8 完成 → 检查 `pendingRounds`：
 
 ### 共享基础设施
 
-- `harness-common/SKILL.md` + `harness-common/references/*`
+- `harness-common/SKILL.md` + `harness-common/contracts/*`

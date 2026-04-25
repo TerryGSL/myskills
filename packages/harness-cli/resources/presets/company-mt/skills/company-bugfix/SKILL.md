@@ -76,4 +76,4 @@ applies_to:
 - 五步 TDD 完整细节：`harness-bugfix/references/five-step-tdd.md`
 - Java 警戒区：[../../references/java-gates.md](../../references/java-gates.md) Category 2
 - Degraded fallback：[../../references/degraded-fallback.md](../../references/degraded-fallback.md)
-- Case frontmatter schema：`harness-common/references/memory-layers.md`
+- Case frontmatter schema：`harness-common/contracts/memory-layers.md`

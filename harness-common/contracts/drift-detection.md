@@ -1,5 +1,7 @@
 # Drift Detection — `harness maintain` 检查清单
 
+> **Source of truth**: `packages/harness-cli/src/types/constants.ts`（或对应 `drift.schema.json`）。如本文档与代码不一致，以代码为准。
+
 What `harness maintain` checks and how leaf skills hook into it.
 
 ## 6 类 drift 检查

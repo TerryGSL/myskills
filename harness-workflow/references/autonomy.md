@@ -13,7 +13,7 @@
 **其余一切自治**。git commit 自治；git push 由 push-decision 规则决定（low 自动 / medium 询问 / high 拒绝），公司 profile（hard_floor 含 auto_push）永远走 high 分支。
 
 > **2026-04-25 改动**：原"绝不静默自动 push"改为 risk-based 决策，规则见
-> [`harness-common/references/push-decision.md`](../../harness-common/references/push-decision.md)。
+> [`harness-common/contracts/push-decision.md`](../../harness-common/contracts/push-decision.md)。
 > 个人项目低 risk 改动（如 markdown / i18n）允许自动 push；公司项目通过 hard_floor
 > 永久强制 high 分支，行为与原契约等价。
 

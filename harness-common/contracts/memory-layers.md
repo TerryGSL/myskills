@@ -1,5 +1,7 @@
 # 三层记忆写入权限矩阵
 
+> **Source of truth**: `packages/harness-cli/src/types/constants.ts`（或对应 `memory.schema.json`）。如本文档与代码不一致，以代码为准。
+
 Single source of truth for who writes what memory file, at what stage, with what schema.
 
 ## 三层概览
