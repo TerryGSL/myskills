@@ -277,7 +277,11 @@ P0 Bug → 自动修复并重新测试（最多 3 轮）
 5. **knowledge 刷新检查** — 若本轮改动范围较大，检查 INDEX 是否需要 `--partial-rescan`（提示用户，不自动执行）
 6. **CronDelete** — 无条件删除心跳 cron job
 7. **删除 `.harness-status.json`** — 清理临时状态文件
-8. **git commit**（仅 commit，**不自动 push**）；最终报告后可询问是否推送
+8. **git commit + push-decision** — commit 完成后，调用 [push-decision](../harness-common/references/push-decision.md) 规则评估改动 risk：
+   - HIGH（公共契约 / >3 文件 / .env / CI / 测试 fail / breaking） → 输出原因 + 拒绝 push
+   - MEDIUM（其他业务改动） → 询问一次（"是否 push？[y/N]"）
+   - LOW（仅 md / i18n / 注释 / 独立新模块） → 自动 push
+   - 公司 profile（hard_floor 含 auto_push）永远走 HIGH
 9. **检查 pendingRounds** — 有则自动启动下一轮
 
 ---
@@ -328,7 +332,8 @@ Reason: company profile hard-floor
 - [ ] MEMORY.md 索引 marker 块内已追加新决策 / 案例链接
 - [ ] CronDelete 已执行（如有心跳）
 - [ ] .harness-status.json 已删除
-- [ ] git commit 完成（push 需用户确认）
+- [ ] git commit 完成
+- [ ] push-decision 已评估并执行（auto / asked / refused），结果记入 WALKTHROUGH.md
 - [ ] knowledge INDEX 是否需要 --partial-rescan（本轮改动触及 manifest applies_to 边界时提示）
 - [ ] 若有 drifted / expired rule 在 knownIssues，已在 WALKTHROUGH.md 中记录
 ```
