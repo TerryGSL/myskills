@@ -13,6 +13,40 @@ description: >
 
 # harness-init — 项目初始化入口
 
+## Wrapper Kernel（duplicated；与 AGENTS.md 一致）
+
+> Spec 强约束：每个 Tier-1 wrapper 必须自带完整 7 条 kernel 规则，**不是** one-line
+> pointer。本节内容与 `AGENTS.md` 顶部 7 Core Kernel Rules 严格一致；source-of-truth
+> 为 `harness-common/contracts/routing.md`。
+
+1. **Profile resolution order** — read `<repo>/.harness-profile` marker first; fallback to
+   `~/.claude/profiles/*.yml` matchers (path_glob / git_remote_regex / file_exists).
+   Marker 命中即跳过 fallback；marker 缺失/malformed 才进 matcher 阶段。
+2. **Task routing** — quick (trivial 1 file <10 lines, 不碰 schema/export/deps) /
+   bugfix (debug + fix 现有功能) / feature (新模块 / 新 API / 新功能) /
+   refactor (behavior 完全不变的结构调整). 路由由 fast-path 检测 + 关键词 + 显式 flag
+   联合决策；详见 `harness-common/contracts/task-type.md`.
+3. **Hard-floor precedence** — `profile.hard_floor > invocation flag`。例如 profile 含
+   `auto_push` 时，用户加 `/yolo` 也不能跳过 push 决策；hard_floor 不可被任何 flag、
+   mode、aggression level 静默绕过。
+4. **CLI-first + markdown fallback** — Tier 1+2（有 node + harness CLI）：
+   `harness route --task "<msg>" --flags "<flags>" --json` 是 canonical 路由执行点。
+   Tier 3（无 node）：按 `profile-entry/SKILL.md` 描述手算，产出等价 7-field route
+   object（leaf_skill / resolved_profile / resolved_mode / task_description /
+   hard_floor / knowledge_manifest / fast_path_hit / context_to_inject）。
+5. **Stage -0.5 retrieval** — feature / bugfix / refactor 在 knowledge-enabled 项目
+   （`docs/harness/knowledge/INDEX.md` 存在）必须在审查前读取 5-domain manifest
+   （architecture / api-contracts / data-schemas / business-rules / deployment）。
+   详见 `harness-common/contracts/knowledge.md`.
+6. **Refusal rule** — 当 invocation flag 与 profile.hard_floor 冲突时返回 REFUSE，
+   不可静默降级。例：profile 含 `force_push` hard-floor，用户输入 `/yolo --force-push`
+   → wrapper 必须拒绝，并要求用户先调整 profile 或换路径，不可自行裁决跑过。
+7. **Routing handoff** — leaf skill 输入只能来自 `harness route --json` 输出（Tier 1+2）
+   或 Tier 3 等价 route object。Wrapper 不可重新 parse 用户原文消息推导 route 字段；
+   一旦路由决定，下游只消费 route object。
+
+完整契约 → `harness-common/contracts/routing.md`
+
 ## 第一步：全局依赖预检
 
 在跑 CLI 之前，先确认 harness 工作流所需的全局基础设施就位。缺失的项目级以上依赖
