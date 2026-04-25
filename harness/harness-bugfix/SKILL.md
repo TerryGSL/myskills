@@ -165,17 +165,16 @@ Step 2 写的 failing test 在 fix 后应已转为 PASS。确认测试覆盖情�
 <test-runner>                                # 全量跑，确认无新 regression
 ```
 
-#### 5b：commit
+#### 5b：commit + push-decision
 
-```bash
-git add <changed-files>
-git commit -m "fix: <一句话描述 bug 和修复方向>
+**最终步骤：commit + push-decision**
 
-Root cause: <根因一句话>
-Test: <回归测试文件:行 或 测试名>"
-```
-
-**不自动 push**。commit 完成后等用户确认是否 push。
+1. `git add <changed_files>`
+2. `git commit -m "fix: ${bug_summary}"`（commit message 体内补充 `Root cause:` 与 `Test:` 行）
+3. 调用 [push-decision](../harness-common/references/push-decision.md) 规则：
+   - bugfix 改动通常是 HIGH（业务逻辑） → 询问或拒绝
+   - 仅当改动满足 LOW 全部条件（如纯日志/typo 修复） → 自动 push
+4. 把 push 结果记入 commit message 之后的输出
 
 #### 5c：写 memory case（若满足 min_criteria）
 
