@@ -204,6 +204,22 @@ fi
 exit 0
 ```
 
+### 8. `context-monitor.sh`
+
+Stop / PostToolUse hook：根据 `.harness-status.json` 中的 `tokensUsed` 与 `effective_task_type`，按任务类型自适应阈值给出 ⚠️ warn / ⛔ crit 提示，建议在 crit 时结束 round 并开启新 session。
+
+| task_type | warn | crit |
+|-----------|------|------|
+| quick     | 80%  | 90%  |
+| bugfix    | 70%  | 85%  |
+| feature   | 60%  | 80%  |
+| refactor  | 60%  | 80%  |
+| 无（无 status file 或无 effective_task_type）| 70% | 85% |
+
+每档可通过环境变量覆盖（HARNESS_QUICK_CRIT_THRESHOLD 等）。
+
+SCRIPT_PATH 固定为 `$REPO_ROOT/hooks/context-monitor.sh`（注册到 `~/.claude/settings.json` 的命令路径）。`harness/hooks/context-monitor.sh` 是 symlink → `../../hooks/context-monitor.sh`，老用户既有注册路径继续可用。
+
 ### （附）`session-init-prompt.txt`
 
 **不是 hook script**，是 SessionStart 注入的 prompt 片段（由上面 `harness-workflow-reminder.sh SessionStart` 输出的 reminder 内容）。不需要单独维护文件 —— reminder 脚本就是它的 source of truth。
