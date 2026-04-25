@@ -1,0 +1,56 @@
+---
+domain: i18n-and-text-boundaries
+snapshot_id: "{{snapshot_id}}"
+applies_to:
+  paths: {{applies_to_paths_json}}
+last_verified: "{{last_verified}}"
+status: active
+---
+
+# i18n and Text Boundaries — Rules
+
+此文件由 harness-workflow scanner 生成，包含国际化文本管理与语言边界约定的 high-confidence rules。
+**激活条件**：仅当 scout 探测到 resource bundles / messages_*.properties / i18n helpers 时激活此 domain。
+**硬约束**：manifest 总行数 ≤ 140 行；超出时 scanner 必须挤掉 low-impact 规则。
+仅 `Status: active` 的 rule 进入 Stage -0.5 的 Binding Rules（reviewer 违反则 FAIL）。
+
+<!-- RULES_BLOCK_START -->
+{{rules_block}}
+<!-- RULES_BLOCK_END -->
+
+<!-- Rule 格式范例（scanner 填充 rules_block 时使用此格式）：
+
+## Rule: 所有面向用户的文本必须通过 MessageSource 获取
+
+**Rule ID**: i18n-and-text-boundaries/rule-1
+**规则**: controller 层及其他面向用户的响应中，禁止硬编码中文或英文字符串。
+所有显示文本必须通过 Spring MessageSource 的 getMessage() 方法获取，key 在
+src/main/resources/messages_*.properties 中定义。
+**适用**: src/main/java/com/acme/web/**
+**Evidence**: evidence.md#message-source-usage
+**Confidence**: high
+**Status**: active
+**Supersedes Gap ID**: （若此 rule 由用户 override 升级，填写 i18n-and-text-boundaries/gap-N；否则省略此行）
+**Supersedes Rule ID**: （若此 rule 取代旧 rule，填写 i18n-and-text-boundaries/rule-N；否则省略此行）
+**violation_test**: must_call_component
+**component**: org.springframework.context.MessageSource
+
+---
+
+Rule Status 四态行为：
+| Status      | Stage -0.5 处理                        | reviewer 行为      |
+|-------------|----------------------------------------|--------------------|
+| active      | 进 knowledge_requirements（binding）   | 违反 → FAIL        |
+| expired     | 进 advisory_knowledge（非 binding）    | 不 FAIL，仅提示    |
+| drifted     | 不进任何 context；记 knownIssue        | 不触发             |
+| superseded  | 不进任何 context；保留作历史记录       | 不触发             |
+
+violation_test 枚举（选一填写）：
+- must_use_wrapper        配套: wrapper_type: <ClassName>
+- must_call_component     配套: component: <package.ClassName>
+- must_not_throw_raw_exception  配套: exception_types: [<ClassName>]
+- must_use_package        配套: package: <prefix>
+- must_not_use_pattern    配套: pattern: <regex>
+- must_annotate_with      配套: annotation: <ClassName>
+- free_form_review        配套: requirement_text + manual_review_reason + expiry_after_days（默认 90）
+-->

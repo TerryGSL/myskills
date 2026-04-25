@@ -1,0 +1,55 @@
+---
+domain: integrations-and-sdk-usage
+snapshot_id: "{{snapshot_id}}"
+---
+
+# Unresolved Gaps
+
+Scanner 在扫描 `integrations-and-sdk-usage` domain 时发现的未解条目——无法仅凭代码证据达到 high confidence。
+详见 `TODO.md` 对应条目（用户在 TODO.md 填写答案后运行 `--apply-knowledge-answers`）。
+
+**micro-rescan 处理规则**：
+- 用户答案 → 写入此文件对应 gap 的 `resolved_by_user` 块（保留原话作 override 声明）
+- 立即执行 micro-rescan：搜索 ≥2 个支持该约定的 file:line 正例
+- **找到 ≥2 正例** 或 **1 正 + 1 反** → 升级为 high confidence rule，写入 manifest.md + evidence.md；此 gap 标记为 `superseded_by_rule: <new_rule_id>`；从 INDEX.md `## User Overrides` 按 gap_id 精确移除对应行
+- **证据不足** → 保留此文件作 explicit user override；Stage -0.5 注入时作 Advisory Context（非 FAIL 依据）；INDEX.md `## User Overrides` 保留对应行
+
+<!-- GAPS_BLOCKS_START -->
+{{gaps_blocks}}
+<!-- GAPS_BLOCKS_END -->
+
+<!-- Gap block 格式范例（scanner 填充 gaps_blocks 时使用此格式）：
+
+### gap-1
+
+**问题描述**: 发现部分 SDK client 直接由业务代码实例化，部分通过 Spring Bean 注入，无法确定统一策略。
+- **分裂证据 A**: `src/main/java/com/acme/core/service/SmsService.java:23`（new AliyunSmsClient() 直接实例化）
+- **分裂证据 B**: `src/main/java/com/acme/core/service/EmailService.java:17`（@Autowired SdkClientFactory 工厂注入）
+- **用户回答位置**: TODO.md#todo-1
+- **status**: open
+
+---
+
+### gap-2（已用户回答，等待 micro-rescan）
+
+**问题描述**: 第三方 API 重试策略是否统一配置？HttpClientWrapper 中有 retry 配置，但部分 client 自行实现了重试。
+- **分裂证据 A**: `src/main/java/com/acme/infra/client/PaymentGatewayClient.java:45`（依赖 HttpClientWrapper retry）
+- **分裂证据 B**: `src/main/java/com/acme/infra/client/CrmClient.java:67`（自行 for 循环重试 3 次）
+- **用户回答位置**: TODO.md#todo-2
+- **resolved_by_user**: 重试统一由 HttpClientWrapper 配置，CrmClient 的自行重试是历史遗留，新代码不得自行重试。
+- **status**: open
+
+---
+
+### gap-3（已升级为 rule，无需用户再处理）
+
+**问题描述**: （已由 micro-rescan 找到足够证据并升级）
+- **status**: superseded_by_rule: integrations-and-sdk-usage/rule-3
+
+---
+
+Gap status 枚举：
+- open:               scanner 发现，等待用户回答
+- resolved_by_user:   用户已填写 TODO.md 答案，--apply-knowledge-answers 已处理（可能仍在 advisory 阶段）
+- superseded_by_rule: micro-rescan 找到足够证据，gap 已升级为 manifest rule（按 rule_id 精确引用）
+-->

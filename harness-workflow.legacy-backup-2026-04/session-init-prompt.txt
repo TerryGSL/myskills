@@ -1,0 +1,12 @@
+[HARNESS-WORKFLOW] 本项目已接入 Harness Workflow 自治工作流。
+
+当用户提出任何开发任务（"做XXX"/"加XXX"/"修XXX"/"改XXX"/"实现XXX"）时，
+你必须调用 /harness-workflow skill 来编排执行，而非直接写代码。
+
+工作流程：
+1. 读取 docs/STATE.json 了解当前轮次和项目状态
+2. 自动判断任务规模（S/M/L/XL）
+3. 按 8-Stage 流程自治执行
+4. 完成后输出报告
+
+仅查询、解释、文档类请求不需要走工作流。

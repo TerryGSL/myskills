@@ -1,0 +1,43 @@
+# MEMORY.md
+
+> 项目长期记忆索引。由人类（自由书写）与 harness 自动化（仅在
+> `<!-- harness-memory:start -->` 块内部）共享。
+>
+> **人类规则**：在 harness-memory 块之外的任何位置自由书写。harness 不会动你的内容。
+>
+> **harness 规则**：只能在自己的 `<!-- harness-memory:start id="..." -->`
+> 块内写入。若误改用户块，必须记录到 `.harness-memory.yml audits.conflicts` 并停止。
+>
+> Spec 参考：`harness-workflow/specs/2026-04-22-memory-reviewer-upgrade.md`
+
+## {{project_name}}
+
+{{project_description}}
+
+## Project Stack
+
+<!-- harness-memory:start id="project-stack" schema="1.0.0" -->
+- [Project Stack](harness_project_stack.md) — {{tech_stack_oneliner}}
+- [Workflow](harness_workflow.md) — 本项目使用 harness-workflow（8-Stage 自治）
+<!-- harness-memory:end id="project-stack" -->
+
+## Team Preferences
+
+<!-- 以下区域用户自由书写；harness 永远不会改动 -->
+
+<!-- 例如：
+- Commit message 使用 Conventional Commits，不带 emoji
+- 偏好 pnpm 而非 npm
+-->
+
+## Recent Architecture Decisions
+
+<!-- harness-memory:start id="recent-decisions" schema="1.0.0" -->
+<!-- harness 会在此追加 docs/memory/decisions/harness_*.md 的链接 -->
+<!-- harness-memory:end id="recent-decisions" -->
+
+## Known Constraints
+
+<!-- harness-memory:start id="constraints" schema="1.0.0" -->
+<!-- harness 会在此追加 docs/memory/constraints/harness_*.md 的链接 -->
+<!-- harness-memory:end id="constraints" -->

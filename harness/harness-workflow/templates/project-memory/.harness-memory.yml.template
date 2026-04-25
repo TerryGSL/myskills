@@ -1,0 +1,63 @@
+# 由 harness-workflow --init / --adopt 自动生成。
+# 编辑本文件以配置 harness 的记忆行为。
+# Spec：harness-workflow/specs/2026-04-22-memory-reviewer-upgrade.md
+
+schema_version: "1.0.0"
+
+project:
+  name: "{{project_name}}"
+  type: "{{project_type}}"
+  root_fingerprint: "{{root_fingerprint}}"
+
+# 专属路径（owned_paths）—— harness 仅可创建 / 更新这些路径。
+owned_paths:
+  - "docs/memory/.harness-memory.yml"
+  - "docs/memory/harness_reviewer_scorecard.yml"
+  - "docs/memory/MEMORY.md"
+  - "docs/memory/ERRORS.md"
+  - "docs/memory/harness_*.md"
+  - "docs/memory/cases/harness_*.md"
+  - "docs/memory/decisions/harness_*.md"
+  - "docs/memory/constraints/harness_*.md"
+  - "docs/memory/archive/harness_*.md"
+  - "docs/memory/archive/harness_*.yml"
+
+# 禁止路径（forbidden_paths）—— 绝对禁止，优先级高于 owned_paths。
+# 必须非空。在此添加 harness 禁止触碰的路径。
+forbidden_paths:
+  - "docs/memory/private/**"
+  - "docs/memory/team-written/**"
+
+# 何时将某条记忆标记为 `suspect`（按需调整）。
+# 参考：spec §Suspect Rule 文法
+suspect_rules: []
+
+# 错误案例收集标准。当 bug 至少满足 `min_criteria` 条时，
+# 才有资格被收录到 cases/。
+errors_collection:
+  min_criteria: 2
+  criteria:
+    - "diagnosis_over_30m"
+    - "cross_module"
+    - "repeated"
+    - "platform_specific"
+    - "user_visible"
+    - "invalidated_assumption"
+
+archive_policy:
+  hot_index_max_lines: 200
+  archive_after_days_unused: 180
+  archive_if_status: ["superseded", "archived"]
+  cold_dir: "docs/memory/archive"
+
+audits:
+  last_full_audit: null
+  last_error_audit: null
+  last_reviewer_score_audit: null
+  conflicts: []
+
+supersession:
+  format: "relative-path#case-id"
+
+reviewer:
+  scorecard_path: "docs/memory/harness_reviewer_scorecard.yml"

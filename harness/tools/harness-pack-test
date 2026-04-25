@@ -1,0 +1,241 @@
+#!/bin/bash
+# harness-pack-test — Contract validator for harness skill pack YAML files.
+#
+# Usage: harness-pack-test <profile.yml>
+#
+# Exits 0 if the pack passes all checks, non-zero otherwise.
+# Lists all violations (not just the first) before exiting.
+
+set -eu
+
+# ─── Usage ───────────────────────────────────────────────────────────────────
+
+usage() {
+  echo "Usage: $(basename "${0}") <profile.yml>"
+  echo ""
+  echo "Contract-tests a harness skill pack YAML against the task-type-contract."
+  echo ""
+  echo "Required fields:"
+  echo "  name, description, detection, entry_skill, task_types,"
+  echo "  default_mode, hard_floor"
+  echo ""
+  echo "Checks performed:"
+  echo "  - YAML is parseable"
+  echo "  - All required top-level fields present"
+  echo "  - detection.priority is an integer"
+  echo "  - detection.matchers has at least one entry"
+  echo "  - task_types contains: quick / bugfix / feature / refactor"
+  echo "  - Each task_type value is a valid skill name [a-z0-9-]+"
+  echo "  - default_mode is one of: conservative / standard / aggressive"
+  echo "  - hard_floor values (if any) are in the allowed set"
+  echo ""
+  echo "Fixture examples:"
+  echo "  harness-pack-test fixtures/pack-test/valid-pack.yml"
+  echo "  harness-pack-test fixtures/pack-test/invalid-pack.yml"
+  exit 1
+}
+
+# ─── ANSI colours (disabled when not a TTY) ──────────────────────────────────
+
+if [[ -t 1 ]]; then
+  GREEN="\033[1;32m"
+  RED="\033[1;31m"
+  YELLOW="\033[1;33m"
+  RESET="\033[0m"
+else
+  GREEN="" RED="" YELLOW="" RESET=""
+fi
+
+# ─── Argument validation ──────────────────────────────────────────────────────
+
+if [[ "${#}" -lt 1 ]]; then
+  usage
+fi
+
+readonly PROFILE_FILE="${1}"
+
+if [[ ! -f "${PROFILE_FILE}" ]]; then
+  echo -e "${RED}Error: file not found: ${PROFILE_FILE}${RESET}" >&2
+  exit 2
+fi
+
+# ─── Dependency check ────────────────────────────────────────────────────────
+
+if ! command -v ruby >/dev/null 2>&1; then
+  echo -e "${RED}Error: ruby is required for YAML parsing (not found in PATH).${RESET}" >&2
+  exit 2
+fi
+
+# ─── YAML parse helper (ruby) ─────────────────────────────────────────────────
+# Outputs "OK" on success, "ERROR: <msg>" on failure.
+# All further field extractions also use ruby for reliability.
+
+parse_result="$(ruby -ryaml -e "
+begin
+  data = YAML.load_file('${PROFILE_FILE}')
+  raise 'YAML parsed to nil' if data.nil?
+  puts 'OK'
+rescue => e
+  puts \"ERROR: #{e.message}\"
+end
+" 2>&1)"
+
+if [[ "${parse_result}" != "OK" ]]; then
+  echo -e "${RED}✗ YAML parse failed: ${parse_result}${RESET}"
+  exit 1
+fi
+
+# Helper: extract a value by dotted key path using Ruby
+# Returns the string representation, or empty string if missing/nil.
+yaml_get() {
+  local key_path="${1}"
+  ruby -ryaml -e "
+begin
+  data = YAML.load_file('${PROFILE_FILE}')
+  keys = '${key_path}'.split('.')
+  val = data
+  keys.each { |k| val = val.is_a?(Hash) ? val[k] : nil }
+  puts val.nil? ? '' : val.to_s
+rescue
+  puts ''
+end
+" 2>/dev/null || true
+}
+
+# Helper: check if a top-level key exists (even if value is nil/empty)
+yaml_key_exists() {
+  local key="${1}"
+  ruby -ryaml -e "
+begin
+  data = YAML.load_file('${PROFILE_FILE}')
+  puts data.is_a?(Hash) && data.key?('${key}') ? 'yes' : 'no'
+rescue
+  puts 'no'
+end
+" 2>/dev/null || echo "no"
+}
+
+# Helper: get a list field as newline-separated items
+yaml_list() {
+  local key_path="${1}"
+  ruby -ryaml -e "
+begin
+  data = YAML.load_file('${PROFILE_FILE}')
+  keys = '${key_path}'.split('.')
+  val = data
+  keys.each { |k| val = val.is_a?(Hash) ? val[k] : nil }
+  if val.is_a?(Array)
+    val.each { |item| puts item.to_s }
+  end
+rescue
+end
+" 2>/dev/null || true
+}
+
+# Helper: count elements in a nested list / hash
+yaml_count() {
+  local key_path="${1}"
+  ruby -ryaml -e "
+begin
+  data = YAML.load_file('${PROFILE_FILE}')
+  keys = '${key_path}'.split('.')
+  val = data
+  keys.each { |k| val = val.is_a?(Hash) ? val[k] : nil }
+  puts val.respond_to?(:length) ? val.length : 0
+rescue
+  puts 0
+end
+" 2>/dev/null || echo "0"
+}
+
+# ─── Accumulate violations ────────────────────────────────────────────────────
+
+violations=()
+
+add_violation() {
+  violations+=("${1}")
+}
+
+# ─── Check 1: Required top-level fields ───────────────────────────────────────
+
+readonly REQUIRED_FIELDS=(name description detection entry_skill task_types default_mode hard_floor)
+
+for field in "${REQUIRED_FIELDS[@]}"; do
+  exists="$(yaml_key_exists "${field}")"
+  if [[ "${exists}" != "yes" ]]; then
+    add_violation "Missing required field: '${field}'"
+  fi
+done
+
+# ─── Check 2: detection.priority is an integer ────────────────────────────────
+
+priority="$(yaml_get "detection.priority")"
+if [[ -z "${priority}" ]]; then
+  add_violation "detection.priority is missing or empty"
+elif ! [[ "${priority}" =~ ^-?[0-9]+$ ]]; then
+  add_violation "detection.priority must be an integer, got: '${priority}'"
+fi
+
+# ─── Check 3: detection.matchers has at least one entry ──────────────────────
+
+matchers_count="$(yaml_count "detection.matchers")"
+if [[ "${matchers_count}" -lt 1 ]]; then
+  add_violation "detection.matchers must contain at least one entry (found ${matchers_count})"
+fi
+
+# ─── Check 4: task_types contains all four required keys ──────────────────────
+
+readonly REQUIRED_TASK_TYPES=(quick bugfix feature refactor)
+for tt in "${REQUIRED_TASK_TYPES[@]}"; do
+  val="$(yaml_get "task_types.${tt}")"
+  if [[ -z "${val}" ]]; then
+    add_violation "task_types.${tt} is missing or empty"
+  elif ! [[ "${val}" =~ ^[a-zA-Z0-9-]+$ ]]; then
+    add_violation "task_types.${tt} has invalid skill name '${val}' (allowed: [a-zA-Z0-9-]+)"
+  fi
+done
+
+# ─── Check 5: default_mode is one of the three allowed values ─────────────────
+
+readonly VALID_MODES=(conservative standard aggressive)
+default_mode="$(yaml_get "default_mode")"
+mode_valid="no"
+for mode in "${VALID_MODES[@]}"; do
+  [[ "${default_mode}" == "${mode}" ]] && mode_valid="yes"
+done
+if [[ "${mode_valid}" != "yes" ]]; then
+  add_violation "default_mode must be conservative/standard/aggressive, got: '${default_mode}'"
+fi
+
+# ─── Check 6: hard_floor values are from the allowed set ─────────────────────
+
+readonly ALLOWED_HARD_FLOOR=(auto_push force_push destructive_ops auto_merge)
+
+while IFS= read -r hf_val; do
+  [[ -z "${hf_val}" ]] && continue
+  val_valid="no"
+  for allowed in "${ALLOWED_HARD_FLOOR[@]}"; do
+    [[ "${hf_val}" == "${allowed}" ]] && val_valid="yes"
+  done
+  if [[ "${val_valid}" != "yes" ]]; then
+    add_violation "hard_floor contains illegal value '${hf_val}' (allowed: auto_push / force_push / destructive_ops / auto_merge)"
+  fi
+done < <(yaml_list "hard_floor")
+
+# ─── Report ───────────────────────────────────────────────────────────────────
+
+pack_name="$(yaml_get "name")"
+[[ -z "${pack_name}" ]] && pack_name="(unknown)"
+
+if [[ "${#violations[@]}" -eq 0 ]]; then
+  echo -e "${GREEN}✓ Pack '${pack_name}' passes contract validation${RESET}"
+  exit 0
+else
+  echo -e "${RED}✗ Pack '${pack_name}' FAILED contract validation — ${#violations[@]} violation(s):${RESET}"
+  echo ""
+  for v in "${violations[@]}"; do
+    echo -e "  ${YELLOW}•${RESET} ${v}"
+  done
+  echo ""
+  exit 1
+fi

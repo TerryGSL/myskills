@@ -1,0 +1,103 @@
+# Batch Q&A — Project Knowledge Gaps
+
+Scanner 在扫描过程中发现了若干无法仅凭代码达到 high confidence 的约定问题。
+请在每条 `Your answer:` 后填写你的决策，然后运行：
+
+```
+/harness-workflow --apply-knowledge-answers
+```
+
+**规则说明**：
+- 每条 TODO 对应一个 domain 的 gap，scanner 已给出冲突证据或信息空缺
+- 回答后 harness 将执行 micro-rescan，按以下分支处理：
+  - 若在代码中找到 **≥ 2 个正例** 或 **1 正 + 1 反** 支持你的答案 → 升级为 high confidence rule，写入 `manifest.md` + `evidence.md`
+  - 若代码中证据不足 → 保留在对应 domain 的 `gaps.md` 作为 explicit user override；Stage -0.5 注入时标注"用户声明约定（未核实）"并降低权重，不作为 reviewer FAIL 依据
+- **硬上限**：每次扫描最多呈现 8 条 TODO；超出部分丢弃 low-impact 项
+
+---
+
+## TODO-1: {{todo_1_title}}
+
+**Context**: {{todo_1_context}}
+
+**Question**: {{todo_1_question}}
+
+**Your answer**: _____
+
+---
+
+## TODO-2: {{todo_2_title}}
+
+**Context**: {{todo_2_context}}
+
+**Question**: {{todo_2_question}}
+
+**Your answer**: _____
+
+---
+
+## TODO-3: {{todo_3_title}}
+
+**Context**: {{todo_3_context}}
+
+**Question**: {{todo_3_question}}
+
+**Your answer**: _____
+
+---
+
+## TODO-4: {{todo_4_title}}
+
+**Context**: {{todo_4_context}}
+
+**Question**: {{todo_4_question}}
+
+**Your answer**: _____
+
+---
+
+## TODO-5: {{todo_5_title}}
+
+**Context**: {{todo_5_context}}
+
+**Question**: {{todo_5_question}}
+
+**Your answer**: _____
+
+---
+
+## TODO-6: {{todo_6_title}}
+
+**Context**: {{todo_6_context}}
+
+**Question**: {{todo_6_question}}
+
+**Your answer**: _____
+
+---
+
+## TODO-7: {{todo_7_title}}
+
+**Context**: {{todo_7_context}}
+
+**Question**: {{todo_7_question}}
+
+**Your answer**: _____
+
+---
+
+## TODO-8: {{todo_8_title}}
+
+**Context**: {{todo_8_context}}
+
+**Question**: {{todo_8_question}}
+
+**Your answer**: _____
+
+---
+
+<!-- 填写说明：
+1. 只需在 "Your answer: _____" 后面直接填写回答，保留 "Your answer:" 前缀
+2. 若某条 TODO 与你的项目无关，填写 "N/A — <原因>"
+3. 填完后不需要修改其他字段，harness 会自动解析
+4. 未回答超过 30 天的条目，--maintain 会发出 warn -->

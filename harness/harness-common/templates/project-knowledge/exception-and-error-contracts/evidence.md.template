@@ -1,0 +1,44 @@
+---
+domain: exception-and-error-contracts
+snapshot_id: "{{snapshot_id}}"
+---
+
+# Evidence
+
+此文件由 scanner 生成，记录 `exception-and-error-contracts/manifest.md` 中每条 Rule 的代码证据。
+**用途**：仅供 audit 使用；Stage -0.5 不加载此文件（只加载 manifest.md）。
+**硬约束**：总行数 ≤ 220 行；超出时合并次要 example。
+
+**格式要求**（scanner 填充时必须遵守）：
+- 每个 anchor 必须与 manifest.md 中对应 Rule 的 `Evidence:` 字段锚点一致
+- 每个 example 必须包含 `**File**: <path>:<line>` 和 `**Interpretation**: <一句话解读>`
+- 禁止纯 path glob / 无 file:line 的引用 / 无来源代码块
+- 至少 1 个正例（核心模块）；反例可选（边界证据）
+
+<!-- EVIDENCE_BLOCKS_START -->
+{{evidence_blocks}}
+<!-- EVIDENCE_BLOCKS_END -->
+
+<!-- Evidence block 格式范例（scanner 填充 evidence_blocks 时使用此格式）：
+
+## no-raw-runtime-exception
+
+Supporting "禁止直接抛裸类型 RuntimeException":
+
+### Example 1 (positive, central)
+- **File**: `src/main/java/com/acme/core/service/OrderService.java:88`
+- **Interpretation**: 参数校验失败时抛 BizException("ORDER_INVALID")，通过全局 ExceptionHandler 转换为标准错误响应。
+
+### Example 2 (positive, central)
+- **File**: `src/main/java/com/acme/core/service/PaymentService.java:112`
+- **Interpretation**: 支付失败抛 SystemException(ErrorCode.PAYMENT_FAILED)，语义化异常类型证明裸 RuntimeException 约定被执行。
+
+### Counterexample (optional, boundary / deprecated)
+- **File**: `src/main/java/com/acme/legacy/OldBatchJob.java:201`
+- **Interpretation**: 批处理遗留代码直接抛 RuntimeException，文件已在迁移 backlog 中，属例外情况。
+
+---
+
+注意：anchor 名称（如 no-raw-runtime-exception）必须与 manifest.md 对应 Rule 的
+**Evidence**: evidence.md#<anchor> 中的 anchor 完全一致（大小写、连字符均须匹配）。
+-->
