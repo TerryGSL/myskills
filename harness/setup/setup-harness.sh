@@ -1,11 +1,15 @@
 #!/bin/bash
-# setup-harness.sh — One-time interactive setup for harness.
+# setup-harness.sh — 一次性安装：校验 + 写默认 profile（无问题，dry-run 默认）。
 #
-# Prompts the user for their workflow preferences and writes the corresponding
-# profile YAML files to ~/.claude/profiles/.  Never overwrites files without
-# explicit confirmation; Ctrl-C leaves existing files untouched.
+# 职责：
+#   1. 确保 ~/.claude/profiles/ 存在
+#   2. 确保 default.yml / harness.yml / company.yml.template 存在（缺则写默认）
+#   3. 检查 ~/.claude/settings.json 是否注册 context-monitor.sh hook
+#   4. 输出"接入完成"+ 后续步骤指引
 #
-# Usage: ./setup-harness.sh
+# 用法：
+#   ./setup-harness.sh           # dry-run，仅检查 + 输出建议
+#   ./setup-harness.sh --apply   # 真正写入缺失的文件
 
 set -euo pipefail
 
@@ -15,222 +19,153 @@ readonly PROFILES_DIR="${HOME}/.claude/profiles"
 readonly HARNESS_YML="${PROFILES_DIR}/harness.yml"
 readonly DEFAULT_YML="${PROFILES_DIR}/default.yml"
 readonly COMPANY_TPL="${PROFILES_DIR}/company.yml.template"
-readonly HOOK_SCRIPT="/Users/twelve/Music/myskills/harness/hooks/context-monitor.sh"
+readonly SETTINGS_JSON="${HOME}/.claude/settings.json"
+readonly HOOK_SCRIPT="${HOME}/Music/myskills/harness/hooks/context-monitor.sh"
 
 # ANSI colours
 if [[ -t 1 ]]; then
-  BOLD="\033[1m"
-  GREEN="\033[1;32m"
-  YELLOW="\033[1;33m"
-  CYAN="\033[1;36m"
-  RED="\033[1;31m"
-  RESET="\033[0m"
+  BOLD="\033[1m"; GREEN="\033[1;32m"; YELLOW="\033[1;33m"
+  CYAN="\033[1;36m"; RED="\033[1;31m"; RESET="\033[0m"
 else
-  BOLD="" GREEN="" YELLOW="" CYAN="" RED="" RESET=""
+  BOLD=""; GREEN=""; YELLOW=""; CYAN=""; RED=""; RESET=""
 fi
 
-# ─── Trap: graceful Ctrl-C ────────────────────────────────────────────────────
-trap 'echo -e "\n${YELLOW}Setup interrupted. Existing files were not modified.${RESET}"; exit 1' INT TERM
+# ─── Args ─────────────────────────────────────────────────────────────────────
+
+APPLY=false
+if [[ "${1:-}" == "--apply" ]]; then
+  APPLY=true
+fi
 
 # ─── Helpers ─────────────────────────────────────────────────────────────────
-
-ask() {
-  # ask <variable_name> <prompt>
-  local var_name="${1}"
-  local prompt="${2}"
-  local answer
-  echo -en "${CYAN}${prompt}${RESET} "
-  read -r answer
-  printf -v "${var_name}" '%s' "${answer}"
-}
-
-ask_yn() {
-  # ask_yn <variable_name> <prompt> — returns "y" or "n"
-  local var_name="${1}"
-  local prompt="${2}"
-  local answer
-  while true; do
-    echo -en "${CYAN}${prompt} [y/n]:${RESET} "
-    read -r answer
-    case "${answer}" in
-      [Yy]) printf -v "${var_name}" 'y'; return ;;
-      [Nn]) printf -v "${var_name}" 'n'; return ;;
-      *) echo "  Please enter y or n." ;;
-    esac
-  done
-}
 
 section() {
   echo -e "\n${BOLD}── ${1} ──────────────────────────────────${RESET}"
 }
 
-check_file() {
+check_or_write() {
+  # check_or_write <path> <default-content-fn>
   local path="${1}"
+  local writer="${2}"
   if [[ -f "${path}" ]]; then
     echo -e "  ${GREEN}✓${RESET} ${path}"
+    return 0
+  fi
+  if $APPLY; then
+    "${writer}" > "${path}.tmp"
+    mv "${path}.tmp" "${path}"
+    echo -e "  ${GREEN}＋${RESET} 写入 ${path}"
   else
-    echo -e "  ${RED}✗ missing:${RESET} ${path}"
+    echo -e "  ${YELLOW}✗ 缺失${RESET} ${path}（运行 --apply 写默认）"
   fi
 }
 
-ensure_profiles_dir() {
-  if [[ ! -d "${PROFILES_DIR}" ]]; then
-    echo -e "${YELLOW}Creating ${PROFILES_DIR} ...${RESET}"
-    mkdir -p "${PROFILES_DIR}"
-  fi
-}
+write_default_yml() {
+  cat <<'YAML'
+# default.yml — 兜底 profile（priority 0，always 匹配）
+name: default
+description: 默认 profile（无项目特定配置时使用）
 
-# ─── Start ────────────────────────────────────────────────────────────────────
+detection:
+  priority: 0
+  matchers:
+    - type: always
+      pattern: "*"
 
-echo -e "${BOLD}"
-echo "╔══════════════════════════════════════════╗"
-echo "║   harness  —  Interactive Setup       ║"
-echo "╚══════════════════════════════════════════╝"
-echo -e "${RESET}"
-
-# ─── 1. Pre-flight check ──────────────────────────────────────────────────────
-
-section "Pre-flight check"
-ensure_profiles_dir
-check_file "${DEFAULT_YML}"
-check_file "${HARNESS_YML}"
-check_file "${COMPANY_TPL}"
-
-# ─── 2. Development scenario ─────────────────────────────────────────────────
-
-section "Primary development scenario"
-echo "  1) Personal project  (Next.js / Go / Python)"
-echo "  2) Company project"
-echo "  3) Both"
-echo ""
-dev_scenario=""
-while true; do
-  ask dev_scenario "Choose [1/2/3]:"
-  case "${dev_scenario}" in
-    1|2|3) break ;;
-    *) echo "  Enter 1, 2, or 3." ;;
-  esac
-done
-
-# ─── 3. Push strategy ────────────────────────────────────────────────────────
-
-section "Default push strategy (for personal projects)"
-echo "  1) conservative — manual push only"
-echo "  2) standard     — ask before pushing"
-echo "  3) aggressive   — auto push"
-echo ""
-push_choice=""
-while true; do
-  ask push_choice "Choose [1/2/3]:"
-  case "${push_choice}" in
-    1) push_mode="conservative"; break ;;
-    2) push_mode="standard";     break ;;
-    3) push_mode="aggressive";   break ;;
-    *) echo "  Enter 1, 2, or 3." ;;
-  esac
-done
-
-# ─── 4. Company project details (if applicable) ───────────────────────────────
-
-company_name=""
-company_repo_path=""
-company_remote_regex=""
-
-if [[ "${dev_scenario}" == "2" || "${dev_scenario}" == "3" ]]; then
-  section "Company project settings"
-  ask company_name     "Company / workspace name (slug, e.g. acme):"
-  ask company_repo_path "Local repo path (e.g. ~/work/acme-api):"
-  ask company_remote_regex "git remote URL regex to match (e.g. github.com/acme):"
-fi
-
-# ─── 5. Optional features ────────────────────────────────────────────────────
-
-section "Optional features"
-enable_scanner="n"
-ask_yn enable_scanner "Enable knowledge scanner (project-scanner)?"
-
-enable_hook="n"
-ask_yn enable_hook "Enable stop-hook context monitor?"
-
-# ─── 6. Write harness.yml ────────────────────────────────────────────────────
-
-section "Writing profile files"
-
-write_harness_yml() {
-  local scanner_enabled
-  scanner_enabled="$([[ "${enable_scanner}" == "y" ]] && echo "true" || echo "false")"
-
-  cat > "${HARNESS_YML}" <<YAML
-# harness.yml — generated by setup-harness.sh on $(date +%Y-%m-%d)
-name: harness
-description: "harness default profile"
-default_mode: ${push_mode}
-
-features:
-  project_scanner: ${scanner_enabled}
-  context_monitor_hook: $([[ "${enable_hook}" == "y" ]] && echo "true" || echo "false")
+entry_skill: profile-entry
 
 task_types:
-  quick:    harness-quick
-  bugfix:   harness-bugfix
-  feature:  harness-feature
+  quick: harness-quick
+  bugfix: harness-bugfix
+  feature: harness-feature
   refactor: harness-refactor
+
+default_mode: conservative
+
+hard_floor: []
 YAML
-  echo -e "  ${GREEN}✓${RESET} Written: ${HARNESS_YML}"
 }
 
-write_harness_yml
-
-# ─── 7. Write company profile (if needed) ────────────────────────────────────
-
-if [[ -n "${company_name}" ]]; then
-  company_yml="${PROFILES_DIR}/company-${company_name}.yml"
-
-  # Source template if it exists, otherwise create from scratch
-  if [[ -f "${COMPANY_TPL}" ]]; then
-    cp "${COMPANY_TPL}" "${company_yml}"
-    # Patch the copied template with actual values using sed (portable)
-    sed -i.bak \
-      -e "s|__COMPANY_NAME__|${company_name}|g" \
-      -e "s|__REPO_PATH__|${company_repo_path}|g" \
-      -e "s|__REMOTE_REGEX__|${company_remote_regex}|g" \
-      "${company_yml}" && rm -f "${company_yml}.bak"
-  else
-    # No template — generate a minimal company profile
-    cat > "${company_yml}" <<YAML
-# company-${company_name}.yml — generated by setup-harness.sh on $(date +%Y-%m-%d)
-name: company-${company_name}
-description: "Company workspace profile for ${company_name}"
-default_mode: ${push_mode}
+write_harness_yml() {
+  cat <<'YAML'
+# harness.yml — 个人项目 profile
+name: harness
+description: 个人项目 profile — 默认 standard aggression。
 
 detection:
   priority: 10
   matchers:
-    - type: repo_path
-      pattern: "${company_repo_path}"
-    - type: git_remote
-      pattern: "${company_remote_regex}"
+    - type: path_glob
+      pattern: "~/Music/myskills/**"
+    - type: git_remote_regex
+      pattern: "github\\.com[:/]TerryGSL/.*"
 
-hard_floor:
-  - auto_merge
+entry_skill: profile-entry
 
 task_types:
-  quick:    harness-quick
-  bugfix:   harness-bugfix
-  feature:  harness-feature
+  quick: harness-quick
+  bugfix: harness-bugfix
+  feature: harness-feature
   refactor: harness-refactor
+
+default_mode: standard
+
+hard_floor: []
 YAML
+}
+
+write_company_template() {
+  cat <<'YAML'
+# 公司 profile 模板 — 用 /profile-bootstrap <name> 自动派生而不是手改本文件
+# hard_floor 列表不可为空 — 公司项目默认底线
+name: company-REPLACE_ME
+description: 公司项目 profile — 严格审查，绝不自动 push
+
+detection:
+  priority: 20
+  matchers:
+    - type: path_glob
+      pattern: "REPLACE_ME"
+    - type: git_remote_regex
+      pattern: "REPLACE_ME"
+
+entry_skill: profile-entry
+
+task_types:
+  quick: harness-quick
+  bugfix: harness-bugfix
+  feature: harness-feature
+  refactor: harness-refactor
+
+default_mode: conservative
+
+hard_floor:
+  - auto_push
+  - force_push
+  - destructive_ops
+  - auto_merge
+YAML
+}
+
+check_hook_registered() {
+  if [[ ! -f "${SETTINGS_JSON}" ]]; then
+    echo -e "  ${YELLOW}∅${RESET} settings.json 不存在 — Stop Hook 未注册"
+    return 1
   fi
-  echo -e "  ${GREEN}✓${RESET} Written: ${company_yml}"
-fi
+  if grep -q "context-monitor.sh" "${SETTINGS_JSON}" 2>/dev/null; then
+    echo -e "  ${GREEN}✓${RESET} Stop Hook 已注册（settings.json 含 context-monitor.sh）"
+    return 0
+  else
+    echo -e "  ${YELLOW}✗${RESET} Stop Hook 未注册"
+    return 1
+  fi
+}
 
-# ─── 8. Hook registration instructions ───────────────────────────────────────
+print_hook_snippet() {
+  cat <<JSON
 
-if [[ "${enable_hook}" == "y" ]]; then
-  section "Stop-hook registration"
-  echo -e "${YELLOW}Add the following to ~/.claude/settings.json (merge into existing JSON):${RESET}"
-  echo ""
-  cat <<'JSON'
+合并以下到 ${SETTINGS_JSON}：
+
 {
   "hooks": {
     "Stop": [
@@ -239,36 +174,61 @@ if [[ "${enable_hook}" == "y" ]]; then
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/twelve/Music/myskills/harness/hooks/context-monitor.sh"
+            "command": "${HOOK_SCRIPT}"
           }
         ]
       }
     ]
   }
 }
+
+阈值按 task_type 自适应：
+  quick    → warn 80% / crit 90%
+  bugfix   → warn 70% / crit 85%
+  feature  → warn 60% / crit 80%
+  refactor → warn 60% / crit 80%
+  无 task_type → 静默退出
 JSON
-  echo ""
-  echo -e "Hook script location: ${CYAN}${HOOK_SCRIPT}${RESET}"
+}
+
+# ─── Main ─────────────────────────────────────────────────────────────────────
+
+mode_label="dry-run"
+$APPLY && mode_label="apply"
+
+echo -e "${BOLD}"
+echo "╔══════════════════════════════════════════════╗"
+echo "║   harness  —  Setup（${mode_label}）"
+echo "╚══════════════════════════════════════════════╝"
+echo -e "${RESET}"
+
+section "Profile 目录与文件"
+if [[ ! -d "${PROFILES_DIR}" ]]; then
+  if $APPLY; then
+    mkdir -p "${PROFILES_DIR}"
+    echo -e "  ${GREEN}＋${RESET} 创建 ${PROFILES_DIR}"
+  else
+    echo -e "  ${YELLOW}✗${RESET} ${PROFILES_DIR} 不存在（--apply 创建）"
+  fi
+else
+  echo -e "  ${GREEN}✓${RESET} ${PROFILES_DIR}"
 fi
 
-# ─── 9. Summary ──────────────────────────────────────────────────────────────
+check_or_write "${DEFAULT_YML}"  write_default_yml
+check_or_write "${HARNESS_YML}"  write_harness_yml
+check_or_write "${COMPANY_TPL}"  write_company_template
 
-section "Setup complete — summary"
+section "Stop Hook 注册状态"
+if check_hook_registered; then
+  echo -e "  Hook 已 active。"
+else
+  echo -e "  注册指引："
+  print_hook_snippet
+fi
 
-echo -e "  ${GREEN}✓${RESET} Profile written : ${HARNESS_YML}"
-[[ -n "${company_name}" ]] && \
-  echo -e "  ${GREEN}✓${RESET} Company profile : ${PROFILES_DIR}/company-${company_name}.yml"
-echo -e "  Push mode        : ${push_mode}"
-echo -e "  Scanner          : ${enable_scanner}"
-echo -e "  Context hook     : ${enable_hook}"
-
+section "下一步"
+echo -e "  • 切到公司项目时：${CYAN}/profile-bootstrap <slug>${RESET} 派生 company-*.yml"
+echo -e "  • 在任意 repo 内：直接说出任务，task-dispatcher → profile-entry 自动路由"
+echo -e "  • 若需手动指定 profile：在 repo 根写 ${CYAN}.harness-profile${RESET}（内容为 profile 名）"
 echo ""
-echo -e "${BOLD}Next steps:${RESET}"
-echo -e "  1. Start a new Claude session."
-echo -e "  2. Activate harness: ${CYAN}/profile-entry${RESET}"
-echo -e "  3. Dispatcher picks your task type automatically, or run:"
-echo -e "     ${CYAN}/task-dispatcher${RESET}"
-echo ""
-echo -e "Validate any profile with:"
-echo -e "  ${CYAN}/Users/twelve/Music/myskills/harness/tools/harness-pack-test <profile.yml>${RESET}"
-echo ""
+$APPLY || echo -e "${CYAN}本次为 dry-run。重跑加 --apply 才会写入。${RESET}"
