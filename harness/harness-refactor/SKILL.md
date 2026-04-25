@@ -253,6 +253,18 @@ review_target:
 
 见 [`../harness-common/references/reviewer-integration.md`](../harness-common/references/reviewer-integration.md) §"Verdict 决定规则"。
 
+**4d. 最终步骤：commit + push-decision**
+
+最终 strict-reviewer PASS 后，进入 commit + push 评估：
+
+1. `git add <refactored_files>`
+2. `git commit -m "refactor: ${summary}"`
+3. 调用 [push-decision](../harness-common/references/push-decision.md)：
+   - 改 > 3 文件 / 改公共导出 / breaking → HIGH 拒绝
+   - 单一模块内重构 → MEDIUM 询问
+   - 极少数 LOW（如纯重命名 + 自动 import 修复） → 自动
+4. 把 push 结果记入 WALKTHROUGH.md
+
 ---
 
 ## 与 harness-common 的引用关系
