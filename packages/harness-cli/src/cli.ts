@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { runInit } from './commands/init.js';
 import { runAdopt } from './commands/adopt.js';
 import { runDoctor } from './commands/doctor.js';
 import { runMaintain } from './commands/maintain.js';
 import { runScan } from './commands/scan.js';
+import { runInstall, printHumanSummary as printInstallSummary } from './commands/install.js';
 
 const program = new Command();
 
@@ -133,6 +135,26 @@ program
     process.stdout.write(`scan: ${r.action}\n`);
     if (r.reason) process.stderr.write(`${r.reason}\n`);
     process.exit(r.exitCode);
+  });
+
+program
+  .command('install')
+  .description('User-global setup: profiles + settings.json hook + skills symlinks (Tier 3 tool probe)')
+  .option('--doctor', 'Check only, no writes', false)
+  .option('--json', 'Machine-readable output', false)
+  .action((opts) => {
+    // Resolve repo root: cli.ts lives at packages/harness-cli/src/cli.ts;
+    // dist version lives at packages/harness-cli/dist/cli.js. Either way the
+    // myskills repo root is 3 levels up from the compiled bundle.
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const repoRoot = path.resolve(here, '..', '..', '..');
+    const r = runInstall({ doctor: !!opts.doctor, json: !!opts.json, repoRoot });
+    if (opts.json) {
+      process.stdout.write(JSON.stringify(r, null, 2) + '\n');
+    } else {
+      printInstallSummary(r);
+    }
+    process.exit(r.status === 'error' ? 1 : 0);
   });
 
 program.parse();

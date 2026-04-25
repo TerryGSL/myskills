@@ -55,6 +55,11 @@ npm link
 alias harness="node $PWD/bin/cli.js"
 ```
 
+**Tier 3 工具依赖**：环境必须有 `bash >= 3.2` / `python3` / `realpath`。
+`harness install --doctor` 探测这 3 个工具，缺失即 warn（不 fail）。
+
+如果环境同时缺 node + 上述任一 → 走"完全无 CLI 手工"路径，AI 直接逐 file Edit/Write。
+
 ### Tier 3：完全无 CLI（应急 / 断网 / 无 node）
 
 AI 手工读取 bundled templates 并逐一 Edit/Write 到目标项目：
@@ -139,20 +144,23 @@ harness doctor --json
 ## 第七步：安装项目级 skill symlink
 
 `harness init` 不会自动把全局 skill symlink 到 `~/.claude/skills/`。用户在新电脑 / 新账号
-首次用 harness 时需要一次性装：
+首次用 harness 时需要一次性装。
+
+推荐用 `harness install --doctor` 校验（仅打印 active/inactive 状态）。
+缺失项自动修复跑 `harness install`（默认 check + auto-fix）。
 
 ```bash
-cd <myskills-clone>
-for d in harness-workflow harness-init profile-entry harness-common \
-         harness-quick harness-bugfix harness-feature harness-refactor \
-         strict-reviewer team-pd team-architect team-senior-dev \
-         team-junior-dev team-qa team-security team-commander \
-         task-dispatcher investigate office-hours gstack; do
-  ln -sf "$PWD/$d" ~/.claude/skills/
-done
-# team-init 作向后兼容 alias 也要
-ln -sf "$PWD/team-init" ~/.claude/skills/
+harness install --doctor   # 只检查，不写
+harness install            # check + auto-fix（profiles + settings.json hook + skills 一键就位）
 ```
+
+`harness install` 的 4 步契约（spec §A PR 2）：
+1. `~/.claude/profiles/` 不存在则 mkdir
+2. `default.yml` / `harness.yml` / `company.yml.template` 缺失即原子写入
+3. `~/.claude/settings.json` 三态分支：missing → 写最小合法 JSON；malformed → 备份 `.bak.invalid`
+   并 `exit 1`；valid → 备份 `.bak` 后 merge `hooks.Stop[]`（hook 路径定死为
+   `<myskills-repo>/hooks/context-monitor.sh`）
+4. skills symlink 检查 + 修复（覆盖坏链）
 
 ## 第八步：交棒
 
