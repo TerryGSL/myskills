@@ -1,0 +1,15 @@
+name: bad-matcher
+description: illegal matcher type
+detection:
+  priority: 10
+  matchers:
+    - type: repo_path
+      pattern: "/work/foo"
+entry_skill: profile-entry
+task_types:
+  quick: harness-quick
+  bugfix: harness-bugfix
+  feature: harness-feature
+  refactor: harness-refactor
+default_mode: standard
+hard_floor: []

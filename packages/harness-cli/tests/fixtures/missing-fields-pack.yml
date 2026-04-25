@@ -1,0 +1,7 @@
+name: missing-fields
+description: missing required
+task_types:
+  quick: harness-quick
+  bugfix: harness-bugfix
+  feature: harness-feature
+  refactor: harness-refactor

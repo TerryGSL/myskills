@@ -1,15 +1,27 @@
 import fs from 'fs-extra';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { parse as parseYaml } from 'yaml';
 import {
   loadProfile,
   listProfiles,
   matchProfile,
   readMarker,
   writeMarker,
+  validateProfile,
   MARKER_PATH,
 } from '../../src/utils/profile.js';
 import { Profile } from '../../src/types/profile.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FIXTURES_DIR = path.resolve(__dirname, '../fixtures');
+
+function loadFixture(name: string): { yamlText: string; parsed: unknown } {
+  const yamlText = fs.readFileSync(path.join(FIXTURES_DIR, name), 'utf8');
+  const parsed = parseYaml(yamlText);
+  return { yamlText, parsed };
+}
 
 function tmpDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'harness-cli-profile-'));
@@ -187,5 +199,31 @@ describe('.harness-profile marker', () => {
   it('MARKER_PATH is .harness-profile (no dot-harness subdir)', () => {
     // Spec: project root level marker, not inside .harness/
     expect(MARKER_PATH).toBe('.harness-profile');
+  });
+});
+
+describe('validateProfile (defensive)', () => {
+  it('flags placeholder residue (REPLACE_ME / __X__)', () => {
+    const { yamlText, parsed } = loadFixture('placeholder-residue-pack.yml');
+    const violations = validateProfile(yamlText, parsed);
+    expect(violations.some((v) => /Placeholder residue/.test(v))).toBe(true);
+  });
+
+  it('flags illegal matcher type not in MATCHER_TYPES whitelist', () => {
+    const { yamlText, parsed } = loadFixture('illegal-matcher-pack.yml');
+    const violations = validateProfile(yamlText, parsed);
+    expect(violations.some((v) => /illegal/.test(v))).toBe(true);
+  });
+
+  it('flags every missing required field', () => {
+    const { yamlText, parsed } = loadFixture('missing-fields-pack.yml');
+    const violations = validateProfile(yamlText, parsed);
+    // missing: detection / entry_skill / default_mode / hard_floor (task_types is present)
+    expect(violations.length).toBeGreaterThanOrEqual(4);
+    for (const k of ['detection', 'entry_skill', 'default_mode', 'hard_floor']) {
+      expect(violations.some((v) => v.includes(`Missing required field: ${k}`))).toBe(
+        true,
+      );
+    }
   });
 });

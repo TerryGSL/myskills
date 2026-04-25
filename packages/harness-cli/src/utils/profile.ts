@@ -36,6 +36,65 @@ export function loadProfile(filePath: string): Profile {
   return data as Profile;
 }
 
+/**
+ * Defensive profile validation.
+ *
+ * Layered on top of the JSON-schema (ajv) check in `loadProfile` to catch
+ * issues that the schema does not — or to fail fast before schema compile.
+ *
+ * Returns a list of human-readable violation strings; empty array = clean.
+ *
+ * Checks:
+ *   1. Placeholder residue (template strings like REPLACE_ME / __X__ left
+ *      in a derived profile — strong signal the user / bootstrap forgot to
+ *      substitute).
+ *   2. Matcher type whitelist (defensive double-check; schema also enforces
+ *      via ajv enum, but markdown contracts and bash fallbacks may emit
+ *      illegal types).
+ *   3. Required top-level fields presence.
+ */
+export function validateProfile(yamlText: string, parsed: unknown): string[] {
+  const violations: string[] = [];
+
+  // 1) Placeholder residue
+  if (/REPLACE_ME|__[A-Z_]+__/.test(yamlText)) {
+    violations.push(
+      'Placeholder residue: file contains REPLACE_ME or __X__, not derived',
+    );
+  }
+
+  const obj =
+    parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null;
+
+  // 2) Matcher type whitelist
+  const detection = obj?.detection as { matchers?: unknown } | undefined;
+  const matchers = Array.isArray(detection?.matchers) ? detection.matchers : [];
+  for (let i = 0; i < matchers.length; i++) {
+    const m = matchers[i] as { type?: unknown };
+    const t = m?.type;
+    if (typeof t !== 'string' || !MATCHER_TYPES.includes(t as MatcherType)) {
+      violations.push(
+        `detection.matchers[${i}].type illegal: ${JSON.stringify(t)} (allowed: ${MATCHER_TYPES.join(' / ')})`,
+      );
+    }
+  }
+
+  // 3) Required fields
+  for (const k of [
+    'detection',
+    'entry_skill',
+    'default_mode',
+    'hard_floor',
+    'task_types',
+  ]) {
+    if (!obj || !(k in obj)) {
+      violations.push(`Missing required field: ${k}`);
+    }
+  }
+
+  return violations;
+}
+
 /** List + load all *.yml profiles under a directory (non-recursive). */
 export function listProfiles(dir: string): Profile[] {
   if (!fs.existsSync(dir)) return [];
