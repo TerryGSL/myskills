@@ -1,20 +1,32 @@
 # Profile resolution: explicit marker file wins over matchers.
 description: 'profile-entry resolves harness profile via explicit .harness-profile marker'
 runner: 'profile-resolve'
-status: 'pending_until_PR-C1'
+status: 'active'
 input:
-  cwd: '/Users/twelve/Music/myskills'
+  # {HOME} is replaced by golden.test.ts with a tmpdir before spawning CLI.
+  # Marker file (if non-null) is written under the tmpdir; CLI is invoked
+  # with HOME={HOME} so ~/Music/myskills/** patterns expand consistently.
+  cwd: '{HOME}/Music/myskills'
   marker_file:
     profile: 'harness'
     resolved_by: 'marker'
     updated_at: '2026-04-26T10:00:00Z'
   available_profiles:
     - name: 'harness'
+      description: 'personal'
       detection:
         priority: 10
         matchers:
           - type: 'path_glob'
             pattern: '~/Music/myskills/**'
+      entry_skill: 'profile-entry'
+      task_types:
+        quick: 'harness-quick'
+        bugfix: 'harness-bugfix'
+        feature: 'harness-feature'
+        refactor: 'harness-refactor'
+      default_mode: 'standard'
+      hard_floor: []
 expected_output:
   profile_name: 'harness'
   resolved_by: 'marker'

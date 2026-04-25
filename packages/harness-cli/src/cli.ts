@@ -13,6 +13,7 @@ import {
   printBootstrapSummary,
 } from './commands/profile-bootstrap.js';
 import { runPushCheck } from './commands/push-check.js';
+import { runProfileResolve } from './commands/profile-resolve.js';
 
 const program = new Command();
 
@@ -182,6 +183,35 @@ program
       process.exit(0);
     } catch (e) {
       process.stderr.write(`profile-bootstrap failed: ${(e as Error).message}\n`);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('profile-resolve')
+  .description('Stage 0 of unified routing: resolve profile via marker or matchers, output JSON')
+  .option('--json', 'Machine-readable JSON output (always JSON; flag for symmetry)', false)
+  .option('--profiles-dir <dir>', 'Override profiles directory (default ~/.claude/profiles)')
+  .option('--git-remote <url>', 'Override git remote (test hook; empty string forces null)')
+  .argument('[projectPath]', 'Project root (defaults to cwd)', '.')
+  .action((projectPath, opts) => {
+    const cwd = path.resolve(projectPath);
+    try {
+      const gitRemoteOpt =
+        opts.gitRemote === undefined
+          ? undefined
+          : opts.gitRemote === ''
+            ? null
+            : opts.gitRemote;
+      const r = runProfileResolve({
+        cwd,
+        profilesDir: opts.profilesDir,
+        gitRemote: gitRemoteOpt,
+      });
+      process.stdout.write(JSON.stringify(r, null, 2) + '\n');
+      process.exit(0);
+    } catch (e) {
+      process.stderr.write(`profile-resolve failed: ${(e as Error).message}\n`);
       process.exit(1);
     }
   });

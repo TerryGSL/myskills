@@ -1,17 +1,27 @@
 # Profile resolution: no marker file → fall back to path_glob matcher.
 description: 'profile-entry resolves harness profile via path_glob matcher when marker absent'
 runner: 'profile-resolve'
-status: 'pending_until_PR-C1'
+status: 'active'
 input:
-  cwd: '/Users/twelve/Music/myskills'
+  # {HOME} replaced by tmpdir; CLI invoked with HOME={HOME}.
+  cwd: '{HOME}/Music/myskills'
   marker_file: null
   available_profiles:
     - name: 'harness'
+      description: 'personal'
       detection:
         priority: 10
         matchers:
           - type: 'path_glob'
             pattern: '~/Music/myskills/**'
+      entry_skill: 'profile-entry'
+      task_types:
+        quick: 'harness-quick'
+        bugfix: 'harness-bugfix'
+        feature: 'harness-feature'
+        refactor: 'harness-refactor'
+      default_mode: 'standard'
+      hard_floor: []
 expected_output:
   profile_name: 'harness'
   resolved_by: 'matcher'
