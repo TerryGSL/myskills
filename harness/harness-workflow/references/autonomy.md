@@ -7,9 +7,15 @@
 | 1 | 首次项目初始化 | `--init` 模式 | 确定技术栈、架构方向、产品定位 |
 | 2 | L/XL 级方向确认 | 规模分级为 L 或 XL | 一个选择题对齐方向，不做逐个问答 |
 | 3 | 不可解决的阻塞 | 连续 3 次自动修复失败 | 附问题描述 + 已尝试方案，请用户决策 |
-| 4 | Git 推送 | Stage 8 收尾 commit 后 | 最终报告输出后可询问一次，用户同意才 push，绝不静默自动 push |
+| 4 | Git 推送（high risk） | commit 后 push-decision 评估 high | 输出原因，拒绝 push，要求人工 |
+| 5 | Git 推送（medium risk） | commit 后 push-decision 评估 medium | 单次询问，用户 y 才 push |
 
-**其余一切自治**，包括 S/M 级全流程、架构判断、规划、审查、测试、收尾。git commit 自治，git push 需用户确认。
+**其余一切自治**。git commit 自治；git push 由 push-decision 规则决定（low 自动 / medium 询问 / high 拒绝），公司 profile（hard_floor 含 auto_push）永远走 high 分支。
+
+> **2026-04-25 改动**：原"绝不静默自动 push"改为 risk-based 决策，规则见
+> [`harness-common/references/push-decision.md`](../../harness-common/references/push-decision.md)。
+> 个人项目低 risk 改动（如 markdown / i18n）允许自动 push；公司项目通过 hard_floor
+> 永久强制 high 分支，行为与原契约等价。
 
 ---
 
