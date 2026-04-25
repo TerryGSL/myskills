@@ -12,14 +12,25 @@ description: >
 
 # harness-feature — 8-Stage 自治新功能流程
 
-## 输入契约（来自 profile-entry）
+## 输入契约
+
+本 SKILL 由 `harness route --json` 输出的 route object 驱动。route object 8 字段（spec §Routing-as-CLI）：
 
 | 字段 | 语义 |
 |------|------|
-| `resolved_profile` | 完整 profile 对象（含 hard_floor 清单） |
+| `leaf_skill` | 必为 `harness-feature` |
+| `resolved_profile` | profile.name（含 hard_floor 清单） |
 | `resolved_mode` | `conservative` / `standard` / `aggressive` |
-| `task_description` | 原用户请求 |
-| `hard_floor` | 禁止动作清单（Stage 8 强制执法） |
+| `task_description` | 原用户请求 verbatim |
+| `hard_floor` | HARD_FLOOR_FLAGS 子集（Stage 8 强制执法） |
+| `knowledge_manifest` | KnowledgeCheck 8-field state object（Stage -0.5 注入） |
+| `fast_path_hit` | boolean（feature 路径通常 false） |
+| `context_to_inject` | markdown 字符串（Binding Rules + Advisory Context；prepend 到第一个 subagent task prompt） |
+
+**Tier 1+2（默认）**：调用方通过 `harness route --json` 拿到 route object 直接 invoke 本 SKILL。
+**Tier 3（无 node）**：CLI 不可用 → 由 `profile-entry` SKILL 手算等价 route object。
+
+完整契约 → [`harness-common/contracts/routing.md`](../harness-common/contracts/routing.md)
 
 ## 8-Stage 总览
 

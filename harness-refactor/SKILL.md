@@ -10,7 +10,25 @@ description: >
 
 # harness-refactor — 重构专用流程
 
-> 由 profile-entry 的 `--refactor` flag 或自动识别路由。
+> 由 `harness route --json`（Tier 1+2）或 profile-entry SKILL 手算（Tier 3）路由进入。
+
+## 输入契约
+
+本 SKILL 由 `harness route --json` 输出的 route object 驱动。route object 8 字段（spec §Routing-as-CLI）：
+
+- `leaf_skill`: 必为 `harness-refactor`
+- `resolved_profile`: string
+- `resolved_mode`: conservative | standard | aggressive
+- `task_description`: string（原用户请求 verbatim）
+- `hard_floor`: HARD_FLOOR_FLAGS 子集
+- `knowledge_manifest`: KnowledgeCheck 8-field state object
+- `fast_path_hit`: boolean（refactor 路径通常 false）
+- `context_to_inject`: markdown 字符串（Binding Rules + Advisory Context；prepend 到第一个 subagent task prompt）
+
+**Tier 1+2（默认）**：调用方通过 `harness route --json` 拿到 route object 直接 invoke 本 SKILL。
+**Tier 3（无 node）**：CLI 不可用 → 由 `profile-entry` SKILL 手算等价 route object。
+
+完整契约 → [`harness-common/contracts/routing.md`](../harness-common/contracts/routing.md)
 
 ## 核心原则
 
