@@ -232,6 +232,85 @@ hook 注入分级：
 
 ---
 
+## 8. 文档语言跟用户主语
+
+### ❌ 用户全程中文，AI 写英文 README / docs
+
+```
+用户："帮我接入 harness"  ← 中文交流
+我：[写] # Project Setup Guide
+        ## Installation
+        cd into the directory and run npm install
+[全英文 README，用户读起来要切语言模式]
+```
+
+### ✅ 跟随用户主语
+
+```
+用户："帮我接入 harness"  ← 中文交流
+我：[写] # 接入指南
+        ## 安装
+        cd 进项目根目录后跑 npm install
+[全中文，技术术语 npm install 保留]
+```
+
+---
+
+### ❌ commit message 用英文（用户中文沟通）
+
+```
+git commit -m "feat(hooks): add router enforcer with fail-closed mode and bypass switch"
+[用户读自己 git log 时切语言模式]
+```
+
+### ✅ commit message 跟用户主语
+
+```
+git commit -m "feat(hooks): 加 router enforcer，fail-closed 模式 + 旁路开关"
+# 保留 conventional commit prefix（feat/fix/docs 等英文规范）
+# body 用中文
+```
+
+---
+
+### ❌ 把代码注释改成中文
+
+```python
+# 计算用户的总订单金额（这个注释项目里其他地方都用英文）
+def calculate_order_total(orders: list[Order]) -> Decimal:
+    ...
+[违反原则：代码注释跟项目代码风格，不跟用户主语]
+```
+
+### ✅ 代码注释跟项目风格，给用户的报告跟用户主语
+
+```python
+# Calculate total order amount (project uses English comments throughout)
+def calculate_order_total(orders: list[Order]) -> Decimal:
+    ...
+
+# 给用户的进度报告：「我加了一个 calculate_order_total 函数，处理订单总额计算」（中文）
+```
+
+---
+
+### ❌ 用户给英文 spec 直接翻译/改写为中文
+
+```
+用户给的 spec.md 是英文 → AI"为了保持一致改成中文"重写
+[原文件被破坏；用户原本可能要保留英文版]
+```
+
+### ✅ 引用英文 spec 时保留原文，自己的解释 / 评论跟用户主语
+
+```
+> "The router must validate all incoming requests"  ← 引用 spec 原文
+我的理解：路由器**必须**验证所有进入请求（每个请求都要过验证，没有例外）
+[原文保留，解释中文]
+```
+
+---
+
 ## 用法
 
 新用户读：先看本文件 → 再读 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) 系统全图。

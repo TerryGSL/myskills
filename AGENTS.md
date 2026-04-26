@@ -14,8 +14,9 @@
 5. **失败不掩盖**。3 次修不好就 rollback + 写 cases/。继续硬干 = 越改越糟。
 6. **小步前进 + 频繁 commit**。每 step 单独可 verify、可回滚。一次大改是赌博。
 7. **看用户的话，不是看自己想做什么**。用户说 X 不要做 X+Y+Z 然后说"顺便就做了"。
+8. **文档语言跟用户主语**。用户中文 → 写中文 README / docs / commit msg / PR；用户英文 → 写英文。**代码注释**跟项目代码风格（不跟用户主语）；技术术语（PreToolUse / hook / API）保留英文。
 
-> 反面教材见 [`EXAMPLES.md`](EXAMPLES.md) — ❌/✅ 配对，包括"该用工具不用"等真实犯过的错。
+> 反面教材见 [`EXAMPLES.md`](EXAMPLES.md) — ❌/✅ 配对，包括"该用工具不用"、"写英文文档给中文用户"等真实犯过的错。
 
 ## 7 Core Kernel Rules
 
