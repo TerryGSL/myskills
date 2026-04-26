@@ -1,1 +1,0 @@
-../../team-qa/SKILL.md

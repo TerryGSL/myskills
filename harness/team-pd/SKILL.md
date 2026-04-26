@@ -1,1 +1,0 @@
-../../team-pd/SKILL.md

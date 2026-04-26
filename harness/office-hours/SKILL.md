@@ -1,1 +1,0 @@
-../../office-hours/SKILL.md

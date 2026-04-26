@@ -1,1 +1,0 @@
-../../team-junior-dev/SKILL.md

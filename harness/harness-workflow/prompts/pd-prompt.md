@@ -1,1 +1,0 @@
-../../../harness-workflow/prompts/pd-prompt.md

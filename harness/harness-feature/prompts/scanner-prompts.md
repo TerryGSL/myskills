@@ -1,1 +1,0 @@
-../../../harness-feature/prompts/scanner-prompts.md

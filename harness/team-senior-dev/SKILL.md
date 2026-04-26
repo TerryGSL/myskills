@@ -1,1 +1,0 @@
-../../team-senior-dev/SKILL.md

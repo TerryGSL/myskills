@@ -1,1 +1,0 @@
-../../team-commander/SKILL.md

@@ -1,7 +1,0 @@
-name: missing-fields-pack
-description: 缺关键字段
-task_types:
-  quick: harness-quick
-  bugfix: harness-bugfix
-  feature: harness-feature
-  refactor: harness-refactor

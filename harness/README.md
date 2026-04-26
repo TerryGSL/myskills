@@ -12,11 +12,12 @@
 
 **直接用法（本目录）的能力**：
 
-- `harness/profile-bootstrap/lib/` — Tier-3 fallback 的纯 bash profile 派生算法 + test oracle
-- `harness/profile-entry/references/` — profile / precedence / fast-path / task-type 历史 reference 档案
-- `harness/harness-feature/prompts/` — feature scanner prompts 历史档案
-- `harness/harness-workflow/specs|plans/` — 工作流历史 spec / plan 档案
-- `harness/docs/` — 历史 narrative 档案
+- `harness/profile-bootstrap/lib/derive.sh` — Tier-3 fallback 的纯 bash profile 派生算法
+- `harness/profile-bootstrap/lib/test-derive.sh` — derive.sh 的 oracle 自检脚本
+
+> 早期设计文档（DESIGN / IMPLEMENTATION-PLAN）已挪到 `docs/archive/`；
+> 工作流 spec / plan 已统一放到 `docs/superpowers/specs|plans/`；
+> 历史 reference 文档已并入 `harness-common/contracts/`（16 份 narrative contract，仓库顶层）。
 
 ## 2. 接入步骤（无 npm 环境）
 
@@ -55,7 +56,9 @@ done 2>/dev/null || true
 
 ```bash
 cd ~/work/acme-api
-bash ~/Music/myskills/harness/profile-bootstrap/lib/derive-profile.sh acme   # Tier-3 fallback
+source ~/Music/myskills/harness/profile-bootstrap/lib/derive.sh && derive_profile acme
+# 输出：DERIVED_PATH_GLOB / DERIVED_REMOTE_REGEX / DERIVED_SLUG 三个环境变量
+# 然后用这些变量手写一份 ~/.claude/profiles/company-acme.yml
 ```
 
 会自动算 path_glob / git_remote_regex，写 `~/.claude/profiles/company-acme.yml` + repo 根 `.harness-profile`。
@@ -167,17 +170,14 @@ leaf skill 在 commit 之后会自动按 `push-decision` 契约评估 risk，详
 ```
 harness/
 ├── profile-bootstrap/lib/    Tier-3 fallback bash 算法 + test oracle（保留）
-├── profile-entry/references/ Profile / precedence / fast-path 历史档案
-├── harness-common/contracts/ 16 narrative contract 的本地副本（如有）
-├── harness-feature/prompts/  Feature scanner prompts 档案
-├── harness-workflow/         specs/ + plans/ 历史档案
-├── docs/                     历史 narrative 档案
-├── README.md                 本文档
-└── DESIGN.md                 早期设计思路（archived）
+│   ├── derive.sh             派生 path_glob + git_remote_regex + 写 profile YAML
+│   └── test-derive.sh        oracle 自检
+└── README.md                 本文档
 ```
 
-> **保留原则**：`profile-bootstrap/lib/` 是活的（Tier-3 fallback bash + oracle）；其余目录是历史档案。
-> 完整规则源在仓库顶层 `harness-common/contracts/`，这里只做接入入口和历史档案。
+> 早期 archive 文档（DESIGN / IMPLEMENTATION-PLAN / 历史 specs+plans）已统一收到
+> `docs/archive/` 和 `docs/superpowers/specs|plans/`；reference 档案已并入
+> `harness-common/contracts/`。本目录只剩 Tier-3 fallback 的纯 bash 算法和接入文档。
 
 ## 7. 故障排除
 
@@ -188,6 +188,7 @@ harness/
 ```bash
 ls -la ~/.claude/skills/profile-entry
 ls -la ~/.claude/skills/harness-feature
+ls -la ~/.claude/skills/harness-init
 ```
 
 若是死链，重新执行 Step 1 的 `ln -sf` 命令。
@@ -212,7 +213,8 @@ ls -la ~/.claude/skills/harness-feature
 | `docs/superpowers/specs/2026-04-26-unified-fusion-design.md` | 当前架构 spec |
 | `docs/superpowers/plans/2026-04-26-unified-fusion-implementation.md` | 实施计划 |
 | `packages/harness-cli/README.md` | CLI 详细命令文档 |
-| `harness/DESIGN.md` | 早期设计思路 |
+| `docs/archive/harness-DESIGN.md` | 早期设计思路（archived） |
+| `docs/archive/harness-IMPLEMENTATION-PLAN.md` | 早期实施计划（archived） |
 
 ---
 

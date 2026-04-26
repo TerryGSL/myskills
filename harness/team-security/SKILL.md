@@ -1,1 +1,0 @@
-../../team-security/SKILL.md

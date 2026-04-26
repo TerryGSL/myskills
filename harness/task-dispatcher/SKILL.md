@@ -1,1 +1,0 @@
-../../task-dispatcher/SKILL.md

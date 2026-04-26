@@ -1,1 +1,0 @@
-../../team-architect/SKILL.md

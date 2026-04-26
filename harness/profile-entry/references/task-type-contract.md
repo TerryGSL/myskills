@@ -1,1 +1,0 @@
-../../../profile-entry/references/task-type-contract.md

@@ -188,7 +188,8 @@ office-hours/                需求诊断教练（Stage 0 前置）
 packages/harness-cli/        TypeScript CLI（harness 二进制 + 多命令）
 hooks/context-monitor.sh     Stop Hook，task_type 自适应阈值
 wrappers/                    跨工具 adapter（codex / cursor / aider / copilot）
-harness/                     直接接入文档 + Tier-3 fallback bash + 历史档案
+harness/                     Tier-3 fallback：纯 bash profile 派生算法（无 npm 环境用）
+docs/archive/                早期 archive 设计文档（DESIGN / IMPLEMENTATION-PLAN）
 gstack/                      AI Skills 框架（git submodule，可选 — 39 个补充 skill）
 careful/ guard/ freeze/ unfreeze/  Safety guardrail skills（已 vendor 自 gstack）
 docs/superpowers/{specs,plans}/  设计文档 + 实施计划

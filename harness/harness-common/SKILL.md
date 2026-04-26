@@ -1,1 +1,0 @@
-../../harness-common/SKILL.md

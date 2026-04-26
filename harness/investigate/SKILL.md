@@ -1,1 +1,0 @@
-../../investigate/SKILL.md

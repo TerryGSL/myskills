@@ -1,1 +1,0 @@
-../../../harness-workflow/references/workflow.md

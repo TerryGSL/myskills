@@ -1,1 +1,0 @@
-../../strict-reviewer/SKILL.md
