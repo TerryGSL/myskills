@@ -1,23 +1,19 @@
-# harness/ — 直接用法接入文档（Tier-3 fallback）
+# 无 CLI 环境接入指南（Tier-3 fallback）
 
-> 本目录是 harness 工作流的**直接 markdown 接入路径** —— 不依赖 npm CLI，纯 markdown + bash fallback。
+> 没装 npm / node 的环境照样能用 harness 工作流 —— 纯 markdown + bash fallback。
 >
-> 完整规则源在仓库顶层 `harness-common/contracts/` 下的 16 份 narrative contract。本目录是 markdown-only 接入路径与历史档案。
+> 完整规则源在仓库顶层 `harness-common/contracts/` 下的 16 份 narrative contract。
 >
 > CLI 工程化路线（`harness install` 一键 setup + jest 测试 + GitHub workflow CI）参 `packages/harness-cli/README.md`。
 
 ## 1. 概览
 
-`harness` 是 myskills 仓库的工程协作 skill 体系。整体设计：profile × task_type × aggression mode 三维正交，hard_floor 强制不可绕过；4 个 task-type leaf skill（quick / bugfix / feature / refactor）按 routing 契约派发；16 份 narrative contract 集中在仓库顶层 `harness-common/contracts/`。
+harness 是 myskills 仓库的工程协作 skill 体系。整体设计：profile × task_type × aggression mode 三维正交，hard_floor 强制不可绕过；4 个 task-type leaf skill（quick / bugfix / feature / refactor）按 routing 契约派发；16 份 narrative contract 集中在仓库顶层 `harness-common/contracts/`。
 
-**直接用法（本目录）的能力**：
+**Tier-3 fallback 能力（无 CLI 时使用）**：
 
-- `harness/profile-bootstrap/lib/derive.sh` — Tier-3 fallback 的纯 bash profile 派生算法
-- `harness/profile-bootstrap/lib/test-derive.sh` — derive.sh 的 oracle 自检脚本
-
-> 早期设计文档（DESIGN / IMPLEMENTATION-PLAN）已挪到 `docs/archive/`；
-> 工作流 spec / plan 已统一放到 `docs/superpowers/specs|plans/`；
-> 历史 reference 文档已并入 `harness-common/contracts/`（16 份 narrative contract，仓库顶层）。
+- `harness-init/lib/derive.sh` — 纯 bash profile 派生算法（与 CLI 的 TypeScript 实现等价）
+- `harness-init/lib/test-derive.sh` — derive.sh 的 oracle 自检脚本
 
 ## 2. 接入步骤（无 npm 环境）
 
@@ -56,7 +52,7 @@ done 2>/dev/null || true
 
 ```bash
 cd ~/work/acme-api
-source ~/Music/myskills/harness/profile-bootstrap/lib/derive.sh && derive_profile acme
+source ~/Music/myskills/harness-init/lib/derive.sh && derive_profile acme
 # 输出：DERIVED_PATH_GLOB / DERIVED_REMOTE_REGEX / DERIVED_SLUG 三个环境变量
 # 然后用这些变量手写一份 ~/.claude/profiles/company-acme.yml
 ```
@@ -165,19 +161,17 @@ leaf skill 在 commit 之后会自动按 `push-decision` 契约评估 risk，详
 
 > `careful / guard / freeze / unfreeze` vendor 自 gstack@ed1e4be2，已 path-rewrite 到 harness 命名空间（state 在 `~/.harness/safety/`）；行为受 profile `hard_floor` 约束（命中 `destructive_ops` / `force_push` / `rewrite_history` / `auto_push` 时 override 失效）。
 
-## 6. 目录结构
+## 6. 关键文件位置
 
 ```
-harness/
-├── profile-bootstrap/lib/    Tier-3 fallback bash 算法 + test oracle（保留）
-│   ├── derive.sh             派生 path_glob + git_remote_regex + 写 profile YAML
-│   └── test-derive.sh        oracle 自检
-└── README.md                 本文档
+harness-init/lib/                 Tier-3 fallback bash 算法 + oracle（无 CLI 时使用）
+├── derive.sh                     派生 path_glob + git_remote_regex（用 source 加载）
+└── test-derive.sh                derive.sh 的 oracle 自检
+docs/setup-without-cli.md         本文档
+docs/archive/                     早期 archive 设计文档（harness-DESIGN / IMPLEMENTATION-PLAN）
+docs/superpowers/{specs,plans}/   工作流历史 spec / plan
+harness-common/contracts/         16 份 narrative contract（规则权威）
 ```
-
-> 早期 archive 文档（DESIGN / IMPLEMENTATION-PLAN / 历史 specs+plans）已统一收到
-> `docs/archive/` 和 `docs/superpowers/specs|plans/`；reference 档案已并入
-> `harness-common/contracts/`。本目录只剩 Tier-3 fallback 的纯 bash 算法和接入文档。
 
 ## 7. 故障排除
 

@@ -4,7 +4,7 @@ import * as os from 'node:os';
 import * as fs from 'node:fs';
 
 /**
- * derive.ts — TS port of harness/profile-bootstrap/lib/derive.sh
+ * derive.ts — TS port of harness-init/lib/derive.sh
  *
  * Spec §A PR 4. Computes:
  *   - canonical (realpath) git repo root

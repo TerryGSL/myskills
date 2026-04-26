@@ -128,7 +128,7 @@ AI 手工读取 bundled templates 并逐一 Edit/Write 到目标项目：
 - 无 `harness doctor` 健康检查 → schema 版本哨兵失效
 - 无 `harness scan` 扫描 pipeline → Spec 1 knowledge scanner 不可用
 
-**无 node 派生 fallback**：调 `harness/profile-bootstrap/lib/derive.sh`，需 bash + realpath。
+**无 node 派生 fallback**：调 `harness-init/lib/derive.sh`，需 bash + realpath。
 Tier 3 fallback rules: see harness-init/SKILL.md#第二步
 
 建议尽快升到 Tier 1 或 Tier 2。

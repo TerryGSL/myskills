@@ -6,7 +6,7 @@ import { deriveProfile } from '../../src/utils/derive.js';
 
 /**
  * derive.ts unit tests — mirrors the 6 test cases from
- * harness/profile-bootstrap/lib/test-derive.sh so the bash
+ * harness-init/lib/test-derive.sh so the bash
  * oracle and TS port stay in lockstep.
  */
 

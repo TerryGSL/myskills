@@ -4,7 +4,7 @@ CLI for the harness workflow of [myskills](https://github.com/TerryGSL/myskills)
 Provides deterministic file scaffolding and routing (init / adopt / maintain / doctor / scan / install / profile-bootstrap / profile-resolve / route / memory / push-check) so the Claude Code skills can focus on intelligence instead of hand-writing files.
 
 > 仓库整体定位：一套核心规则 + 两种使用方式（npm CLI 工程化 / 直接 markdown 接入）+ 跨工具兼容。
-> 直接 markdown 接入（无 npm 环境）见仓库顶层 [`harness/README.md`](../../harness/README.md)。
+> 直接 markdown 接入（无 npm 环境）见仓库顶层 [`docs/setup-without-cli.md`](../../docs/setup-without-cli.md)。
 
 ## Install
 

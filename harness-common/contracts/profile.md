@@ -136,5 +136,5 @@ mode: "standard"
 - Marker schema：`packages/harness-cli/resources/schemas/marker.schema.json`
 - Detection 实现：`packages/harness-cli/src/utils/detect.ts`
 - Bootstrap 实现：`packages/harness-cli/src/commands/profile-bootstrap.ts`
-- Bash fallback 实现：`harness/profile-bootstrap/lib/derive.sh`
+- Bash fallback 实现：`harness-init/lib/derive.sh`
 - 路由集成：见 [routing.md](routing.md)

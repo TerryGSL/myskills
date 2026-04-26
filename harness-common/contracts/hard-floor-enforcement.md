@@ -118,7 +118,7 @@ Step 4 override flags（`/yolo` / `/no-push`）**不能绕过 hard_floor**：
 
 ## 工具集 install 脚本约束
 
-所有 install 脚本（`packages/harness-cli/src/commands/install.ts` + bash fallback `harness/profile-bootstrap/lib/derive.sh` + 工具 wrapper 的 setup 脚本）必须用同一份 `HARD_FLOOR_FLAGS` 常量列表。任何脚本写死 4 个 flag 而不是 6 个 → drift，CI（`schema-drift.yml`）应拒绝。
+所有 install 脚本（`packages/harness-cli/src/commands/install.ts` + bash fallback `harness-init/lib/derive.sh` + 工具 wrapper 的 setup 脚本）必须用同一份 `HARD_FLOOR_FLAGS` 常量列表。任何脚本写死 4 个 flag 而不是 6 个 → drift，CI（`schema-drift.yml`）应拒绝。
 
 ## 失败处理
 

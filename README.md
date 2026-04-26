@@ -82,7 +82,7 @@ harness 是一套 profile-driven、四层分层的 AI 工程协作框架：核�
 | **Tier 2** | Cursor | `wrappers/cursor/AGENTS.md` |
 | **Tier 2** | Aider | `wrappers/aider/AGENTS.md` |
 | **Tier 2** | GitHub Copilot | `wrappers/copilot/AGENTS.md` |
-| **Tier 3** | 任何不带 npm 的环境 | `harness/profile-bootstrap/lib/` 纯 bash fallback + `profile-entry/` markdown 解析 |
+| **Tier 3** | 任何不带 npm 的环境 | `harness-init/lib/` 纯 bash fallback + `profile-entry/` markdown 解析 |
 
 ## 两种使用方式
 
@@ -96,7 +96,7 @@ harness doctor             # 验收
 
 ### 方式 B：纯 markdown / Tier 3 fallback（无 npm）
 
-直接 symlink 顶层 skill 到 `~/.claude/skills/`，用 `harness/profile-bootstrap/lib/` 提供的 bash 算法派生 profile。完整接入文档见 [`harness/README.md`](harness/README.md)。
+直接 symlink 顶层 skill 到 `~/.claude/skills/`，用 `harness-init/lib/` 提供的 bash 算法派生 profile。完整接入文档见 [`docs/setup-without-cli.md`](docs/setup-without-cli.md)。
 
 ## 快速开始
 
@@ -133,7 +133,7 @@ harness install            # 零问题 setup：symlink skills + 注册 hook
 harness doctor             # 验收
 ```
 
-无 npm？走 Tier 3（纯 bash fallback）：手动 symlink 顶层 skill 到 `~/.claude/skills/`，用 `harness/profile-bootstrap/lib/` 提供的 bash 算法派生 profile。
+无 npm？走 Tier 3（纯 bash fallback）：手动 symlink 顶层 skill 到 `~/.claude/skills/`，用 `harness-init/lib/` 提供的 bash 算法派生 profile。
 
 ### Step 3 —— 在你的项目里直接说需求
 
@@ -171,6 +171,7 @@ harness profile-bootstrap <slug>   # 派生 company/<slug> profile（含 hard_fl
 
 ```text
 harness-init/                项目首次接入入口（外部用户只装这一个）
+harness-init/lib/            Tier-3 fallback：纯 bash profile 派生（无 CLI 也能用）
 profile-entry/               Tier-3 fallback router（纯 markdown 路由）
 harness-quick/               S 级 trivial 任务
 harness-bugfix/              bug 定位 + 修复
@@ -188,8 +189,8 @@ office-hours/                需求诊断教练（Stage 0 前置）
 packages/harness-cli/        TypeScript CLI（harness 二进制 + 多命令）
 hooks/context-monitor.sh     Stop Hook，task_type 自适应阈值
 wrappers/                    跨工具 adapter（codex / cursor / aider / copilot）
-harness/                     Tier-3 fallback：纯 bash profile 派生算法（无 npm 环境用）
 docs/archive/                早期 archive 设计文档（DESIGN / IMPLEMENTATION-PLAN）
+docs/setup-without-cli.md    无 CLI 环境接入指南（Tier-3 fallback）
 gstack/                      AI Skills 框架（git submodule，可选 — 39 个补充 skill）
 careful/ guard/ freeze/ unfreeze/  Safety guardrail skills（已 vendor 自 gstack）
 docs/superpowers/{specs,plans}/  设计文档 + 实施计划
@@ -203,7 +204,7 @@ docs/superpowers/{specs,plans}/  设计文档 + 实施计划
 | `docs/superpowers/plans/2026-04-26-unified-fusion-implementation.md` | 实施计划 |
 | `harness-common/contracts/` | 16 份 narrative contract（push-decision / drift / memory / ...） |
 | `harness-init/SKILL.md` | 接入入口 |
-| `harness/README.md` | 直接用法接入文档（Tier-3 fallback） |
+| `docs/setup-without-cli.md` | 直接用法接入文档（Tier-3 fallback） |
 | `packages/harness-cli/README.md` | CLI 详细命令文档 |
 
 ## Push 决策（risk-based）
