@@ -5,8 +5,23 @@
 
 # 精简版（codex round 3 反馈：完整提示已在 SessionStart 注入，每条重复浪费 token）
 # 只保留路由分流 + hard gate 提醒（约 110 tokens）；详细规则查 [HARNESS]（SessionStart）
-cat <<'EOF'
+# Claude Code 的 UserPromptSubmit hook stdout 必须是 JSON。纯文本会触发
+# "hook returned invalid user prompt submit JSON output"。
+cat >/dev/null || true
+
+python3 - <<'PY'
+import json
+
+context = """\
 [HARNESS-ROUTER] L0 评估子任务数 → ≥2 先 Skill(task-dispatcher) / 单任务进 L1。
 代码任务先 Skill(harness-workflow)；生命周期 `harness <cmd>`；纯查询直接答。
 PreToolUse 硬拦：Edit/Write 没 Skill(harness-workflow) → 阻；Agent 没 Skill(task-dispatcher) → 阻。
-EOF
+"""
+
+print(json.dumps({
+    "hookSpecificOutput": {
+        "hookEventName": "UserPromptSubmit",
+        "additionalContext": context,
+    }
+}, ensure_ascii=False))
+PY

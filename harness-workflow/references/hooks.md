@@ -115,12 +115,20 @@ Harness 工作流所需的全局配置（每用户一次配好，跨项目共享
 ### 1. `harness-workflow-reminder.sh`
 
 给 UserPromptSubmit + SessionStart 注入 reminder，确保 AI 知道用 harness-workflow。
+UserPromptSubmit 的 stdout 必须是 JSON；纯文本会被 Claude Code 判为
+`invalid user prompt submit JSON output`。
 
 ```bash
 #!/usr/bin/env bash
 # Usage: harness-workflow-reminder.sh <UserPromptSubmit|SessionStart>
 TRIGGER="${1:-Unknown}"
-cat <<EOF
+cat >/dev/null || true
+
+TRIGGER_ENV="$TRIGGER" python3 - <<'PY'
+import json
+import os
+
+context = """\
 <harness-workflow-reminder>
 对于任何涉及代码开发的任务（实现新功能、修复 bug、重构、修改现有代码、写测试、改配置文件），
 你必须在动手之前先通过 Skill 工具调用 "harness-workflow" 技能。这是强制要求，不可协商。
@@ -131,7 +139,15 @@ harness-workflow 是公开入口，内部会路由到合适的叶子 skill（har
 例外：纯研究、纯问答、纯文档查看、读 git log、解释代码、回答概念问题 等不涉及写/改代码的任务
 不受此约束。
 </harness-workflow-reminder>
-EOF
+"""
+
+print(json.dumps({
+    "hookSpecificOutput": {
+        "hookEventName": os.environ.get("TRIGGER_ENV", "Unknown"),
+        "additionalContext": context,
+    }
+}, ensure_ascii=False))
+PY
 ```
 
 ### 2. `session-checklist.sh`
