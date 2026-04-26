@@ -99,6 +99,23 @@ Stage 8 完成 → 检查 `pendingRounds`：
 - 有 → 自动启动 Round N+1（从 Stage -0.5 开始）
 - 无 → 输出最终汇总 + 清空
 
+## 多 agent 冲突仲裁（judge-agent invoke）
+
+Stage 3 派多 sub-agent 并行时（senior-dev + junior-dev），可能出现：
+
+- **结论冲突**：senior 和 junior 给出矛盾的实现方案
+- **文件边界重叠**：两个 agent 都改了同一文件相邻行
+- **strict-reviewer Stage verdict 分歧**：reviewer A 说 PASS，reviewer B 说 FAIL
+
+主 agent 不要自己拍板 → 强制 invoke `Skill(judge-agent)`：
+
+```
+输入：spec.md + owner_map.json + 各 agent 摘要 + git diff + test 结果
+输出：JSON `{verdict: "A|B|merge|rollback", reasoning, next_step}`
+```
+
+judge-agent 是只读 skill（allowed-tools: Read/Grep/Glob），不会自己改码。详 [`judge-agent/SKILL.md`](../judge-agent/SKILL.md)。
+
 ## 失败回退闭环（rollback contract，每 Stage 适用）
 
 任何 Stage 失败且 strict-reviewer FAIL 不可修 → 强制走以下闭环：

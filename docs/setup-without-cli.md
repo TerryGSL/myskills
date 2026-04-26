@@ -2,13 +2,22 @@
 
 > 没装 npm / node 的环境照样能用 harness 工作流 —— 纯 markdown + bash fallback。
 >
-> 完整规则源在仓库顶层 `harness-common/contracts/` 下的 16 份 narrative contract。
+> 完整规则源在仓库顶层 `harness-common/contracts/` 下的 17 份 narrative contract。
 >
 > CLI 工程化路线（`harness install` 一键 setup + jest 测试 + GitHub workflow CI）参 `packages/harness-cli/README.md`。
 
+## 0. 配套必读（与 CLI 路径一样需要）
+
+无 CLI 环境也要读这两份 always-on 文档（不是流程，是姿态）：
+
+- [`AGENTS.md`](../AGENTS.md) **§0 价值层 7 条姿态**：不假设先验证 / 手术刀式改动 / 该用工具就用工具 / 暴露不确定性 / 失败不掩盖 / 小步前进 / 看用户说的话
+- [`EXAMPLES.md`](../EXAMPLES.md) **❌/✅ 反面教材**：7 类真实犯过的错（路由 / 工具使用 / token 优化 / 多任务 / 失败处理 / codex 审稿 / 文档同步），看场景就联想正确做法
+
+> **价值层 + EXAMPLES 与 CLI / hook 无关**——纯 markdown，无需任何外部依赖。Tier-3 用户和 CLI 用户读同一份。
+
 ## 1. 概览
 
-harness 是 myskills 仓库的工程协作 skill 体系。整体设计：profile × task_type × aggression mode 三维正交，hard_floor 强制不可绕过；4 个 task-type leaf skill（quick / bugfix / feature / refactor）按 routing 契约派发；16 份 narrative contract 集中在仓库顶层 `harness-common/contracts/`。
+harness 是 myskills 仓库的工程协作 skill 体系。整体设计：profile × task_type × aggression mode 三维正交，hard_floor 强制不可绕过；4 个 task-type leaf skill（quick / bugfix / feature / refactor）按 routing 契约派发；17 份 narrative contract 集中在仓库顶层 `harness-common/contracts/`。
 
 **Tier-3 fallback 能力（无 CLI 时使用）**：
 
@@ -69,7 +78,7 @@ source ~/Music/myskills/harness-init/lib/derive.sh && derive_profile acme
 
 阈值按 task_type 自适应（quick: 80/90 / bugfix: 70/85 / feature/refactor: 60/80），无需手动调整。
 
-## 3. 16 narrative contract
+## 3. 17 narrative contract
 
 完整规则在 `harness-common/contracts/`（仓库顶层），按能力分文件：
 
@@ -91,6 +100,7 @@ source ~/Music/myskills/harness-init/lib/derive.sh && derive_profile acme
 | `doctor-protocol.md` | 诊断输出契约 |
 | `maintenance.md` | 12 项 audit + 4 类一致性校验 + 7 步 drift 恢复 |
 | `project-detection.md` | 技术栈探测规则（.harness-context.json） |
+| `judge.md` | 多 agent 冲突仲裁（触发 / verdict / cost budget）|
 
 > **Source of truth**：每份 contract 顶部都标注其代码 / schema 来源（`packages/harness-cli/src/types/constants.ts` + `resources/schemas/*.schema.json`）。如本文档与代码不一致，以代码为准。
 
@@ -170,7 +180,7 @@ harness-init/lib/                 Tier-3 fallback bash 算法 + oracle（无 CLI
 docs/setup-without-cli.md         本文档
 docs/archive/                     早期 archive 设计文档（harness-DESIGN / IMPLEMENTATION-PLAN）
 docs/superpowers/{specs,plans}/   工作流历史 spec / plan
-harness-common/contracts/         16 份 narrative contract（规则权威）
+harness-common/contracts/         17 份 narrative contract（规则权威）
 ```
 
 ## 7. 故障排除
@@ -203,7 +213,7 @@ ls -la ~/.claude/skills/harness-init
 
 | 文档 | 说明 |
 |------|------|
-| `harness-common/contracts/` | 16 份 narrative contract |
+| `harness-common/contracts/` | 17 份 narrative contract |
 | `docs/superpowers/specs/2026-04-26-unified-fusion-design.md` | 当前架构 spec |
 | `docs/superpowers/plans/2026-04-26-unified-fusion-implementation.md` | 实施计划 |
 | `packages/harness-cli/README.md` | CLI 详细命令文档 |
@@ -212,4 +222,4 @@ ls -la ~/.claude/skills/harness-init
 
 ---
 
-*完整规则源 = 仓库顶层 `harness-common/contracts/` 下的 16 份 narrative contract。本目录是 markdown-only 接入路径 + Tier-3 fallback + 历史档案。*
+*完整规则源 = 仓库顶层 `harness-common/contracts/` 下的 17 份 narrative contract。本目录是 markdown-only 接入路径 + Tier-3 fallback + 历史档案。*

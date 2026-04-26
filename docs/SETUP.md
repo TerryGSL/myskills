@@ -478,7 +478,7 @@ done
 ## 7. 下一步
 
 - 读 [`docs/ARCHITECTURE.md`](ARCHITECTURE.md) 了解完整架构 + 每个 skill 干啥
-- 读 [`harness-common/contracts/`](../harness-common/contracts/) 了解 16 份 narrative contract
+- 读 [`harness-common/contracts/`](../harness-common/contracts/) 了解 17 份 narrative contract
 - 跑 `harness scan --json` 让 AI 扫一遍项目知识
 
 ---

@@ -34,7 +34,7 @@ L2/L3 自动派发到 leaf skill   → harness route CLI（Tier 1+2）或 profil
 ## 完整规则源
 
 - 架构文档：`/Users/twelve/Music/myskills/docs/ARCHITECTURE.md`
-- 16 narrative contracts：`/Users/twelve/Music/myskills/harness-common/contracts/`
+- 17 narrative contracts：`/Users/twelve/Music/myskills/harness-common/contracts/`
 - CLI 命令文档：`/Users/twelve/Music/myskills/packages/harness-cli/README.md`
 - 无 CLI 环境接入：`/Users/twelve/Music/myskills/docs/setup-without-cli.md`
 

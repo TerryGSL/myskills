@@ -15,7 +15,7 @@
 
 ## 1. 一句话总览
 
-**Harness 是一套 profile-driven 的 AI 工程协作框架**：核心规则写一份（16 份 narrative contract），多种工具（Claude Code / Codex / Cursor / Aider / Copilot）共用同一份契约；用户既可以装 npm CLI 走工程化路线，也可以纯 markdown + bash fallback 走零依赖路线。
+**Harness 是一套 profile-driven 的 AI 工程协作框架**：核心规则写一份（17 份 narrative contract），多种工具（Claude Code / Codex / Cursor / Aider / Copilot）共用同一份契约；用户既可以装 npm CLI 走工程化路线，也可以纯 markdown + bash fallback 走零依赖路线。
 
 ---
 
@@ -27,12 +27,12 @@
 │   leaf skills (4) + 协作 agents (8) + safety guards (4)         │
 │   + 跨工具 wrappers (Codex / Cursor / Aider / Copilot)           │
 ├─────────────────────────────────────────────────────────────────┤
-│ Layer 2 — 16 Narrative Contracts（规则层，人读的契约）           │
+│ Layer 2 — 17 Narrative Contracts（规则层，人读的契约）           │
 │   harness-common/contracts/*.md                                  │
 │   profile / routing / task-type / push-decision /                │
 │   hard-floor-enforcement / aggression / autonomy / drift /       │
 │   memory / knowledge / reviewer-gates / phase-init / hooks /     │
-│   doctor-protocol / maintenance / project-detection              │
+│   doctor-protocol / maintenance / project-detection / judge      │
 ├─────────────────────────────────────────────────────────────────┤
 │ Layer 1 — 持久化文件契约（数据层，git 跟踪）                     │
 │   docs/memory/*.md（项目级长期 memory，跨工具共享）              │
@@ -186,6 +186,7 @@
 | 14 | `doctor-protocol.md` | 诊断输出契约（JSON schema）|
 | 15 | `maintenance.md` | 12 项 audit + 4 类一致性 + 7 步 drift 恢复 |
 | 16 | `project-detection.md` | 技术栈探测 + `.harness-context.json` |
+| 17 | `judge.md` | 多 agent 冲突仲裁（触发 / 输入 / verdict / cost budget）|
 
 ---
 
@@ -362,7 +363,7 @@ myskills/
 │   └── superpowers/{specs,plans}/  历史 spec / plan
 ├── harness-common/
 │   ├── SKILL.md                 共享基础设施 skill
-│   └── contracts/               16 份 narrative contract（规则源）
+│   └── contracts/               17 份 narrative contract（规则源）
 ├── harness-init/                项目首次接入入口（外部用户只装这一个）
 │   ├── SKILL.md
 │   └── lib/                     Tier-3 fallback bash 算法（无 CLI 也能用）
@@ -439,7 +440,7 @@ myskills/
 |------|------|
 | [`README.md`](../README.md) | 顶层入口（精简版） |
 | [`docs/setup-without-cli.md`](setup-without-cli.md) | 无 CLI 环境接入指南 |
-| [`harness-common/contracts/`](../harness-common/contracts/) | 16 份 narrative contract（规则源） |
+| [`harness-common/contracts/`](../harness-common/contracts/) | 17 份 narrative contract（规则源） |
 | [`packages/harness-cli/README.md`](../packages/harness-cli/README.md) | CLI 详细命令文档 |
 | [`docs/superpowers/specs/2026-04-26-unified-fusion-design.md`](superpowers/specs/2026-04-26-unified-fusion-design.md) | 当前架构 spec |
 | [`docs/superpowers/plans/2026-04-26-unified-fusion-implementation.md`](superpowers/plans/2026-04-26-unified-fusion-implementation.md) | 实施计划 |

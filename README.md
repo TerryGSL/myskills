@@ -24,7 +24,7 @@ harness 是一套 profile-driven、四层分层的 AI 工程协作框架：核�
                                      │
                                      ▼
                               harness-common
-                       (16 narrative contracts in contracts/)
+                       (17 narrative contracts in contracts/)
 ```
 
 ## 4 层架构
@@ -33,10 +33,10 @@ harness 是一套 profile-driven、四层分层的 AI 工程协作框架：核�
 |----|------|------|
 | **Layer 0 — Schema / 类型** | TypeScript constants + JSON Schema（12 份），CI `schema-drift.yml` 守门 | `packages/harness-cli/src/types/constants.ts` |
 | **Layer 1 — 持久化文件契约** | `docs/memory/*.md`（项目级长期 memory）/ `docs/harness/knowledge/`（5-domain 项目知识）/ `.harness-profile`（YAML marker）/ `.harness-status.json` | `harness-common/contracts/memory.md`、`harness-common/contracts/knowledge.md` |
-| **Layer 2 — 16 narrative contracts** | profile / routing / push-decision / drift / memory / knowledge / hard-floor-enforcement / aggression-mode / autonomy / reviewer-gates / phase-init /  hooks / doctor-protocol / task-type / maintenance / project-detection | `harness-common/contracts/`（16 份 .md，每份顶部 source-of-truth header） |
+| **Layer 2 — 17 narrative contracts** | profile / routing / push-decision / drift / memory / knowledge / hard-floor-enforcement / aggression-mode / autonomy / reviewer-gates / phase-init / hooks / doctor-protocol / task-type / maintenance / project-detection / **judge** | `harness-common/contracts/`（17 份 .md，每份顶部 source-of-truth header） |
 | **Layer 3 — Skill / Adapter** | leaf skills（4 task-type）+ team-* agents + Tier-1/2/3 adapters | 顶层 SKILL.md 文件 |
 
-## 16 能力清单（精炼版）
+## 17 能力清单（精炼版）
 
 | # | 能力 | 契约文档 |
 |---|------|---------|
@@ -56,6 +56,7 @@ harness 是一套 profile-driven、四层分层的 AI 工程协作框架：核�
 | 14 | doctor protocol（诊断输出契约） | `harness-common/contracts/doctor-protocol.md` |
 | 15 | maintenance（12 项 audit + 4 类一致性 + 7 步 drift 恢复） | `harness-common/contracts/maintenance.md` |
 | 16 | project detection（技术栈探测 + `.harness-context.json`） | `harness-common/contracts/project-detection.md` |
+| 17 | judge（多 agent 冲突仲裁，触发 / 输入 / verdict / cost budget） | `harness-common/contracts/judge.md` |
 
 完整 narrative spec → 参 `docs/superpowers/specs/2026-04-26-unified-fusion-design.md`。
 
@@ -181,7 +182,7 @@ harness-quick/               S 级 trivial 任务
 harness-bugfix/              bug 定位 + 修复
 harness-feature/             新功能（M/L/XL）
 harness-refactor/            跨模块重构
-harness-common/              共享基础设施 + contracts/（16 份 narrative contract）
+harness-common/              共享基础设施 + contracts/（17 份 narrative contract）
 harness-workflow/            老命令兼容入口（--init/--adopt/--maintain/--scan）+ references
 task-dispatcher/             通用并行任务编排
 strict-reviewer/             反谄媚审稿（schema-driven）
@@ -261,7 +262,7 @@ docs/superpowers/{specs,plans}/  设计文档 + 实施计划
 | **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** | **架构 + 完整 skill 速查 + 4 个工作流 walkthrough（必读）** |
 | **[`docs/SETUP.md`](docs/SETUP.md)** | **Claude Code + Codex 双工具接入指南（含 hook 配置让每次对话自动路由）** |
 | [`docs/setup-without-cli.md`](docs/setup-without-cli.md) | 无 CLI 环境接入指南（Tier-3 fallback）|
-| [`harness-common/contracts/`](harness-common/contracts/) | 16 份 narrative contract（规则源头）|
+| [`harness-common/contracts/`](harness-common/contracts/) | 17 份 narrative contract（规则源头）|
 | [`packages/harness-cli/README.md`](packages/harness-cli/README.md) | CLI 11 命令详细文档 |
 | [`docs/superpowers/specs/2026-04-26-unified-fusion-design.md`](docs/superpowers/specs/2026-04-26-unified-fusion-design.md) | 当前架构 spec |
 | [`docs/superpowers/plans/2026-04-26-unified-fusion-implementation.md`](docs/superpowers/plans/2026-04-26-unified-fusion-implementation.md) | 实施计划 |
