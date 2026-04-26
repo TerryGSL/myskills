@@ -37,9 +37,15 @@ hooks:
 <!-- Regenerate: bun run gen:skill-docs -->
 
 > **Vendored from gstack@ed1e4be2 (2026-04-26)**.
-> Path references rewritten to harness-native locations (`~/.gstack/...` → `~/.harness/safety/`).
+> Path references rewritten to harness-native locations (state files now under `~/.harness/safety/` instead of the upstream-default state directory).
 > Originally lived in gstack submodule; now part of harness namespace.
 > Upgrades to upstream are manual: re-clone gstack temporarily, diff, sync changes if relevant.
+
+> **Harness governance note**：当本仓库的 active profile 在 `hard_floor` 列表里含
+> `destructive_ops` / `rewrite_history` / `auto_push` / `force_push` 时，本 skill 的
+> "可 override 警告" 行为**失效**——hard_floor 优先级最高（参 `harness-common/contracts/hard-floor-enforcement.md`）。
+> 命中 hard_floor 的操作直接 REFUSE，不再询问 / 不可被 flag 绕过。
+> 本 skill 的 override 通道仅在 hard_floor **不含**对应 flag 时生效。
 
 # /guard — Full Safety Mode
 
@@ -47,8 +53,9 @@ Activates both destructive command warnings and directory-scoped edit restrictio
 This is the combination of `/careful` + `/freeze` in a single command.
 
 **Dependency note:** This skill references hook scripts from the sibling `/careful`
-and `/freeze` skill directories. Both must be installed (they are installed together
-by the gstack setup script).
+and `/freeze` skill directories. All three are vendored together at the top level
+of myskills (`careful/`, `freeze/`, `guard/`), so symlinking any one of them via
+`harness install` automatically brings the others.
 
 ```bash
 mkdir -p ~/.harness/safety/analytics
