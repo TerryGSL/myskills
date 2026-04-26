@@ -32,7 +32,7 @@ hooks:
 <!-- Regenerate: bun run gen:skill-docs -->
 
 > **Vendored from gstack@ed1e4be2 (2026-04-26)**.
-> Path references rewritten to harness-native locations (state files now under `~/.harness/safety/` instead of the upstream-default state directory).
+> Path references rewritten to harness-native locations (state files now under `~/.harness/safety/` instead of the upstream-default state directory)
 > Originally lived in gstack submodule; now part of harness namespace.
 > Upgrades to upstream are manual: re-clone gstack temporarily, diff, sync changes if relevant.
 
