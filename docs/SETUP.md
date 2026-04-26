@@ -137,19 +137,30 @@ for s in profile-entry harness-common harness-quick harness-bugfix harness-featu
 done
 ```
 
-### 2.2 写 `~/.codex/AGENTS.md`（Codex 的全局 system prompt）
+### 2.2 ⚠️ 关键限制：Codex 只读项目级 AGENTS.md
 
-从 myskills 仓库拷一份：
+经 codex 实测验证：**`~/.codex/AGENTS.md`（user-global）不会被 Codex 自动加载**，Codex 只读 cwd 下的 `AGENTS.md`（项目级）。所以方案是：在**每个**你想用 harness 的项目根放一份 AGENTS.md。
 
-```bash
-cp ~/Music/myskills/wrappers/codex/AGENTS.md ~/.codex/AGENTS.md
-```
-
-或者 symlink 让它跟随更新：
+**方案 A — symlink 到 myskills 顶层 AGENTS.md（推荐，跟随更新）：**
 
 ```bash
-ln -sfn ~/Music/myskills/wrappers/codex/AGENTS.md ~/.codex/AGENTS.md
+cd ~/your-project
+ln -sfn ~/Music/myskills/AGENTS.md AGENTS.md
 ```
+
+**方案 B — 复制（独立副本，不会被 myskills 更新覆盖）：**
+
+```bash
+cd ~/your-project
+cp ~/Music/myskills/AGENTS.md AGENTS.md
+# 之后可以按需要给当前项目加自定义规则
+```
+
+**方案 C — myskills 自己工作时**：myskills repo 根已有 `AGENTS.md`（86 行 7 kernel rules），cwd 在 myskills 时 codex 自动加载，无需额外操作。
+
+> **不要**只写 `~/.codex/AGENTS.md` —— 它在 home-level 不会被 codex 读，等于死文件。
+>
+> `wrappers/codex/AGENTS.md` 在 myskills repo 里仅作为 source of truth 备份，不要直接靠它生效。
 
 ### 2.3 配置 `~/.codex/hooks.json`
 
@@ -183,9 +194,27 @@ ln -sfn ~/Music/myskills/wrappers/codex/AGENTS.md ~/.codex/AGENTS.md
 }
 ```
 
-### 2.4 验证
+### 2.4 验证（含 sentinel 实证测试）
 
-启动 Codex CLI，看 session 开头是否出现 `[HARNESS]` 提示。说一句 "你好" 试试，应该看到 `[HARNESS-ROUTER]` 提醒被注入。
+#### 基础验证
+
+启动 Codex CLI（在有 AGENTS.md 的项目 cwd 下），看 session 开头是否注入 `[HARNESS]` 提示。
+
+#### Sentinel 实证测试（确认 hook stdout 真的进 model context）
+
+如果不确定 SessionStart / UserPromptSubmit hook 的 stdout 是否真的注入到模型 context（而不是仅写日志），用 sentinel 字符串测一下：
+
+```bash
+# 临时改 hook 命令为 echo sentinel
+# ~/.codex/hooks.json 的 UserPromptSubmit 改成：
+#   "command": "echo 'SENTINEL_PROMPT_HOOK_FIRED_$(date +%s)'"
+```
+
+启动 Codex，发"今天几号？"。看 AI 输出里是否出现 `SENTINEL_PROMPT_HOOK_FIRED_*` 字串：
+- 出现 → hook stdout 确实注入了 model context（路由方案 work）
+- 不出现 → hook 只是侧边日志，路由方案需要换成项目级 AGENTS.md（方案 A 已经覆盖了这种 fallback）
+
+> Claude Code 的 SessionStart hook 已经实证 work（你能在新 session 开头看到 `[HARNESS] 本会话已接入 Harness 三层架构` 那段）。Codex 的需要自己测一下。
 
 ---
 
@@ -336,3 +365,14 @@ done
 - **两个工具共用一份 source of truth**：myskills repo 里的 skill / hook 脚本 / session-init-prompt.txt 改一次，两个工具自动跟随
 - **私有配置只放工具特定的入口**：`~/.claude/settings.json` 和 `~/.codex/hooks.json` 只引用 myskills 路径，不重复内容
 - **hook 是强制提醒，不是路由器**：路由真正的逻辑在 `harness route` CLI 或 `profile-entry` markdown，hook 只是把规则刷进 AI 的 context
+- **AGENTS.md 是 Codex 的主要保险**：因为 Codex 不读 home-level AGENTS.md，每个项目的 cwd 都要有 AGENTS.md（symlink 方案 A 最省事）。即使 hook stdout 不注入 model context，AGENTS.md 也保证规则被加载
+
+## 9. Codex 审核反馈备忘（2026-04-26）
+
+经 codex 实证审核，当前接入方案 verdict 为 **PARTIAL**，已修复的 gap：
+
+- ✓ Codex 不读 `~/.codex/AGENTS.md`（home-level）→ 改用项目级 AGENTS.md（§2.2 方案 A/B/C）
+- ✓ `context-monitor.sh` 是 Claude-biased（依赖 `CLAUDE_TOKENS_USED`）→ 已加 `CODEX_TOKENS_USED` + `HARNESS_TOKENS_USED` fallback
+- ⚠️ Hook stdout 是否真注入 model context — 配置正确，需要 sentinel 实证（§2.4）。Claude Code 经本会话开头注入实测 work；Codex 需要自测。
+
+**双保险策略**：即使 hook stdout 不注入 model context，项目级 AGENTS.md 已覆盖 Codex 路由规则，最差情况下 Codex 仍然能走 harness 工作流（只是少了每条消息的精简提醒）。Claude Code 同时有 SessionStart 和 UserPromptSubmit 两层 hook 注入，双保险更牢。

@@ -78,9 +78,15 @@ if [[ -z "${cron_job_id}" ]]; then
 fi
 
 # ─── Read context usage ───────────────────────────────────────────────────────
-# Priority: env var > status file field
+# Priority: tool-specific env var > generic env var > status file field
+# Supports both Claude Code (CLAUDE_TOKENS_USED) and Codex CLI (CODEX_TOKENS_USED)
+# plus a tool-neutral HARNESS_TOKENS_USED fallback.
 if [[ -n "${CLAUDE_TOKENS_USED:-}" ]]; then
   tokens_used="${CLAUDE_TOKENS_USED}"
+elif [[ -n "${CODEX_TOKENS_USED:-}" ]]; then
+  tokens_used="${CODEX_TOKENS_USED}"
+elif [[ -n "${HARNESS_TOKENS_USED:-}" ]]; then
+  tokens_used="${HARNESS_TOKENS_USED}"
 else
   tokens_used="$(json_get "${STATUS_FILE}" "tokensUsed")"
 fi
