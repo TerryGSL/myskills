@@ -28,16 +28,16 @@ allowed-tools:
 > 命中 hard_floor 的操作直接 REFUSE，不再询问 / 不可被 flag 绕过。
 > 本 skill 的 override 通道仅在 hard_floor **不含**对应 flag 时生效。
 
-# /unfreeze — Clear Freeze Boundary
+# /unfreeze — 解除编辑边界
 
-Remove the edit restriction set by `/freeze`, allowing edits to all directories.
+清除 `/freeze` 设的编辑限制，恢复对所有目录的编辑权限。
 
 ```bash
 mkdir -p ~/.harness/safety/analytics
 echo '{"skill":"unfreeze","ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","repo":"'$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || echo "unknown")'"}'  >> ~/.harness/safety/analytics/skill-usage.jsonl 2>/dev/null || true
 ```
 
-## Clear the boundary
+## 清除边界
 
 ```bash
 STATE_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.harness/safety}"
@@ -50,6 +50,5 @@ else
 fi
 ```
 
-Tell the user the result. Note that `/freeze` hooks are still registered for the
-session — they will just allow everything since no state file exists. To re-freeze,
-run `/freeze` again.
+把结果告诉用户。注意 `/freeze` 的 hook 在 session 内仍然注册着——只是因为状态文件不在了，
+所以一律放行。要重新锁定，再跑一次 `/freeze`。

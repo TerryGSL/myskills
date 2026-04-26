@@ -42,32 +42,32 @@ hooks:
 > 命中 hard_floor 的操作直接 REFUSE，不再询问 / 不可被 flag 绕过。
 > 本 skill 的 override 通道仅在 hard_floor **不含**对应 flag 时生效。
 
-# /freeze — Restrict Edits to a Directory
+# /freeze — 编辑边界锁定
 
-Lock file edits to a specific directory. Any Edit or Write operation targeting
-a file outside the allowed path will be **blocked** (not just warned).
+把文件编辑锁在指定目录里。任何 Edit / Write 操作只要 file_path 不在允许的目录下，
+就会被**直接 block**（不是仅警告）。
 
 ```bash
 mkdir -p ~/.harness/safety/analytics
 echo '{"skill":"freeze","ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","repo":"'$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || echo "unknown")'"}'  >> ~/.harness/safety/analytics/skill-usage.jsonl 2>/dev/null || true
 ```
 
-## Setup
+## 启动流程
 
-Ask the user which directory to restrict edits to. Use AskUserQuestion:
+问用户要锁定到哪个目录。用 AskUserQuestion：
 
-- Question: "Which directory should I restrict edits to? Files outside this path will be blocked from editing."
-- Text input (not multiple choice) — the user types a path.
+- 问题："要把编辑锁在哪个目录？该目录之外的文件会被 block。"
+- 文本输入（非选择题）——用户输入路径。
 
-Once the user provides a directory path:
+拿到用户给的路径后：
 
-1. Resolve it to an absolute path:
+1. 解析为绝对路径：
 ```bash
 FREEZE_DIR=$(cd "<user-provided-path>" 2>/dev/null && pwd)
 echo "$FREEZE_DIR"
 ```
 
-2. Ensure trailing slash and save to the freeze state file:
+2. 确保路径以 `/` 结尾，写入 freeze 状态文件：
 ```bash
 FREEZE_DIR="${FREEZE_DIR%/}/"
 STATE_DIR="${CLAUDE_PLUGIN_DATA:-$HOME/.harness/safety}"
@@ -76,22 +76,19 @@ echo "$FREEZE_DIR" > "$STATE_DIR/freeze-dir.txt"
 echo "Freeze boundary set: $FREEZE_DIR"
 ```
 
-Tell the user: "Edits are now restricted to `<path>/`. Any Edit or Write
-outside this directory will be blocked. To change the boundary, run `/freeze`
-again. To remove it, run `/unfreeze` or end the session."
+告诉用户："编辑现在锁定在 `<path>/`。该目录之外的 Edit / Write 都会被 block。
+要换边界，重新跑 `/freeze`；要解除，跑 `/unfreeze` 或结束会话。"
 
-## How it works
+## 工作原理
 
-The hook reads `file_path` from the Edit/Write tool input JSON, then checks
-whether the path starts with the freeze directory. If not, it returns
-`permissionDecision: "deny"` to block the operation.
+hook 从 Edit/Write 的 tool input JSON 里读 `file_path`，检查路径是否以 freeze 目录开头。
+不是 → 返回 `permissionDecision: "deny"`，操作被 block。
 
-The freeze boundary persists for the session via the state file. The hook
-script reads it on every Edit/Write invocation.
+freeze 边界通过状态文件在 session 内持久化。hook 在每次 Edit/Write 调用时读取一次。
 
-## Notes
+## 注意
 
-- The trailing `/` on the freeze directory prevents `/src` from matching `/src-old`
-- Freeze applies to Edit and Write tools only — Read, Bash, Glob, Grep are unaffected
-- This prevents accidental edits, not a security boundary — Bash commands like `sed` can still modify files outside the boundary
-- To deactivate, run `/unfreeze` or end the conversation
+- freeze 目录尾部强制 `/`，避免 `/src` 误匹配 `/src-old`
+- 只对 Edit / Write 生效——Read / Bash / Glob / Grep 不受影响
+- 防的是**误编辑**，不是安全边界——`sed` 之类的 bash 命令仍可改边界外文件
+- 关闭：跑 `/unfreeze` 或结束会话

@@ -36,39 +36,37 @@ hooks:
 > 命中 hard_floor 的操作直接 REFUSE，不再询问 / 不可被 flag 绕过。
 > 本 skill 的 override 通道仅在 hard_floor **不含**对应 flag 时生效。
 
-# /careful — Destructive Command Guardrails
+# /careful — 危险命令守门
 
-Safety mode is now **active**. Every bash command will be checked for destructive
-patterns before running. If a destructive command is detected, you'll be warned
-and can choose to proceed or cancel.
+安全模式**已激活**。每条 bash 命令在执行前都会先扫一遍危险模式；命中即提示警告，
+你可以选择继续或取消（除非命中下面 governance note 里说的 hard_floor，那种情况下直接 REFUSE）。
 
 ```bash
 mkdir -p ~/.harness/safety/analytics
 echo '{"skill":"careful","ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","repo":"'$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || echo "unknown")'"}'  >> ~/.harness/safety/analytics/skill-usage.jsonl 2>/dev/null || true
 ```
 
-## What's protected
+## 拦截哪些命令
 
-| Pattern | Example | Risk |
-|---------|---------|------|
-| `rm -rf` / `rm -r` / `rm --recursive` | `rm -rf /var/data` | Recursive delete |
-| `DROP TABLE` / `DROP DATABASE` | `DROP TABLE users;` | Data loss |
-| `TRUNCATE` | `TRUNCATE orders;` | Data loss |
-| `git push --force` / `-f` | `git push -f origin main` | History rewrite |
-| `git reset --hard` | `git reset --hard HEAD~3` | Uncommitted work loss |
-| `git checkout .` / `git restore .` | `git checkout .` | Uncommitted work loss |
-| `kubectl delete` | `kubectl delete pod` | Production impact |
-| `docker rm -f` / `docker system prune` | `docker system prune -a` | Container/image loss |
+| 模式 | 示例 | 风险 |
+|------|------|------|
+| `rm -rf` / `rm -r` / `rm --recursive` | `rm -rf /var/data` | 递归删除 |
+| `DROP TABLE` / `DROP DATABASE` | `DROP TABLE users;` | 数据丢失 |
+| `TRUNCATE` | `TRUNCATE orders;` | 数据丢失 |
+| `git push --force` / `-f` | `git push -f origin main` | 改写远端历史 |
+| `git reset --hard` | `git reset --hard HEAD~3` | 未提交工作丢失 |
+| `git checkout .` / `git restore .` | `git checkout .` | 未提交工作丢失 |
+| `kubectl delete` | `kubectl delete pod` | 影响生产 |
+| `docker rm -f` / `docker system prune` | `docker system prune -a` | 容器/镜像丢失 |
 
-## Safe exceptions
+## 不会触发警告的安全场景
 
-These patterns are allowed without warning:
+以下模式默认放行（构建产物/缓存目录的清理是常规操作）：
 - `rm -rf node_modules` / `.next` / `dist` / `__pycache__` / `.cache` / `build` / `.turbo` / `coverage`
 
-## How it works
+## 工作原理
 
-The hook reads the command from the tool input JSON, checks it against the
-patterns above, and returns `permissionDecision: "ask"` with a warning message
-if a match is found. You can always override the warning and proceed.
+hook 从 tool input JSON 里读出命令，对照上面表里的模式扫描；命中则返回
+`permissionDecision: "ask"` 附带警告消息。你可以选择继续覆盖警告。
 
-To deactivate, end the conversation or start a new one. Hooks are session-scoped.
+要关闭：结束当前会话或新开一个会话。hook 是 session-scoped 的，自动失效。
