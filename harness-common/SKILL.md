@@ -64,11 +64,11 @@ Stage 3（实现）前读 `.harness/current.json.workflow_schema_version`：
 - `> 1.0.0`（未来）→ 硬 abort + 提示升级 CLI
 - `<= 1.0.0` → 正常继续
 
-**完整握手逻辑** → [references/doctor-protocol.md](references/doctor-protocol.md)
+**完整握手逻辑** → [contracts/doctor-protocol.md](contracts/doctor-protocol.md)
 
-## `--maintain` 模式（drift detection）
+## `harness maintain` 模式（drift detection + 一致性 audit）
 
-叶子 skill 不直接跑 drift，由 `harness maintain` 命令做 6 类检查：
+叶子 skill 不直接跑 drift，由 `harness maintain` 命令做 6 类粗粒度 drift 检查：
 
 1. Managed-files vs bundled 四态
 2. `docs/memory/` tree 完整性
@@ -78,6 +78,10 @@ Stage 3（实现）前读 `.harness/current.json.workflow_schema_version`：
 6. Schema 版本哨兵
 
 **完整检查清单** → [contracts/drift.md](contracts/drift.md)
+
+具体一致性校验项（WALKTHROUGH / CLAUDE.md ADR / evidence file:line / knowledge↔memory 反向链）+ 12 项 audit 详解 + 7 步 drift 恢复流程 + 7 条 red-flag 自检 → [contracts/maintenance.md](contracts/maintenance.md)
+
+项目技术栈探测规则（init / adopt 阶段调用，写入 `.harness-context.json`） → [contracts/project-detection.md](contracts/project-detection.md)
 
 ## 硬边界
 

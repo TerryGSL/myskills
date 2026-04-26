@@ -83,6 +83,7 @@ Tier 3 fallback rules: see harness-init/SKILL.md#第二步
 - Stage 1 team-architect：[prompts/architect-prompt.md](prompts/architect-prompt.md)
 - Stage 6 team-qa：[prompts/qa-prompt.md](prompts/qa-prompt.md)
 - Stage 7 team-security：[prompts/security-prompt.md](prompts/security-prompt.md)
+- Stage -0.5 Knowledge Scanner（5-domain Parallel Domain Scan subagent prompts）：[prompts/scanner-prompts.md](prompts/scanner-prompts.md)（实施时由 `harness scan` Phase 2 coordinator 派发）
 
 ## Round 间衔接
 

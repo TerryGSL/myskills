@@ -103,9 +103,16 @@ description: >
 - 不对外公开触发词
 - 不在 Tier 1+2 路径加载（Tier 1+2 走 CLI）
 
+## Cross-Pack Task-Type 契约
+
+任何第三方 skill pack 替代官方 `harness-{quick,bugfix,feature,refactor}` sub-skill 时，必须遵守 task-type 输入/输出契约（hard_floor 严守、mode echo、标准 I/O schema）。
+
+完整契约 → [references/task-type-contract.md](references/task-type-contract.md)（Step 6 Sub-skill Invocation 时 leaf 必须遵循；profile-entry 路由后该 leaf 承担完整执行责任）
+
 ## 引用
 
 - 完整 routing 契约：[`harness-common/contracts/routing.md`](../harness-common/contracts/routing.md)
+- Cross-pack task-type 契约（leaf sub-skill 必读）：[references/task-type-contract.md](references/task-type-contract.md)
 - profile / fast-path / aggression / hard-floor / knowledge 各分契约：`harness-common/contracts/{profile,task-type,aggression-mode,hard-floor-enforcement,knowledge}.md`
 - CLI 实现：`packages/harness-cli/src/commands/route.ts`
 - Schema：`packages/harness-cli/resources/schemas/route-output.schema.json`

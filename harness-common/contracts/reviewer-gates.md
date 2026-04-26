@@ -164,6 +164,19 @@ aggression mode 倍数见 [aggression-mode.md](aggression-mode.md)。
   等待：用户指示
 ```
 
+### harness 模式检测方法
+
+```bash
+# coordinator 在调用 strict-reviewer 前执行
+if [ -f ".harness-status.json" ]; then
+  HARNESS_MODE=true
+else
+  HARNESS_MODE=false
+fi
+```
+
+`HARNESS_MODE=true` 时，任何 strict-reviewer 不可用情形一律 BLOCKED。
+
 ## known_issues 处理
 
 `known_issues` 是诊断信息，**不直接影响 verdict 方向**：

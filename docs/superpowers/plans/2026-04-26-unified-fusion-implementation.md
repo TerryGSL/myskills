@@ -1,5 +1,8 @@
 # Harness 统一工作流 实施计划
 
+> **⚠️ HISTORICAL ARCHIVE — paths refer to repo state at time of writing.**
+> This plan was authored mid-fusion; file paths within (e.g. `harness-common/references/*` 之类的旧路径) describe the repo state when this plan was written, **not** the current source-of-truth layout. PR F1/F2/F3 已将 references/ 下内容迁入 `harness-common/contracts/*`（16 contracts，含 maintenance.md / project-detection.md）。当前真相源以 `README.md` 16 能力清单 + `harness-common/contracts/*` 为准。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development. Steps use checkbox (`- [ ]`) for tracking.
 
 **Goal:** 把 harness 体系融合为一套核心规则（4 层架构）+ 两种使用方式（直接 markdown / CLI）+ 跨工具兼容（Claude Code / Codex / Cursor / Aider / Copilot），通过 contract test 守门保证一致性。

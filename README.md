@@ -36,7 +36,7 @@ harness 是一套 profile-driven、四层分层的 AI 工程协作框架：核�
 | **Layer 2 — 14 narrative contracts** | profile / routing / push-decision / drift / memory / knowledge / hard-floor-enforcement / aggression-mode / autonomy / reviewer-gates / phase-init / hooks / doctor-protocol / task-type | `harness-common/contracts/`（14 份 .md，每份顶部 source-of-truth header） |
 | **Layer 3 — Skill / Adapter** | leaf skills（4 task-type）+ team-* agents + Tier-1/2/3 adapters | 顶层 SKILL.md 文件 |
 
-## 14 能力清单（精炼版）
+## 16 能力清单（精炼版）
 
 | # | 能力 | 契约文档 |
 |---|------|---------|
@@ -54,6 +54,8 @@ harness 是一套 profile-driven、四层分层的 AI 工程协作框架：核�
 | 12 | phase-init（init / adopt / maintain） | `harness-common/contracts/phase-init.md` |
 | 13 | hooks（Stop Hook 自适应阈值） | `harness-common/contracts/hooks.md` |
 | 14 | doctor protocol（诊断输出契约） | `harness-common/contracts/doctor-protocol.md` |
+| 15 | maintenance（12 项 audit + 4 类一致性 + 7 步 drift 恢复） | `harness-common/contracts/maintenance.md` |
+| 16 | project detection（技术栈探测 + `.harness-context.json`） | `harness-common/contracts/project-detection.md` |
 
 完整 narrative spec → 参 `docs/superpowers/specs/2026-04-26-unified-fusion-design.md`。
 

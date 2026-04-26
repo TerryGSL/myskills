@@ -1,5 +1,8 @@
 # Profile-Based Dispatch Redesign Implementation Plan
 
+> **⚠️ HISTORICAL ARCHIVE — paths refer to repo state at time of writing.**
+> This is a historical plan recording an earlier redesign. File paths and contract names within (e.g. `harness-workflow/references/*`, `harness-common/references/*`) describe the repo state when this plan was authored, **not** the current source-of-truth layout. For current contracts see `harness-common/contracts/*` and `README.md` 16 能力清单.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the monolithic `harness-workflow` skill (363 LoC) with a layered profile-based dispatch framework: thin `profile-entry` router + 5 focused task-type sub-skills, supporting personal and (stubbed) company project profiles with orthogonal aggression mode.

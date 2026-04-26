@@ -29,6 +29,8 @@
 
 **总耗时 ≤ 28 min**（不含 Phase 5 用户填写）。`--partial-rescan` ≤ 10 min，TODO 上限 3 条。
 
+Phase 2 Parallel Domain Scan 派发 N 个 subagent 时使用的 5-domain prompt 模板（公共前缀 + 各 domain 专属段） → [`harness-feature/prompts/scanner-prompts.md`](../../harness-feature/prompts/scanner-prompts.md)
+
 ### Scan Budget 硬上限
 
 | 约束项 | 上限 |
