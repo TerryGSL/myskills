@@ -25,7 +25,23 @@ description: >
 3. 代码任务 → invoke `Skill(profile-entry)` 让它做路由 + 叶子 skill 选择
 4. 零任务类型逻辑、零激进模式策略（由 profile-entry 和叶子 skill 承担）
 
-## 路由规则
+## 硬边界
+
+- 不自己做代码任务路由（交 profile-entry）
+- 不自己写代码（交叶子 skill）
+- 不公开 `/profile-entry` 触发词（内部 only）
+- 生命周期命令必须 passthrough 到 CLI（不允许 AI 手工 Edit/Write 代替）
+
+## 主要流程 outline
+
+1. 解析用户输入：生命周期 flag（`--init` / `--adopt` / `--maintain` / `--doctor` / `--scan`）vs 代码任务
+2. 生命周期 flag → passthrough 到 CLI（CLI 未装则 abort）
+3. 代码任务 → `Skill(profile-entry)` 路由（`forced_profile: null`）
+4. 入口前读 `workflow_schema_version` 哨兵；不兼容则 abort
+
+---
+
+## 路由规则（详细）
 
 ### 生命周期命令（passthrough 到 CLI）
 
@@ -96,10 +112,3 @@ exactly ONE 叶子 skill（`harness-{quick,bugfix,feature,refactor}` 或对应 `
 
 - `specs/2026-04-23-project-knowledge-scanner-design.md` — knowledge scanner 设计
 - `specs/2026-04-24-harness-cli-integration-design.md` — CLI + skill 生态设计
-
-## 硬边界
-
-- 不自己做代码任务路由（交 profile-entry）
-- 不自己写代码（交叶子 skill）
-- 不公开 `/profile-entry` 触发词（内部 only）
-- 生命周期命令必须 passthrough 到 CLI（不允许 AI 手工 Edit/Write 代替）

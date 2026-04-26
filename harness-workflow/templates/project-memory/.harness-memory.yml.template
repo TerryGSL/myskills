@@ -61,3 +61,18 @@ supersession:
 
 reviewer:
   scorecard_path: "docs/memory/harness_reviewer_scorecard.yml"
+
+# Cost budget — multi-agent dispatch + judge-agent caps per round.
+# 写入 `.harness-status.json.budget` 作为运行时上限。codex Round 3 反馈落地。
+# M 级（默认）：max_agents=2, max_judge=1, max_round_subagent_tokens_pct=20
+# XL 级覆盖（在 profile-xl overlay 里）：max_agents=3, max_judge=1, max_round_subagent_tokens_pct=30
+# Schema 真源（待补全到 packages/harness-cli/resources/schemas/budget.schema.json）：
+#   {
+#     "max_agents": int 1..8,
+#     "max_judge":  int 0..3,
+#     "max_round_subagent_tokens_pct": int 1..100
+#   }
+budget:
+  max_agents: 2
+  max_judge: 1
+  max_round_subagent_tokens_pct: 20

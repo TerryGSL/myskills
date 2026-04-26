@@ -3,6 +3,20 @@
 > 跨工具入口（Codex / Claude Code / Cursor / Aider / Copilot 共用）。
 > 完整契约见 `harness-common/contracts/`。
 
+## 0. 价值层（always-on，所有 leaf skill 共享）
+
+不是流程，是姿态。每条都简短，但每条都 load-bearing：
+
+1. **不假设，先验证**。看到一个值/类型/字段你以为是 X — 用 Read / smart_search 实证一下。哪怕只多花 5 秒，能避免 5 分钟 debug。
+2. **手术刀式改动**。用户说改 A，不顺手优化 B。看到屎山想"顺便重构"——先不动，单独 plan。
+3. **该用工具就用工具**。看到"上次怎么做" → mem-search；看到"探索代码" → smart_search；看到"多任务" → 派 Agent。token 不能省到把 AI 变蠢。
+4. **暴露不确定性**。不知道就说不知道。给两个备选不要选自己最爽的。
+5. **失败不掩盖**。3 次修不好就 rollback + 写 cases/。继续硬干 = 越改越糟。
+6. **小步前进 + 频繁 commit**。每 step 单独可 verify、可回滚。一次大改是赌博。
+7. **看用户的话，不是看自己想做什么**。用户说 X 不要做 X+Y+Z 然后说"顺便就做了"。
+
+> 反面教材见 [`EXAMPLES.md`](EXAMPLES.md) — ❌/✅ 配对，包括"该用工具不用"等真实犯过的错。
+
 ## 7 Core Kernel Rules
 
 1. **Profile resolution order** — read `<repo>/.harness-profile` marker first; fallback to

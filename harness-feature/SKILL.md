@@ -32,6 +32,12 @@ description: >
 
 完整契约 → [`harness-common/contracts/routing.md`](../harness-common/contracts/routing.md)
 
+## 硬边界
+
+- Stage -0.5 若 `knowledge_requirements` 非空但 Stage 4 未核查 → FAIL
+- Stage 8 hard_floor 动作 → 硬 abort（即使 `/yolo`）
+- 连续 10 Round 未 PASS Stage 4 → 停下反思路径是否错
+
 ## 8-Stage 总览
 
 ```
@@ -48,6 +54,8 @@ Stage 8     收尾                          Coordinator (hard_floor 执法)
 ```
 
 **每 Stage 详细契约 + invoke 模板** → [references/stages.md](references/stages.md)
+
+---
 
 ## Round 规模（S/M/L/XL 自动分级）
 
@@ -90,12 +98,6 @@ Tier 3 fallback rules: see harness-init/SKILL.md#第二步
 Stage 8 完成 → 检查 `pendingRounds`：
 - 有 → 自动启动 Round N+1（从 Stage -0.5 开始）
 - 无 → 输出最终汇总 + 清空
-
-## 硬边界
-
-- Stage -0.5 若 `knowledge_requirements` 非空但 Stage 4 未核查 → FAIL
-- Stage 8 hard_floor 动作 → 硬 abort（即使 `/yolo`）
-- 连续 10 Round 未 PASS Stage 4 → 停下反思路径是否错
 
 ## 失败回退闭环（rollback contract，每 Stage 适用）
 

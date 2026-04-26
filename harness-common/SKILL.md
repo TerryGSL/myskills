@@ -15,7 +15,23 @@ description: >
 
 ## 提供的能力（4 类）
 
-### 1. CLI 命令 passthrough 封装
+1. **CLI 命令 passthrough 封装** — 统一封装 `harness {doctor,init,adopt,maintain,scan}` 等命令调用
+2. **`.harness/current.json` 读写契约** — Round 进度状态文件 schema + 写入权限
+3. **三层记忆写入权限矩阵** — `.harness/learnings/` → `docs/memory/` → `docs/harness/knowledge/`
+4. **Schema 版本哨兵（AD4 双向）** — Stage 3 实现前的版本兼容握手
+
+## 硬边界
+
+以下**不是**本 skill 的职责：
+
+- 不承担任何具体任务类型（quick/bugfix/feature/refactor 各自叶子做）
+- 不做 profile 路由（profile-entry 做）
+- 不审稿（strict-reviewer 做）
+- 不做 AI 扫描（harness-feature 在 Stage -0.5 做；CLI 只 `scan` 命令壳触发）
+
+---
+
+## 1. CLI 命令 passthrough 封装
 
 | Skill 意图 | 调用 CLI |
 |-----------|---------|
@@ -28,7 +44,7 @@ description: >
 
 CLI 未装 → abort + 提示 `npm install -g harness-workflow-cli`。不允许手工 Edit/Write 代替。
 
-### 2. `.harness/current.json` 读写契约
+## 2. `.harness/current.json` 读写契约
 
 叶子 skill 更新 Round 进度时按以下 schema：
 
@@ -48,7 +64,7 @@ CLI 未装 → abort + 提示 `npm install -g harness-workflow-cli`。不允许�
 - Stage 8 收尾时清 `currentFeature`（写 null）
 - 不直接改 `schemaVersion` 或 `workflow_schema_version`（那是 CLI 迁移时的事）
 
-### 3. 三层记忆写入权限矩阵
+## 3. 三层记忆写入权限矩阵
 
 记忆有三层：`.harness/learnings/`（rolling inbox）→ `docs/memory/{cases,decisions,constraints}/`（长期）→ `docs/harness/knowledge/`（静态 inventory）。
 
@@ -56,7 +72,7 @@ CLI 未装 → abort + 提示 `npm install -g harness-workflow-cli`。不允许�
 
 **违反权限 → strict-reviewer Step 5 立即 FAIL。**
 
-### 4. Schema 版本哨兵（AD4 双向）
+## 4. Schema 版本哨兵（AD4 双向）
 
 Stage 3（实现）前读 `.harness/current.json.workflow_schema_version`：
 
@@ -82,15 +98,6 @@ Stage 3（实现）前读 `.harness/current.json.workflow_schema_version`：
 具体一致性校验项（WALKTHROUGH / CLAUDE.md ADR / evidence file:line / knowledge↔memory 反向链）+ 12 项 audit 详解 + 7 步 drift 恢复流程 + 7 条 red-flag 自检 → [contracts/maintenance.md](contracts/maintenance.md)
 
 项目技术栈探测规则（init / adopt 阶段调用，写入 `.harness-context.json`） → [contracts/project-detection.md](contracts/project-detection.md)
-
-## 硬边界
-
-以下**不是**本 skill 的职责：
-
-- 不承担任何具体任务类型（quick/bugfix/feature/refactor 各自叶子做）
-- 不做 profile 路由（profile-entry 做）
-- 不审稿（strict-reviewer 做）
-- 不做 AI 扫描（harness-feature 在 Stage -0.5 做；CLI 只 `scan` 命令壳触发）
 
 ## 引用
 

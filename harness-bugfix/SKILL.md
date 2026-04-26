@@ -32,7 +32,15 @@ description: >
 
 完整契约 → [`harness-common/contracts/routing.md`](../harness-common/contracts/routing.md)
 
-## 五步流程
+## 硬边界
+
+- Step 2 测试必须 FAIL 才能进 Step 3（TDD 顺序不可颠倒）
+- Step 3 修复范围 ≤ Step 2 测试覆盖的代码路径（不重构、不扩展）
+- 不自己写调试方法论（Step 1 必须 invoke `Skill(investigate)`，缺失时显式 degraded）
+- 不写 manifest（docs/harness/knowledge/* 只有 harness scan 能写）
+- 不自作主张写 case（errors_collection 阈值未达成只写 learnings）
+
+## 五步流程 outline
 
 1. **Investigate** — `Skill(investigate)` 调试方法论（含 company-mt Java profile_hints）
 2. **Reproduce** — 写失败测试（**硬要求**：必须 FAIL 才进 Step 3）
@@ -43,6 +51,8 @@ description: >
    Tier 3 fallback rules: see harness-init/SKILL.md#第二步
 
 **每步详细契约 + degraded fallback + 升级条件** → [references/five-step-tdd.md](references/five-step-tdd.md)
+
+---
 
 ## 连续失败升级
 
@@ -57,14 +67,6 @@ description: >
 2. `git checkout -- <files-this-step>` 回退本 Step 的修改（保留前面 Step 成果）
 3. 写一条 `docs/memory/cases/<incident-bugfix-<date>>.md`：失败上下文 + 尝试方案 + 给后续 Round 的提示
 4. 询问用户：是 spec 不准 / 还是改方案 / 还是放弃
-
-## 硬边界
-
-- Step 2 测试必须 FAIL 才能进 Step 3（TDD 顺序不可颠倒）
-- Step 3 修复范围 ≤ Step 2 测试覆盖的代码路径（不重构、不扩展）
-- 不自己写调试方法论（Step 1 必须 invoke `Skill(investigate)`，缺失时显式 degraded）
-- 不写 manifest（docs/harness/knowledge/* 只有 harness scan 能写）
-- 不自作主张写 case（errors_collection 阈值未达成只写 learnings）
 
 ## 与其他 skill 的关系
 

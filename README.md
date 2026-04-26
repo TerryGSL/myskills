@@ -256,6 +256,8 @@ docs/superpowers/{specs,plans}/  设计文档 + 实施计划
 
 | 文档 | 说明 |
 |------|------|
+| **[`AGENTS.md`](AGENTS.md)** | **§0 价值层（7 条姿态铁律 always-on）+ 7 Kernel Rules + 跨工具入口** |
+| **[`EXAMPLES.md`](EXAMPLES.md)** | **❌/✅ 反面教材手册（7 类常犯错 + 正确做法，Karpathy 启发）** |
 | **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** | **架构 + 完整 skill 速查 + 4 个工作流 walkthrough（必读）** |
 | **[`docs/SETUP.md`](docs/SETUP.md)** | **Claude Code + Codex 双工具接入指南（含 hook 配置让每次对话自动路由）** |
 | [`docs/setup-without-cli.md`](docs/setup-without-cli.md) | 无 CLI 环境接入指南（Tier-3 fallback）|

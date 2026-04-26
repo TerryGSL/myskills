@@ -6,6 +6,11 @@
 > - 每个 skill 的角色、触发条件、输入输出
 > - 怎么扩展、怎么调试、怎么排查故障
 
+> **配套必读**：
+> - [`AGENTS.md`](../AGENTS.md) §0 价值层（7 条姿态铁律，always-on）
+> - [`EXAMPLES.md`](../EXAMPLES.md) ❌/✅ 反面教材（真实犯过的错 + 正确做法）
+> - [`docs/SETUP.md`](SETUP.md) Claude + Codex 接入完整步骤
+
 ---
 
 ## 1. 一句话总览
@@ -137,13 +142,14 @@
 | `team-commander` | team-* 工作流指挥官（状态机调度）| 老的 team-* 流程入口 |
 | `team-init` | alias for harness-init | 旧用法兼容 |
 
-### 4.4 审查 / 调试 / 教练
+### 4.4 审查 / 调试 / 教练 / 仲裁
 
 | Skill | 角色 | 触发 |
 |-------|------|------|
 | `strict-reviewer` | 反谄媚审稿（默认 FAIL 立场 + 4 硬门：Grounding / Reproduction / Coverage / Knowledge）| feature Stage 4/5/6/7 自动 / 手动 PR review |
 | `investigate` | 系统调试 4 阶段（根因 → 模式 → 假设 → 验证）| harness-bugfix Step 1 自动；用户说"调试" / "为什么坏了" |
 | `office-hours` | 需求诊断教练（产品/工程模式 6 个逼问）| feature Stage 0 前置 / 用户说"想想这个需求" |
+| `judge-agent` | 多 agent 冲突仲裁（**只读**，输入争议方案，输出仲裁结论 A/B/合并/回退）| 多 agent 结论冲突 / 文件边界重叠 / Stage verdict 分歧 |
 
 ### 4.5 安全防护（vendored from gstack@ed1e4be2）
 

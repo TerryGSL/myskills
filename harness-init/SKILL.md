@@ -47,6 +47,27 @@ description: >
 
 完整契约 → `harness-common/contracts/routing.md`
 
+## 主要流程 outline（八步）
+
+1. 全局依赖预检（Claude Code plugins / MCP / 7 hooks 就位）
+2. CLI 探测（Tier 1/2/3 三级降级）
+3. CLI 握手（`harness doctor --json` 五字段）
+4. Schema 版本双向握手
+5. 决策树（用户意图 → CLI 命令）
+6. 检测 preset（personal vs company-mt）
+7. 安装项目级 skill symlink（`harness install`）
+8. 交棒（`/harness-workflow` 公开触发词接管后续开发）
+
+## Fallback 规则（汇总）
+
+- **CLI 可用**（Tier 1/2）：按第 3-6 步正常路径
+- **CLI 不可用但 myskills clone 存在**（Tier 3）：按第 2 步 Tier 3 手工投放 + 显式 warning
+- **都没有** → abort + 提示 `git clone <myskills-url>` 后重试
+- CLI 版本过低 → 提示升级
+- 项目版本高于 CLI → 硬 abort 要求先升级 CLI
+
+---
+
 ## 第一步：全局依赖预检
 
 在跑 CLI 之前，先确认 harness 工作流所需的全局基础设施就位。缺失的项目级以上依赖
@@ -209,14 +230,6 @@ CLI 命令成功后，harness-init 职责结束。用户后续开发通过 `/har
 `company-*`）。
 
 harness-init 不参与后续开发 Round。
-
-## Fallback 规则（汇总）
-
-- **CLI 可用**（Tier 1/2）：按第 3-6 步正常路径
-- **CLI 不可用但 myskills clone 存在**（Tier 3）：按第 2 步 Tier 3 手工投放 + 显式 warning
-- **都没有** → abort + 提示 `git clone <myskills-url>` 后重试
-- CLI 版本过低 → 提示升级
-- 项目版本高于 CLI → 硬 abort 要求先升级 CLI
 
 ## 与任务分发的关系
 

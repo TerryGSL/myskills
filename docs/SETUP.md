@@ -490,6 +490,54 @@ done
 - **hook 是强制提醒，不是路由器**：路由真正的逻辑在 `harness route` CLI 或 `profile-entry` markdown，hook 只是把规则刷进 AI 的 context
 - **AGENTS.md 是 Codex 的主要保险**：因为 Codex 不读 home-level AGENTS.md，每个项目的 cwd 都要有 AGENTS.md（symlink 方案 A 最省事）。即使 hook stdout 不注入 model context，AGENTS.md 也保证规则被加载
 
+## 9.7 Round 4 — 智能注入 + Karpathy + Judge agent + Cost Budget（2026-04-26）
+
+应用了 codex round 3 落地反馈 + Karpathy skill 仓库启发 + 用户对 token / 流程合理性的深度反思：
+
+### A. UserPromptSubmit 智能判定（codex 方案 2）
+
+`hooks/user-prompt-router-reminder.sh` 加判定逻辑：
+
+| 条件 | 注入内容 | token cost |
+|------|---------|-----------|
+| 像代码任务 + 最近未路由 | **完整版**（路由 + hard gate + 主动用工具）| ~200 tokens |
+| 像代码任务 + 最近已路由 | **轻量版**（只剩主动用工具提醒）| ~60 tokens |
+| 纯查询 / 解释 | **精简版**（提醒主动用工具，不进 L1）| ~80 tokens |
+
+判定规则：
+- 关键词检测（中英 fix/修/加/改/重构/debug + 代码 fence + src/.ts 路径）
+- transcript 最近 100 行查 Skill(harness-*) 调用
+
+旁路：`HARNESS_REMINDER=off`
+
+收益：长 session 50 turn 节省 30-50% UserPromptSubmit token。
+
+### B. SKILL.md 稳定头 + 动态尾（codex 方案 1）
+
+6 个核心 SKILL.md 重排：稳定头（触发 / 输入契约 / 硬边界 / 流程 outline）放前面 cache 友好；动态尾（详细步骤 / prompt 模板 / fallback / 引用）放后面按需。
+
+完成清单：harness-{workflow,feature,init,common,bugfix,refactor}/SKILL.md 全部 frontmatter byte-equal、内容零增删。
+
+### C. EXAMPLES.md ❌/✅ + AGENTS.md §0 价值层（Karpathy 启发）
+
+新建 `myskills/EXAMPLES.md` — 7 类反面教材（路由 / 工具使用 / token 优化 / 多任务 / 失败处理 / codex 审稿 / 文档同步）。
+
+`myskills/AGENTS.md` 加 §0 价值层（7 条姿态铁律：不假设先验证 / 手术刀式改动 / 该用工具就用工具 / 暴露不确定性 / 失败不掩盖 / 小步前进 / 看用户的话）—— 比每个 SKILL.md 重写一遍省 token。
+
+### D. Judge agent + Cost Budget（codex 方案 3）
+
+新建 `myskills/judge-agent/` skill：
+- 只读（allowed-tools: Read, Grep, Glob）
+- 触发：多 agent 结论冲突 / 文件边界重叠 / Stage verdict 分歧
+- 输入：spec + owner map + 各 agent 摘要 + diff + test
+- 输出：JSON `{verdict, reasoning, next_step}`
+
+`harness-workflow/templates/project-memory/.harness-memory.yml.template` 加 budget 段（M 级默认 max_agents=2 / max_judge=1 / max_round_subagent_tokens=20%；XL 覆盖到 3/1/30%）。
+
+### 实证亮点
+
+**PreToolUse hard gate 在生产环境拦下 sub-agent**：sub-agent D 试图 Write `packages/harness-cli/resources/schemas/budget.schema.json`（非白名单业务代码路径），hook 真实拦截 → sub-agent 优雅降级写到 .harness-memory.yml.template。这是 hard gate 不靠 AI 自觉的真实证明。
+
 ## 9.5 Codex Round 3 简化反馈（2026-04-26）
 
 经 codex round 3 综合审核（VERDICT: NEEDS_SIMPLIFICATION），已应用 3 个精简：
