@@ -1,7 +1,7 @@
 # Knowledge Scanner Integration (Spec 1)
 
 How harness-feature cooperates with the knowledge scanner pipeline defined in
-`harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md`.
+`docs/superpowers/specs/2026-04-23-project-knowledge-scanner-design.md`.
 
 ## 核心集成点：Stage -0.5
 

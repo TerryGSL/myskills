@@ -262,7 +262,7 @@ cd my-java-project
 
 ## 10. 参考
 
-- Spec：`harness-workflow/specs/2026-04-24-harness-cli-integration-design.md`
-- Plan：`harness-workflow/plans/2026-04-24-harness-cli-integration-implementation.md`
+- Spec：`docs/superpowers/specs/2026-04-24-harness-cli-integration-design.md`
+- Plan：`docs/superpowers/plans/2026-04-24-harness-cli-integration-implementation.md`
 - 迭代文档：`docs/harness-iteration-2026-04-24.md`（+ 2026-04-25 Addendum）
 - 原 v0 深度介绍：`docs/harness-workflow-sharing.md`（1796 行，本文前章）

@@ -191,4 +191,4 @@ fcc01b9 refactor(skills): 全面去历史话语 + 补齐缺失模板 + 补 clone
 - 主迭代总结：`docs/harness-iteration-2026-04-24.md`
 - 向新用户分享文档：`docs/harness-workflow-sharing.md`（v0 深度介绍）+ `docs/harness-workflow-v1-addendum.md`（v1 升级）
 - 运行态 skill 清单：`harness-workflow/references/skill-registry.md`
-- Spec：`harness-workflow/specs/2026-04-24-harness-cli-integration-design.md`
+- Spec：`docs/superpowers/specs/2026-04-24-harness-cli-integration-design.md`

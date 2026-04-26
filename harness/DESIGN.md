@@ -543,7 +543,7 @@ Setup 是**一次配置，反复受益**。用户显式声明"这台机器的默
 ### Spec 文档
 
 - `docs/superpowers/specs/2026-04-24-profile-based-dispatch-redesign-design.md` — profile-based dispatch 架构 spec（3 轮 codex 审查收敛）
-- `harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md` — knowledge scanner spec（11 轮 codex 审查收敛）
+- `docs/superpowers/specs/2026-04-23-project-knowledge-scanner-design.md` — knowledge scanner spec（11 轮 codex 审查收敛）
 
 ### Plan 文档
 

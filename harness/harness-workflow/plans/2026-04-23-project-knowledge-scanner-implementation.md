@@ -2,7 +2,7 @@
 
 > **面向自动化工作者：** 推荐使用 `superpowers:subagent-driven-development`（或 `superpowers:executing-plans`）逐 task 执行本计划。每个步骤使用 checkbox（`- [ ]`）语法追踪进度。
 
-**目标：** 按已审批的 spec（`harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md`）实现项目 knowledge 扫描器 + Stage -0.5 检索 + strict-reviewer knowledge 门控。
+**目标：** 按已审批的 spec（`docs/superpowers/specs/2026-04-23-project-knowledge-scanner-design.md`）实现项目 knowledge 扫描器 + Stage -0.5 检索 + strict-reviewer knowledge 门控。
 
 **架构：** Adaptive Domain-Sharded Evidence Manifests（Option D）。5-phase scanner pipeline 在目标项目中生成 `docs/harness/knowledge/` corpus。Stage -0.5 按任务检索相关 knowledge；render pipeline 按 Rule Status 过滤；strict-reviewer 第 4 硬门执行 binding rules 检查。所有加载机制零依赖 Claude Code 内部机制——纯 markdown + CLAUDE.md 触发。
 
@@ -26,7 +26,7 @@ Run:
 cd /Users/twelve/Music/myskills
 git status --short
 git log --oneline -1
-ls harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md
+ls docs/superpowers/specs/2026-04-23-project-knowledge-scanner-design.md
 ```
 
 Expected:
@@ -2059,11 +2059,11 @@ Task 14 不做代码修改——只做只读验证。无需 commit。
 ## Task 15: 在 iteration log 中记录实施完成
 
 **Files:**
-- Modify: `harness-workflow/specs/2026-04-22-iteration-log.md`（追加）
+- Modify: `docs/superpowers/specs/2026-04-22-iteration-log.md`（追加）
 
 - [ ] **Step 1: 追加完成 section**
 
-用 Edit tool 追加到 `harness-workflow/specs/2026-04-22-iteration-log.md`：
+用 Edit tool 追加到 `docs/superpowers/specs/2026-04-22-iteration-log.md`：
 
 ```markdown
 
@@ -2071,8 +2071,8 @@ Task 14 不做代码修改——只做只读验证。无需 commit。
 
 ## 实施完成：Project Knowledge Scanner (spec 2026-04-23)
 
-Plan: `harness-workflow/plans/2026-04-23-project-knowledge-scanner-implementation.md`（~2000 行，16 tasks，5 phases）
-Spec: `harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md`（986 行，11 轮 codex review + 30+ findings 修复 + 3 条 Known Spec Gaps）
+Plan: `docs/superpowers/plans/2026-04-23-project-knowledge-scanner-implementation.md`（~2000 行，16 tasks，5 phases）
+Spec: `docs/superpowers/specs/2026-04-23-project-knowledge-scanner-design.md`（986 行，11 轮 codex review + 30+ findings 修复 + 3 条 Known Spec Gaps）
 
 按 16 task 顺序实施。核心产出：
 
@@ -2119,7 +2119,7 @@ Spec: `harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md`（
 
 ```bash
 cd /Users/twelve/Music/myskills
-git add harness-workflow/specs/2026-04-22-iteration-log.md
+git add docs/superpowers/specs/2026-04-22-iteration-log.md
 git commit -m "docs: iteration-log marks project-knowledge-scanner implementation complete"
 ```
 
@@ -2208,7 +2208,7 @@ Next: run /harness-workflow --scan-project on a real legacy Java repo to validat
 
 ## 执行交接
 
-**本 plan 已完成并保存至 `harness-workflow/plans/2026-04-23-project-knowledge-scanner-implementation.md`。**
+**本 plan 已完成并保存至 `docs/superpowers/plans/2026-04-23-project-knowledge-scanner-implementation.md`。**
 
 两种执行方案：
 

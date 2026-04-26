@@ -7,4 +7,4 @@
 `status`、`applies_to`、`criteria_met`、`freshness`、`next_time_signal`。正文必须
 包含 `## Negative Patterns` 标题（内容可为 `(none)`）。
 
-参考：`harness-workflow/specs/2026-04-22-memory-reviewer-upgrade.md` §Error Case 文件格式
+参考：`docs/superpowers/specs/2026-04-22-memory-reviewer-upgrade.md` §Error Case 文件格式

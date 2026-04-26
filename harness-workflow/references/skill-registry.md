@@ -1,7 +1,7 @@
 # Skill Registry — 运行态完整 skill 清单 + 关系矩阵
 
 > harness 生态的所有 skill 在这里登记，**这是 canonical 运行态索引**。
-> 同样的信息在 `harness-workflow/specs/2026-04-24-harness-cli-integration-design.md` 附录 C
+> 同样的信息在 `docs/superpowers/specs/2026-04-24-harness-cli-integration-design.md` 附录 C
 > 有详细论证，本文是它的运行态摘要（skill 加载时按需读）。
 
 ## 公开触发词
@@ -89,5 +89,5 @@ harness-{quick,bugfix,feature,refactor}  ← 或 company-* overlay
 
 ## 引用
 
-- 完整保留矩阵论证：`harness-workflow/specs/2026-04-24-harness-cli-integration-design.md` 附录 C
+- 完整保留矩阵论证：`docs/superpowers/specs/2026-04-24-harness-cli-integration-design.md` 附录 C
 - 各 skill 详细 description 见每个 skill 自己的 `SKILL.md` frontmatter

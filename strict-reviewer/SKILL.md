@@ -7,7 +7,7 @@ description: 反谄媚审稿 skill — 默认 FAIL 立场 + 三硬门（Groundin
 
 > 薄 wrapper。**不是** persona skill。Schema driven。Stateless。
 >
-> 设计参考：`/Users/twelve/Music/myskills/harness-workflow/specs/2026-04-22-memory-reviewer-upgrade.md` §`strict-reviewer` Skill — IO Contract
+> 设计参考：`/Users/twelve/Music/myskills/docs/superpowers/specs/2026-04-22-memory-reviewer-upgrade.md` §`strict-reviewer` Skill — IO Contract
 
 ## 默认立场（硬编码在 prompt 前置）
 

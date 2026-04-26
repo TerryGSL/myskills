@@ -2,7 +2,7 @@
 
 **日期**: 2026-04-22（当日完成）
 **主题**: 项目长期记忆机制 + strict-reviewer skill 设计
-**最终产出**: `harness-workflow/specs/2026-04-22-memory-reviewer-upgrade.md` (726 行，codex Round 9 PASS)
+**最终产出**: `docs/superpowers/specs/2026-04-22-memory-reviewer-upgrade.md` (726 行，codex Round 9 PASS)
 
 ---
 
@@ -239,7 +239,7 @@ Codex session ID: `019db09f-b8d4-7b63-920b-ed126e207144`（保存在 `.context/c
 
 ## 实施完成（本 commit 系列）
 
-Plan: `harness-workflow/plans/2026-04-22-memory-reviewer-implementation.md`
+Plan: `docs/superpowers/plans/2026-04-22-memory-reviewer-implementation.md`
 
 按 18 个 task 顺序实施（Phase A-E），新建 11 文件 + 修改 7 文件，累计 ~15 commits。
 

@@ -28,4 +28,4 @@ Skill(harness-init) with <所有 caller 传入参数原样透传>
 ## 引用
 
 - 实际实现：`harness-init/SKILL.md`
-- 命名决定见 spec §5.4：`harness-workflow/specs/2026-04-24-harness-cli-integration-design.md`
+- 命名决定见 spec §5.4：`docs/superpowers/specs/2026-04-24-harness-cli-integration-design.md`

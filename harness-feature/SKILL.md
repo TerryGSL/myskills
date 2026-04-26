@@ -140,8 +140,8 @@ Stage 8 完成 → 检查 `pendingRounds`：
 
 ### Spec
 
-- `harness-workflow/specs/2026-04-24-harness-cli-integration-design.md` §附录 C（skill 处理矩阵）
-- `harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md`
+- `docs/superpowers/specs/2026-04-24-harness-cli-integration-design.md` §附录 C（skill 处理矩阵）
+- `docs/superpowers/specs/2026-04-23-project-knowledge-scanner-design.md`
 - `docs/superpowers/specs/2026-04-24-profile-based-dispatch-redesign-design.md`
 
 ### 共享基础设施

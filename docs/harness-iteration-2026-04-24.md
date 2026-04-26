@@ -323,5 +323,5 @@ harness scan --apply-answers       # 处理用户在 TODO.md 的批答复
 
 ---
 
-文档结束。迭代方案的完整 spec 见 `harness-workflow/specs/2026-04-24-harness-cli-integration-design.md`，
-完整实施 plan 见 `harness-workflow/plans/2026-04-24-harness-cli-integration-implementation.md`。
+文档结束。迭代方案的完整 spec 见 `docs/superpowers/specs/2026-04-24-harness-cli-integration-design.md`，
+完整实施 plan 见 `docs/superpowers/plans/2026-04-24-harness-cli-integration-implementation.md`。

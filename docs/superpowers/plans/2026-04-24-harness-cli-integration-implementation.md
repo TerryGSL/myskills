@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal**：按 spec `harness-workflow/specs/2026-04-24-harness-cli-integration-design.md`（含附录 C skill 处理矩阵）产出 `harness-workflow-cli` npm 包 + 优化现有 `team-init` skill v1（唯一对外入口 skill，保名重塑）+ `profile-entry` / `harness-common` / `harness-{quick,bugfix,feature,refactor}` 六个新 skill + `harness-workflow/skill.md` 重塑为保名 stub + `strict-reviewer` 加 Step 5 + `company-mt` 企业 preset 实体。**现有 skill 保留/扩展/改造清单的单一真源 = spec 附录 C**（含 myskills 仓库内 14 个本地 skill + 独立 Java 生态 3 个外部 skill；3 类处理：保名重塑 2 个 / v1 内容优化 1 个 / 原样保留 11 个 + 外部 3 个）。
+**Goal**：按 spec `docs/superpowers/specs/2026-04-24-harness-cli-integration-design.md`（含附录 C skill 处理矩阵）产出 `harness-workflow-cli` npm 包 + 优化现有 `team-init` skill v1（唯一对外入口 skill，保名重塑）+ `profile-entry` / `harness-common` / `harness-{quick,bugfix,feature,refactor}` 六个新 skill + `harness-workflow/skill.md` 重塑为保名 stub + `strict-reviewer` 加 Step 5 + `company-mt` 企业 preset 实体。**现有 skill 保留/扩展/改造清单的单一真源 = spec 附录 C**（含 myskills 仓库内 14 个本地 skill + 独立 Java 生态 3 个外部 skill；3 类处理：保名重塑 2 个 / v1 内容优化 1 个 / 原样保留 11 个 + 外部 3 个）。
 
 **Architecture**：monorepo 在 `packages/harness-cli/` 起新 npm 包，`src/types/*.ts` + `resources/schemas/*.json` 作为唯一真源，`scripts/generate-doc-fragments.ts` 把 canonical 派生到 skill 的 `<!-- @generated -->` 锚点块；CI 跑五关漂移门禁。项目级落地产物：`.harness-profile` / `harness.config.json` / `.harness/` runtime 状态（强制 gitignore）/ `docs/memory/` 三子目录 / `docs/harness/knowledge/` 五领域 / `.claude/skills/` 投放的核心 skill。
 
@@ -28,7 +28,7 @@
 
 ### 层级 2：Round sub-plan（进入该 Round 前强制产出）
 
-每 Round 进入 Stage 2 前必须产出 `harness-workflow/plans/round-<N>-<slug>.md`，**sub-plan 承担 Reproduction 硬门**：
+每 Round 进入 Stage 2 前必须产出 `docs/superpowers/plans/round-<N>-<slug>.md`，**sub-plan 承担 Reproduction 硬门**：
 - 每 step Files / Run / Expected / Commit 格式
 - 所有 Master 里的 sub-plan 契约条款**已落地为具体 step**（不是转述）
 - sub-plan 通过 strict-reviewer 审稿后才算"Stage 2 完成"，Stage 3 才能开始
@@ -57,7 +57,7 @@ Run：
 ```bash
 cd /Users/twelve/Pictures/myskills
 git status --short
-ls harness-workflow/specs/2026-04-24-harness-cli-integration-design.md
+ls docs/superpowers/specs/2026-04-24-harness-cli-integration-design.md
 git log --oneline -1
 ```
 
@@ -1679,7 +1679,7 @@ git commit -m "feat(harness-cli): generate-doc-fragments script + sample skill c
 
 ## 执行方式（Execution Handoff）
 
-Plan 完成并保存到 `harness-workflow/plans/2026-04-24-harness-cli-integration-implementation.md`。两个执行选项：
+Plan 完成并保存到 `docs/superpowers/plans/2026-04-24-harness-cli-integration-implementation.md`。两个执行选项：
 
 **1. Subagent-Driven（推荐）** — harness-workflow Stage 3 会为每个 Round 派发新 subagent（senior/junior 并行），两阶段审查，快速迭代
 

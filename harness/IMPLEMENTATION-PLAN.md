@@ -6,7 +6,7 @@
 **融合的三份设计**:
 1. `docs/superpowers/specs/2026-04-24-profile-based-dispatch-redesign-design.md` — 架构拆分（profile-entry + 4 task-type sub-skills + harness-common）
 2. `docs/superpowers/plans/2026-04-24-profile-based-dispatch-redesign.md` — profile 拆分 plan（16 tasks）
-3. `harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md` — knowledge scanner 能力
+3. `docs/superpowers/specs/2026-04-23-project-knowledge-scanner-design.md` — knowledge scanner 能力
 
 **追加用户需求**:
 - Stop Hook 监控 context 占用，高占用时再注入 skill

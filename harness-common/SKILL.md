@@ -96,4 +96,4 @@ Stage 3（实现）前读 `.harness/current.json.workflow_schema_version`：
 
 - CLI 实现：`packages/harness-cli/src/commands/*.ts` + `src/utils/*.ts`
 - Phase → CLI 交叉核查：`harness-workflow/references/migration-checklist.md`
-- 上游 spec：`harness-workflow/specs/2026-04-24-harness-cli-integration-design.md` §6
+- 上游 spec：`docs/superpowers/specs/2026-04-24-harness-cli-integration-design.md` §6

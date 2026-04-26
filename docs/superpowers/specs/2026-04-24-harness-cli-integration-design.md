@@ -6,7 +6,7 @@
 - **决策者**：TerryGSL
 - **取代关系**：无（是对 Spec 1 / Spec 2 的实施路径补充，不替代它们）
 - **前置依赖**：
-  - Spec 1：`harness-workflow/specs/2026-04-23-project-knowledge-scanner-design.md`（知识扫描器，11 轮 codex 评审 PASS）
+  - Spec 1：`docs/superpowers/specs/2026-04-23-project-knowledge-scanner-design.md`（知识扫描器，11 轮 codex 评审 PASS）
   - Spec 2：`docs/superpowers/specs/2026-04-24-profile-based-dispatch-redesign-design.md`（profile 调度重设计，3 轮评审 APPROVED）
 
 ---
