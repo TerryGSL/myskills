@@ -196,16 +196,69 @@ careful/ guard/ freeze/ unfreeze/  Safety guardrail skills（已 vendor 自 gsta
 docs/superpowers/{specs,plans}/  设计文档 + 实施计划
 ```
 
+## Skill 速查表
+
+按角色分组（详见 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)）：
+
+**入口 / 路由层**
+
+| Skill | 角色 | 触发 |
+|-------|------|------|
+| `task-dispatcher` | 外层并行编排（每条用户消息）| 自动 |
+| `harness-workflow` | 公开入口（统一）| `/harness-workflow` 或代码任务关键词 |
+| `harness-init` | 项目接入入口（外部用户唯一装这个）| `harness init` / "接入 harness" |
+| `harness-common` | 共享基础设施 + 16 contracts | leaf skill 调用 |
+| `profile-entry` | Tier-3 fallback 路由（无 node 时）| CLI 不可用时间接 invoke |
+
+**执行层（4 个 leaf skill — 唯一执行者）**
+
+| Skill | 复杂度 | 触发 | 流程 |
+|-------|-------|------|------|
+| `harness-quick` | S（< 10 行 / 1 文件）| profile-entry fast-path 自动 | edit + test + commit（无仪式）|
+| `harness-bugfix` | M（bug 修复）| `--fix` flag / bug 关键词 | 5 步 TDD：investigate → reproduce → fix → regression → commit |
+| `harness-feature` | L/XL（新功能）| profile 默认（其他都不命中时）| 8-Stage：需求 → 架构 → 规划 → 实现 → 审查 → QA → 安全 → 收尾 |
+| `harness-refactor` | 重构（行为不变）| `--refactor` flag | baseline → 增量 → 持续验证 → 对比 |
+
+**协作 agent（被 harness-feature 显式 invoke）**
+
+| Agent | 角色 | Stage |
+|-------|------|------|
+| `team-pd` | 产品设计师（PRD + DESIGN）| 0~1 |
+| `team-architect` | 系统架构（Torvalds 风格）| 2 |
+| `team-senior-dev` / `team-junior-dev` | 老登 / 小登并行实现 | 3 |
+| `team-qa` | QA 工程师 | 5 |
+| `team-security` | SDL 安全 | 6 |
+| `team-commander` / `team-init` | 老 team-* 流程指挥 / harness-init alias | — |
+
+**审查 / 调试 / 教练**
+
+| Skill | 角色 |
+|-------|------|
+| `strict-reviewer` | 反谄媚审稿（4 硬门：Grounding / Reproduction / Coverage / Knowledge）|
+| `investigate` | 系统调试 4 阶段方法论（harness-bugfix Step 1 复用）|
+| `office-hours` | 需求诊断教练（Stage 0 前置 6 个逼问）|
+
+**安全防护（vendored from gstack@ed1e4be2）**
+
+| Skill | 角色 |
+|-------|------|
+| `careful` | 危险命令拦截（rm -rf / DROP TABLE / force-push 等）|
+| `freeze` / `unfreeze` | 编辑边界锁定 / 解除 |
+| `guard` | careful + freeze 组合（最大安全）|
+
+> 受 profile `hard_floor` 约束：命中 `destructive_ops` / `rewrite_history` / `auto_push` / `force_push` 时 override 失效，直接 REFUSE。
+
 ## 关键文档
 
 | 文档 | 说明 |
 |------|------|
-| `docs/superpowers/specs/2026-04-26-unified-fusion-design.md` | 当前架构 design（最新） |
-| `docs/superpowers/plans/2026-04-26-unified-fusion-implementation.md` | 实施计划 |
-| `harness-common/contracts/` | 16 份 narrative contract（push-decision / drift / memory / ...） |
-| `harness-init/SKILL.md` | 接入入口 |
-| `docs/setup-without-cli.md` | 直接用法接入文档（Tier-3 fallback） |
-| `packages/harness-cli/README.md` | CLI 详细命令文档 |
+| **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** | **架构 + 完整 skill 速查 + 4 个工作流 walkthrough（必读）** |
+| [`docs/setup-without-cli.md`](docs/setup-without-cli.md) | 无 CLI 环境接入指南（Tier-3 fallback）|
+| [`harness-common/contracts/`](harness-common/contracts/) | 16 份 narrative contract（规则源头）|
+| [`packages/harness-cli/README.md`](packages/harness-cli/README.md) | CLI 11 命令详细文档 |
+| [`docs/superpowers/specs/2026-04-26-unified-fusion-design.md`](docs/superpowers/specs/2026-04-26-unified-fusion-design.md) | 当前架构 spec |
+| [`docs/superpowers/plans/2026-04-26-unified-fusion-implementation.md`](docs/superpowers/plans/2026-04-26-unified-fusion-implementation.md) | 实施计划 |
+| [`docs/archive/`](docs/archive/) | 早期 archive 设计文档 |
 
 ## Push 决策（risk-based）
 
