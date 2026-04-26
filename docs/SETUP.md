@@ -367,12 +367,35 @@ done
 - **hook 是强制提醒，不是路由器**：路由真正的逻辑在 `harness route` CLI 或 `profile-entry` markdown，hook 只是把规则刷进 AI 的 context
 - **AGENTS.md 是 Codex 的主要保险**：因为 Codex 不读 home-level AGENTS.md，每个项目的 cwd 都要有 AGENTS.md（symlink 方案 A 最省事）。即使 hook stdout 不注入 model context，AGENTS.md 也保证规则被加载
 
-## 9. Codex 审核反馈备忘（2026-04-26）
+## 9. Codex 审核 + 实证结果备忘（2026-04-26）
 
-经 codex 实证审核，当前接入方案 verdict 为 **PARTIAL**，已修复的 gap：
+经 codex 实证审核 + sentinel 测试（用 `codex exec` 跑了一次实测查询），当前接入方案 verdict：
 
-- ✓ Codex 不读 `~/.codex/AGENTS.md`（home-level）→ 改用项目级 AGENTS.md（§2.2 方案 A/B/C）
-- ✓ `context-monitor.sh` 是 Claude-biased（依赖 `CLAUDE_TOKENS_USED`）→ 已加 `CODEX_TOKENS_USED` + `HARNESS_TOKENS_USED` fallback
-- ⚠️ Hook stdout 是否真注入 model context — 配置正确，需要 sentinel 实证（§2.4）。Claude Code 经本会话开头注入实测 work；Codex 需要自测。
+### Claude Code（完全 work — 实证）
+- ✓ SessionStart hook stdout 注入 model context（session 开头看得到 `[HARNESS]` 三层架构提示）
+- ✓ UserPromptSubmit hook stdout 注入 model context（每条用户消息上方看得到 `[HARNESS-ROUTER]` 提醒）
 
-**双保险策略**：即使 hook stdout 不注入 model context，项目级 AGENTS.md 已覆盖 Codex 路由规则，最差情况下 Codex 仍然能走 harness 工作流（只是少了每条消息的精简提醒）。Claude Code 同时有 SessionStart 和 UserPromptSubmit 两层 hook 注入，双保险更牢。
+### Codex CLI（hook stdout **不**注入 — 但有兜底）
+**实证结果**（用 `codex exec "你的 context 是否包含 [HARNESS]/[HARNESS-ROUTER]/Harness Agent Instructions？"`）：
+```
+SESSION_START_HOOK: NO    ← hook 触发但 stdout 不进 model context
+USER_PROMPT_HOOK:   NO    ← 同上
+AGENTS_MD:          YES   ← 项目级 AGENTS.md 实际进入 model context ✓
+```
+Codex 日志显示 `hook: SessionStart Failed` / `UserPromptSubmit Failed` — Codex CLI 处理 hook 的方式与 Claude Code 不同，hook 只是 lifecycle 事件，stdout 不会被注入到模型 context。**只有 Stop hook 完整 work**（用于 context-monitor.sh 阈值警告）。
+
+### 修复 / 兜底机制（已落实）
+
+- ✓ **Codex 路由规则全靠项目级 AGENTS.md auto-load**（§2.2 方案 A symlink / B cp / C native）
+- ✓ Codex 不读 `~/.codex/AGENTS.md`（home-level）→ 已删除该死文件
+- ✓ `context-monitor.sh` 工具中立化（CLAUDE / CODEX / HARNESS 三层 env var fallback）
+- ✓ codex config.toml model：`gpt-5.5` (deprecated) → `gpt-5.4`
+
+### 双保险设计已验证
+
+| 工具 | 主要机制 | 兜底机制 | 实证状态 |
+|------|---------|---------|---------|
+| Claude Code | SessionStart + UserPromptSubmit hook stdout 注入 | — | ✅ 完全 work |
+| Codex CLI | 项目级 AGENTS.md auto-load | hook 触发（stdout 不注入但 Stop hook work） | ✅ AGENTS.md 兜底 work |
+
+**结论**：在 myskills repo 工作时，两个工具都 work；在其他项目工作时，**只要 cwd 下有 AGENTS.md 软链到 myskills 顶层**，Codex 也走 harness 工作流。Claude Code 不依赖项目级 AGENTS.md（因为 hook 注入足够），但有也 OK。
