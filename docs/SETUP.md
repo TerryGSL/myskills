@@ -235,22 +235,46 @@ UserPromptSubmit hook 触发
   ↓ stdout 被注入到 user 消息前
 [HARNESS-ROUTER] 5 行精简提醒
   ↓
-AI 看到提醒 → 必走 L0 task-dispatcher 评估 → 进 L1 入口分发 → 派发到 leaf skill
+AI 看到提醒 → 隐式 L0 评估子任务数（脑内）：
+  ≥2 子任务 → 显式 Skill(task-dispatcher) 加载派发协议 → 派 sub-agent 并行
+  单任务   → 跳过 task-dispatcher，进 L1：
+              业务代码 → Skill(harness-workflow) → leaf skill
+              生命周期 → harness <cmd>
+              纯查询  → 直接答（不进 L1）
 
 用户发第 2/3/N 条消息（同上）
 
-会话结束
+每次 AI 回应结束（"心跳" hook）
   ↓
-Stop hook 触发
+Stop hook 触发 → context-monitor.sh
+  ↓ 读 .harness-status.json 的 effective_task_type 字段
+  ↓ 按 task_type 用对应阈值
   ↓
-context-monitor.sh 输出 task-type 自适应阈值（quick: 80% / bugfix: 70% / feature: 60%）
+当 context 占用 ≥ 阈值 → 输出 ⚠️ 警告 / ⛔ 临界提示
+  阈值（warn / crit）：
+    quick:           80% / 90%（小任务，提醒晚一点）
+    bugfix:          70% / 85%
+    feature/refactor: 60% / 80%（长任务，提醒早一点）
+    其他/未知:        70% / 85%
+  支持 HARNESS_QUICK_WARN_THRESHOLD 等 env var 覆盖默认值
 ```
 
 ### 为什么需要两个 hook（不能只用 SessionStart）
 
 - **SessionStart 只触发一次**，session 长了或 auto-compact 后，那段提示在 context 里被稀释，AI 可能"忘记"走路由
-- **UserPromptSubmit 每条消息都触发**，5 行精简提醒确保铁律每轮被刷新
-- 两层叠加保证：长 session 也不会失效
+- **UserPromptSubmit 每条消息都触发**，精简提醒确保铁律每轮被刷新（不重复完整内容，避免 token 浪费）
+- **Stop hook（心跳）**每次 AI 回应结束触发，按 task-type 自适应阈值监控 context 压力——长任务（feature/refactor）提醒早，避免接近 cap 时还在干重活；小任务（quick）提醒晚，避免过度打扰
+- 三层叠加保证：长 session 也不会失效，复杂代码任务（feature/refactor）有专门的早期警告
+
+### 复杂代码任务的"心跳 + 定时检查"机制
+
+对于长 session、L/XL 级 feature 实施（多 Stage、>2 小时持续工作），harness 提供两层监控：
+
+1. **每轮心跳（Stop hook）**：每次 AI 完成回应触发 context-monitor.sh，按 task_type 给阈值化警告。前提是项目有 `.harness-status.json`（跑过 `harness init` / `adopt`）；无该文件时 hook silent exit 0
+2. **task_type 自适应**：feature/refactor 60% 就开始 warn，比 quick 提早 20%，让你有时间在接近 cap 时主动开新 session（split context）
+3. **持久化状态**：所有进展写入 `docs/STATE.json` / `WALKTHROUGH.md` / `docs/memory/cases/*.md`，新开 session 后能续接上下文，不丢工作
+
+> **没有 cron 类的"定时任务检查"** — harness 设计是事件驱动（hook on session lifecycle），不是 wallclock 定时。如果你想要"每 30 分钟检查一次"，那需要外部 cron / launchd job 调 `harness doctor --json` 之类，不在当前接入方案里。
 
 ---
 
