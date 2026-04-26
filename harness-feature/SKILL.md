@@ -97,6 +97,16 @@ Stage 8 完成 → 检查 `pendingRounds`：
 - Stage 8 hard_floor 动作 → 硬 abort（即使 `/yolo`）
 - 连续 10 Round 未 PASS Stage 4 → 停下反思路径是否错
 
+## 失败回退闭环（rollback contract，每 Stage 适用）
+
+任何 Stage 失败且 strict-reviewer FAIL 不可修 → 强制走以下闭环：
+
+1. `git diff --stat` 列出本 Stage 改了哪些文件（Stage 起点对比）
+2. 回退本 Stage 但**不动前面 Stage 的成果**：`git checkout -- <files-stage-N>`
+3. 写 `docs/memory/cases/<incident-stage-N-<date>>.md`：失败 spec + 修复尝试 + 后续 Round 该改什么
+4. 更新 `.harness-status.json` / `STATE.json`：`current_stage = N-1`，`last_failure = "<context>"`
+5. 询问用户：调整 spec / 改架构 / 拆 Round / 中止
+
 ## 依赖 skill 的 degraded fallback
 
 | skill | 缺失时行为 |

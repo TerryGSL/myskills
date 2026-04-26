@@ -264,7 +264,47 @@ Stop hook 触发 → context-monitor.sh
 - **SessionStart 只触发一次**，session 长了或 auto-compact 后，那段提示在 context 里被稀释，AI 可能"忘记"走路由
 - **UserPromptSubmit 每条消息都触发**，精简提醒确保铁律每轮被刷新（不重复完整内容，避免 token 浪费）
 - **Stop hook（心跳）**每次 AI 回应结束触发，按 task-type 自适应阈值监控 context 压力——长任务（feature/refactor）提醒早，避免接近 cap 时还在干重活；小任务（quick）提醒晚，避免过度打扰
-- 三层叠加保证：长 session 也不会失效，复杂代码任务（feature/refactor）有专门的早期警告
+- **PreToolUse hook（router-enforcer）真技术强制**：业务代码 Edit/Write 之前若没调 Skill(harness-workflow) → exit 2 阻止工具调用。这是 hard gate，AI 跳不过
+- 四层叠加保证：长 session 也不会失效，复杂代码任务（feature/refactor）有早期警告 + 业务代码强制走 harness-workflow
+
+### PreToolUse Router Enforcer（hard gate）
+
+soft 提醒（注入）有局限——AI 看了 N 次会麻木跳过。`router-enforcer.sh` 是**技术强制**：
+
+```
+AI 试图调 Edit / Write
+  ↓
+PreToolUse hook 自动触发（绕不过）
+  ↓
+检查文件路径是否在白名单（docs/ / hooks/ / *.md / 配置 / .harness* 等）
+  ├─ 命中白名单 → exit 0 允许（运维 / 文档不强制）
+  └─ 业务代码（src/*.ts、app/*.py 等）
+       ↓
+     检查 transcript 最近 200 行有没有 Skill(harness-workflow / harness-init / 4 个 leaf)
+       ├─ 有 → exit 0 允许
+       └─ 没有 → exit 2 + stderr 输出指引 → 工具被阻止
+```
+
+**白名单**：文档 (\*.md / docs/ / wrappers/) / hook 脚本 (hooks/) / 配置 (settings.json / hooks.json / config.toml) / 状态文件 (.harness*) / 包管理 (package.json / tsconfig*) 等运维路径不拦。
+
+**临时旁路**：`HARNESS_ENFORCER=off` 环境变量关闭（开发者调试用）。
+
+**配置**（已在 §1.3 / §2.3 hooks 段加入，参考样板）：
+
+```json
+"PreToolUse": [
+  {
+    "matcher": "Edit|Write",
+    "hooks": [
+      { "type": "command", "command": "/Users/twelve/Music/myskills/hooks/router-enforcer.sh" }
+    ]
+  }
+]
+```
+
+**fail-open 设计**：JSON parse 失败 / transcript 不可读 → exit 0 放过（避免误锁正常工作）。这是 trade-off：宁可漏拦一次，也不锁死整个工作流。
+
+**注意 task-dispatcher 没有 hard gate**：Agent tool 派 sub-agent 时机太晚（PreToolUse 时已经准备调用了），现实里靠注入 + feedback memory 两层 soft enforcement。所以 ≥2 子任务时**主动 Skill(task-dispatcher)** 仍是 AI 自觉行为。
 
 ### 复杂代码任务的三层监控机制
 
@@ -449,6 +489,16 @@ done
 - **私有配置只放工具特定的入口**：`~/.claude/settings.json` 和 `~/.codex/hooks.json` 只引用 myskills 路径，不重复内容
 - **hook 是强制提醒，不是路由器**：路由真正的逻辑在 `harness route` CLI 或 `profile-entry` markdown，hook 只是把规则刷进 AI 的 context
 - **AGENTS.md 是 Codex 的主要保险**：因为 Codex 不读 home-level AGENTS.md，每个项目的 cwd 都要有 AGENTS.md（symlink 方案 A 最省事）。即使 hook stdout 不注入 model context，AGENTS.md 也保证规则被加载
+
+## 9.5 Codex Round 3 简化反馈（2026-04-26）
+
+经 codex round 3 综合审核（VERDICT: NEEDS_SIMPLIFICATION），已应用 3 个精简：
+
+1. **`[HARNESS-ROUTER]` 注入精简**：从 9 行 / 480B / ~130 tokens → 3 行 / 304B / ~95 tokens（每条节省 ~30%；50 turn 长 session 节省 ~1.7K tokens）。理由：完整规则在 SessionStart 一次注入足够，PreToolUse 已是 hard gate，软注入只保留路由分流提醒
+2. **心跳频率减半**：Stage 3 内 2 min → 5 min，单 Agent 5 min → 10 min；新增"仅 round > 15 min 才启心跳"条件，避免短任务被监控开销吃掉。30min round 累计从 2.3K → 1K tokens
+3. **失败回退闭环**：harness-bugfix / harness-feature 显式补"git checkout 回退本 Step/Stage + 写 cases/ + 更新 STATE.json"协议（详见各自 SKILL.md "失败回退闭环"段）
+
+详细 token 估算 + 设计 trade-off 见 docs/SETUP.md §9 Codex 历史审核备忘。
 
 ## 9. Codex 审核 + 实证结果备忘（2026-04-26）
 

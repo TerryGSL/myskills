@@ -49,6 +49,15 @@ description: >
 - Step 2 测试 PASS 但 Step 4 全量 FAIL → 回 Step 3 最多 2 轮
 - 连续 3 次 Step 3 让全量更糟 → **升级到 harness-feature**（整体重新设计，本 bugfix Round 废弃）
 
+## 失败回退闭环（rollback contract）
+
+任何 Step 失败且 3 次内无法修复 → 强制走以下闭环：
+
+1. `git diff --stat` 列出本 Step 改了哪些文件
+2. `git checkout -- <files-this-step>` 回退本 Step 的修改（保留前面 Step 成果）
+3. 写一条 `docs/memory/cases/<incident-bugfix-<date>>.md`：失败上下文 + 尝试方案 + 给后续 Round 的提示
+4. 询问用户：是 spec 不准 / 还是改方案 / 还是放弃
+
 ## 硬边界
 
 - Step 2 测试必须 FAIL 才能进 Step 3（TDD 顺序不可颠倒）
