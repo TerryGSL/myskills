@@ -35,12 +35,14 @@ for skill in \
   task-dispatcher strict-reviewer \
   team-pd team-architect team-senior-dev team-junior-dev team-qa team-security \
   team-init team-commander \
-  investigate office-hours; do
+  investigate office-hours \
+  careful guard freeze unfreeze; do
   ln -sf ~/Music/myskills/${skill} ~/.claude/skills/${skill} 2>/dev/null || true
 done
 
-# 可选：链接 gstack 补充 skill（前端 QA、context、codex review 等 39 个）
-# gstack 是可选 submodule，不存在时跳过此步即可。
+# 可选：链接 gstack 补充 skill（39 个：browse / canary / design-review /
+# context-save / learn / retro / codex / review 等）。
+# 4 个 safety skill（careful / guard / freeze / unfreeze）已 vendor 到顶层，无需 submodule。
 # 注意：实际目录布局是 gstack/<skill>/SKILL.md，不是 gstack/skills/*
 for skill_dir in ~/Music/myskills/gstack/*/; do
   [ -f "${skill_dir}SKILL.md" ] && ln -sf "$skill_dir" ~/.claude/skills/
@@ -153,6 +155,12 @@ leaf skill 在 commit 之后会自动按 `push-decision` 契约评估 risk，详
 | `team-pd / team-architect / team-{senior,junior}-dev / team-qa / team-security` | 各角色 subagent | Stage 0~7 |
 | `investigate` | 调试方法论 | `harness-bugfix` Step 1 |
 | `office-hours` | 需求诊断教练 | Stage 0 前置 |
+| `careful` | 危险命令拦截（rm -rf / DROP TABLE / force-push 等） | "careful mode" / 触发危险 Bash 时 |
+| `freeze` | 编辑边界（限制 Write/Edit 在指定目录内） | "freeze mode" / 锁定调试范围 |
+| `guard` | careful + freeze 组合（最大安全） | "guard mode" / 动 prod 或 live 系统 |
+| `unfreeze` | 解除 freeze 边界 | freeze 后清理 |
+
+> `careful / guard / freeze / unfreeze` vendor 自 gstack@ed1e4be2，已 path-rewrite 到 harness 命名空间（state 在 `~/.harness/safety/`）；行为受 profile `hard_floor` 约束（命中 `destructive_ops` / `force_push` / `rewrite_history` / `auto_push` 时 override 失效）。
 
 ## 6. 目录结构
 
