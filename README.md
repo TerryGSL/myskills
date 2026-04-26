@@ -129,11 +129,15 @@ cd ~/myskills && git submodule update --init --recursive
 
 ```bash
 cd ~/myskills/packages/harness-cli && npm install && npm run build && npm link
-harness install            # 零问题 setup：symlink skills + 注册 hook
+harness install            # 零问题 setup：symlink skills + 注册 Stop hook
 harness doctor             # 验收
 ```
 
-无 npm？走 Tier 3（纯 bash fallback）：手动 symlink 顶层 skill 到 `~/.claude/skills/`，用 `harness-init/lib/` 提供的 bash 算法派生 profile。
+> **关键**：`harness install` 默认只装 Stop hook。要让**每条用户消息**都自动触发 task-dispatcher 三层路由（不需要每次手动 invoke skill），还要手动加两个 hook（SessionStart + UserPromptSubmit）到 `~/.claude/settings.json`。
+>
+> **完整接入说明（含 Codex CLI 接入）→ [`docs/SETUP.md`](docs/SETUP.md)**
+
+无 npm？走 Tier 3（纯 bash fallback）：[`docs/setup-without-cli.md`](docs/setup-without-cli.md)。
 
 ### Step 3 —— 在你的项目里直接说需求
 
@@ -253,6 +257,7 @@ docs/superpowers/{specs,plans}/  设计文档 + 实施计划
 | 文档 | 说明 |
 |------|------|
 | **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** | **架构 + 完整 skill 速查 + 4 个工作流 walkthrough（必读）** |
+| **[`docs/SETUP.md`](docs/SETUP.md)** | **Claude Code + Codex 双工具接入指南（含 hook 配置让每次对话自动路由）** |
 | [`docs/setup-without-cli.md`](docs/setup-without-cli.md) | 无 CLI 环境接入指南（Tier-3 fallback）|
 | [`harness-common/contracts/`](harness-common/contracts/) | 16 份 narrative contract（规则源头）|
 | [`packages/harness-cli/README.md`](packages/harness-cli/README.md) | CLI 11 命令详细文档 |
