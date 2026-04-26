@@ -1,12 +1,56 @@
-[HARNESS-WORKFLOW] 本项目已接入 Harness Workflow 自治工作流。
+[HARNESS] 本会话已接入 Harness 三层架构。每条用户消息按以下顺序判断，禁止跳层。
 
-当用户提出任何开发任务（"做XXX"/"加XXX"/"修XXX"/"改XXX"/"实现XXX"）时，
-你必须调用 /harness-workflow skill 来编排执行，而非直接写代码。
+═══════════════════════════════════════════════════════════
+L0 — task-dispatcher（强制，每条消息都过）
+═══════════════════════════════════════════════════════════
+先做子任务分解：
+- ≥2 个互不依赖的子任务  → Skill(task-dispatcher) 派 sub-agent 并行
+- =1 个原子子任务         → 跳过 L0，进 L1
+- 即使是查询/调研/配置/安装/运维类，也要先做这一步分解评估
 
-工作流程：
-1. 读取 docs/STATE.json 了解当前轮次和项目状态
-2. 自动判断任务规模（S/M/L/XL）
-3. 按 8-Stage 流程自治执行
-4. 完成后输出报告
+不分代码 vs 非代码 —— L0 关心的是"几件事"，不是"什么事"。
 
-仅查询、解释、文档类请求不需要走工作流。
+═══════════════════════════════════════════════════════════
+L1 — 入口分发（按消息类型选 ONE）
+═══════════════════════════════════════════════════════════
+
+A) 代码任务 → Skill(harness-workflow)
+   触发词：做 / 加 / 修 / 改 / 实现 / 重构 / 优化 / 修 bug / debug /
+          重写 / 抽出 / 拆分 / 合并 / 替换 / 升级依赖 / 改 schema
+   harness-workflow 会自动 invoke profile-entry → 叶子 skill，不用你手动选。
+
+B) 生命周期任务 → Skill(harness-workflow) 走 passthrough，或直接 `harness <cmd>`
+   触发词：装 harness / 接入 / 初始化 / 适配 / 维护 / 扫描 / 体检 /
+          升级 schema / 注册 hook / install / doctor / scan
+   passthrough：--init | --adopt | --maintain | --doctor | --scan
+
+C) 纯查询 / 解释 / 读代码 / 看 git log → 直接答，不走 L1
+
+D) 环境配置 / symlink / PATH / 编辑 settings.json / 装 CLI
+   → 先过 L0 分解，再决定：单步直接做，多步派 sub-agent
+   → 不进 harness-workflow 的 8-Stage（那是给业务代码任务的）
+
+═══════════════════════════════════════════════════════════
+L2/L3 — 自动，不需要你管
+═══════════════════════════════════════════════════════════
+harness-workflow 内部 invoke profile-entry → harness-{quick,bugfix,feature,refactor}
+或 company-* overlay。你只管把消息送进 L1，剩下交给路由器。
+
+═══════════════════════════════════════════════════════════
+铁律
+═══════════════════════════════════════════════════════════
+1. 看到自己想 Edit/Write 业务代码之前 —— 必须先 Skill(harness-workflow)
+2. 看到自己想连续跑 3+ Bash（任何类型）之前 —— 必须先 Skill(task-dispatcher) 评估分解
+3. 用户给的是生命周期/安装/配置类任务 —— 优先 `harness <cmd>` 或 --flag passthrough，
+   而不是手写一堆 ln -s / npm link / cat > settings.json
+4. 复盘上一轮：如果绕过了 L0 或 L1，下一轮主动承认并按规矩重做
+
+═══════════════════════════════════════════════════════════
+快查表
+═══════════════════════════════════════════════════════════
+"修一下登录 bug"          → L0(单任务) → L1.A → harness-workflow → bugfix 叶子
+"接入 harness"             → L0(单任务) → L1.B → harness init / --init
+"装一下外层 skill"         → L0(评估分解) → L1.D → 多步派 dispatcher 或单步直做
+"看看这个文件"             → L0(单任务) → L1.C → 直接 Read
+"修 bug + 调研免费额度 + 写文档"
+                          → L0(三任务) → dispatcher 并行

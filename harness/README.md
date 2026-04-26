@@ -2,13 +2,13 @@
 
 > 本目录是 harness 工作流的**直接 markdown 接入路径** —— 不依赖 npm CLI，纯 markdown + bash fallback。
 >
-> 完整规则源在仓库顶层 `harness-common/contracts/` 下的 14 份 narrative contract。本目录是 markdown-only 接入路径与历史档案。
+> 完整规则源在仓库顶层 `harness-common/contracts/` 下的 16 份 narrative contract。本目录是 markdown-only 接入路径与历史档案。
 >
 > CLI 工程化路线（`harness install` 一键 setup + jest 测试 + GitHub workflow CI）参 `packages/harness-cli/README.md`。
 
 ## 1. 概览
 
-`harness` 是 myskills 仓库的工程协作 skill 体系。整体设计：profile × task_type × aggression mode 三维正交，hard_floor 强制不可绕过；4 个 task-type leaf skill（quick / bugfix / feature / refactor）按 routing 契约派发；14 份 narrative contract 集中在仓库顶层 `harness-common/contracts/`。
+`harness` 是 myskills 仓库的工程协作 skill 体系。整体设计：profile × task_type × aggression mode 三维正交，hard_floor 强制不可绕过；4 个 task-type leaf skill（quick / bugfix / feature / refactor）按 routing 契约派发；16 份 narrative contract 集中在仓库顶层 `harness-common/contracts/`。
 
 **直接用法（本目录）的能力**：
 
@@ -64,7 +64,7 @@ bash ~/Music/myskills/harness/profile-bootstrap/lib/derive-profile.sh acme   # T
 
 阈值按 task_type 自适应（quick: 80/90 / bugfix: 70/85 / feature/refactor: 60/80），无需手动调整。
 
-## 3. 14 narrative contract
+## 3. 16 narrative contract
 
 完整规则在 `harness-common/contracts/`（仓库顶层），按能力分文件：
 
@@ -84,6 +84,8 @@ bash ~/Music/myskills/harness/profile-bootstrap/lib/derive-profile.sh acme   # T
 | `phase-init.md` | init / adopt / maintain |
 | `hooks.md` | Stop Hook 自适应阈值 |
 | `doctor-protocol.md` | 诊断输出契约 |
+| `maintenance.md` | 12 项 audit + 4 类一致性校验 + 7 步 drift 恢复 |
+| `project-detection.md` | 技术栈探测规则（.harness-context.json） |
 
 > **Source of truth**：每份 contract 顶部都标注其代码 / schema 来源（`packages/harness-cli/src/types/constants.ts` + `resources/schemas/*.schema.json`）。如本文档与代码不一致，以代码为准。
 
@@ -141,7 +143,7 @@ leaf skill 在 commit 之后会自动按 `push-decision` 契约评估 risk，详
 | `harness-bugfix` | investigate → reproduce → fix → 回归 | `/fix` flag |
 | `harness-feature` | 完整 8-Stage 主体 | profile 默认路由 |
 | `harness-refactor` | baseline → 增量 → verify | `/refactor` flag |
-| `harness-common` | 14 contracts 集合 | 各 sub-skill 引用 |
+| `harness-common` | 16 contracts 集合 | 各 sub-skill 引用 |
 | `strict-reviewer` | 4 硬门审稿 | Stage 4/5/6/7 自动调用 |
 | `harness-workflow` | 老命令 passthrough | 用户用老命令时 |
 | `team-pd / team-architect / team-{senior,junior}-dev / team-qa / team-security` | 各角色 subagent | Stage 0~7 |
@@ -154,7 +156,7 @@ leaf skill 在 commit 之后会自动按 `push-decision` 契约评估 risk，详
 harness/
 ├── profile-bootstrap/lib/    Tier-3 fallback bash 算法 + test oracle（保留）
 ├── profile-entry/references/ Profile / precedence / fast-path 历史档案
-├── harness-common/contracts/ 14 narrative contract 的本地副本（如有）
+├── harness-common/contracts/ 16 narrative contract 的本地副本（如有）
 ├── harness-feature/prompts/  Feature scanner prompts 档案
 ├── harness-workflow/         specs/ + plans/ 历史档案
 ├── docs/                     历史 narrative 档案
@@ -194,7 +196,7 @@ ls -la ~/.claude/skills/harness-feature
 
 | 文档 | 说明 |
 |------|------|
-| `harness-common/contracts/` | 14 份 narrative contract |
+| `harness-common/contracts/` | 16 份 narrative contract |
 | `docs/superpowers/specs/2026-04-26-unified-fusion-design.md` | 当前架构 spec |
 | `docs/superpowers/plans/2026-04-26-unified-fusion-implementation.md` | 实施计划 |
 | `packages/harness-cli/README.md` | CLI 详细命令文档 |
@@ -202,4 +204,4 @@ ls -la ~/.claude/skills/harness-feature
 
 ---
 
-*完整规则源 = 仓库顶层 `harness-common/contracts/` 下的 14 份 narrative contract。本目录是 markdown-only 接入路径 + Tier-3 fallback + 历史档案。*
+*完整规则源 = 仓库顶层 `harness-common/contracts/` 下的 16 份 narrative contract。本目录是 markdown-only 接入路径 + Tier-3 fallback + 历史档案。*

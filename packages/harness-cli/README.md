@@ -84,7 +84,7 @@ JSON Schema 由 `scripts/regen-schema.ts` 从 constants 自动生成。CI workfl
 
 ## Contracts
 
-`harness-common/contracts/` 下 14 份 narrative contract 是规则的 source-of-truth narrative 副本。每份 contract 顶部都标注其代码 / schema 来源（`packages/harness-cli/src/types/constants.ts` + `resources/schemas/*.schema.json`）。
+`harness-common/contracts/` 下 16 份 narrative contract 是规则的 source-of-truth narrative 副本。每份 contract 顶部都标注其代码 / schema 来源（`packages/harness-cli/src/types/constants.ts` + `resources/schemas/*.schema.json`）。
 
 ## Build & Test
 
