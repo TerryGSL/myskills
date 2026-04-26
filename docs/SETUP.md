@@ -389,7 +389,8 @@ Codex 日志显示 `hook: SessionStart Failed` / `UserPromptSubmit Failed` — C
 - ✓ **Codex 路由规则全靠项目级 AGENTS.md auto-load**（§2.2 方案 A symlink / B cp / C native）
 - ✓ Codex 不读 `~/.codex/AGENTS.md`（home-level）→ 已删除该死文件
 - ✓ `context-monitor.sh` 工具中立化（CLAUDE / CODEX / HARNESS 三层 env var fallback）
-- ✓ codex config.toml model：`gpt-5.5` (deprecated) → `gpt-5.4`
+
+> **codex CLI model 配置**：如果 `codex exec` 报 `model requires a newer version` / `model deprecated` 错，把 `~/.codex/config.toml` 的 `model` 字段换成当前 codex 支持的版本（用 `codex --help` 或 `codex login` 后的 prompt 看可选项）。这是 codex CLI 内部配置，与 harness 工作流无关；模型名会随 codex 版本迭代变化，故不在本文档写死具体名字。
 
 ### 双保险设计已验证
 
