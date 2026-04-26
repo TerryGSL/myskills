@@ -15,7 +15,7 @@
     },
     "verification": {
       "required": ["strict-reviewer", "team-qa"],
-      "optional": ["gstack"]
+      "optional": ["gstack/browse", "gstack/canary", "gstack/design-review"]
     },
     "doc-sync": {
       "required": ["team-security"]

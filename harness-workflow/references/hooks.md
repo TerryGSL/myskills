@@ -278,7 +278,7 @@ SCRIPT_PATH 固定为 `$REPO_ROOT/hooks/context-monitor.sh`（注册到 `~/.clau
 
 用途：
 - `context7` — 拉取最新上游文档（React / Next / Spring / etc）时给 AI 补最新 API
-- `playwright` — 前端 QA 自动化（Stage 6 gstack / team-qa 调用）
+- `playwright` — 前端 QA 自动化（Stage 6 team-qa 调用；前端任务可选 invoke `gstack/browse` 等 submodule skill）
 
 ---
 

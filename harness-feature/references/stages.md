@@ -177,7 +177,7 @@ Skill(team-qa) with:
 
 **Prompt 模板**：[prompts/qa-prompt.md](../prompts/qa-prompt.md)
 
-**前端任务**：自动 invoke `gstack` 浏览器自动化做 E2E。
+**前端任务**：if gstack submodule available — invoke `gstack/browse` 做 E2E（先用 `gstack/setup-browser-cookies` 处理 auth）。否则手工 E2E + degraded learnings 条目。
 
 **硬约束**：P0 bug 自动修复；P1 以下记到 learnings ERRORS。
 

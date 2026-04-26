@@ -15,7 +15,8 @@
 | `office-hours` | "我有个想法 / 需求诊断 / 验证产品" | Stage -1 前置（用户主动） |
 | `investigate` | "调试 / debug / 排查 / 根因分析" | 系统调试方法论（被 harness-bugfix invoke） |
 | `strict-reviewer` | `/strict-reviewer <YAML>` / 自动调用 | 审稿（含 Step 5 知识合规）|
-| `gstack` | 浏览器自动化任务 | 前端 QA（被 team-qa invoke） |
+| `gstack/browse` / `gstack/canary` / `gstack/design-review` / `gstack/setup-browser-cookies` (optional / submodule) | 浏览器自动化、canary 监控、设计审查 | 前端 QA（按需被 team-qa invoke；submodule 缺失时 degraded） |
+| `careful` / `guard` / `freeze` / `unfreeze` (vendored from gstack) | 危险命令护栏 / 编辑边界 | 全局安全 guardrail，可手工启用 |
 
 ## 内部 only（不公开触发词）
 
@@ -67,7 +68,7 @@ harness-{quick,bugfix,feature,refactor}  ← 或 company-* overlay
   ├─ team-architect (Stage 1)
   ├─ team-senior/junior-dev (Stage 3)
   ├─ strict-reviewer (Stage 4/5/Step 5 知识合规)
-  ├─ team-qa + gstack (Stage 6)
+  ├─ team-qa (Stage 6) + 可选 gstack/browse · gstack/canary · gstack/design-review
   ├─ team-security (Stage 7)
   └─ investigate (harness-bugfix Step 1)
 ```
@@ -80,7 +81,7 @@ harness-{quick,bugfix,feature,refactor}  ← 或 company-* overlay
 | `team-{senior,junior}-dev` | 主 agent 直接实现（不派 subagent） |
 | `team-qa` | 手工跑测试 + 标 degraded |
 | `team-security` | 跳过 Stage 7 + 在 learnings 记 high-priority entry |
-| `gstack` | 前端 E2E 手工验证 |
+| `gstack/browse` / `gstack/canary` / `gstack/design-review` (submodule) | 各自独立缺失 → 该项前端 E2E / canary / design 审查改手工 + 各自 degraded learnings |
 | `investigate` | 通用 grep + read 调试 |
 | `meituan-java-standards` / `java-backend-i18n-refactor` | company-mt 走 bundled `references/java-rules.md` 保底 |
 

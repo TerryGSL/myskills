@@ -42,7 +42,7 @@ Stage 2     规划                          superpowers:writing-plans
 Stage 3     实现                          subagent-driven (senior/junior 并行)
 Stage 4     Spec 审查                     strict-reviewer (含 Step 5 知识合规)
 Stage 5     质量审查                      codex + code-reviewer
-Stage 6     QA 测试                       team-qa (+ gstack 前端)
+Stage 6     QA 测试                       team-qa (+ gstack/browse / gstack/canary / gstack/design-review 前端 — 可选 ln)
 Stage 7     安全审查                      team-security
 Stage 8     收尾                          Coordinator (hard_floor 执法)
 ```
@@ -106,7 +106,7 @@ Stage 8 完成 → 检查 `pendingRounds`：
 | team-{senior,junior}-dev | 主 agent 直接实现（非 subagent 派发） |
 | team-qa | 手工跑测试 + 标 degraded |
 | team-security | 跳过 Stage 7 + 在 learnings 记 high-priority entry |
-| gstack | 前端任务手工 E2E 验证 + 标 degraded |
+| gstack/browse / gstack/canary / gstack/design-review (可选 submodule) | 前端任务手工 E2E 验证 + 标 degraded |
 
 **不静默兜底** —— 每个 degraded 场景在 learnings 记条目 + 显式提示用户。
 

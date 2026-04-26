@@ -15,7 +15,9 @@ Shared reference for all `company-*` overlay skills. 当 overlay 依赖的独立
 | `java-backend-i18n-refactor` | 后端 i18n 改造通用 | company-feature Stage 3（涉及新 i18n 文本时） |
 | `costasset-i18n-phase2` | costasset 专属 i18n 阶段 2 | company-feature Stage 3（repo 命中 costasset matcher 时） |
 | `investigate` | 系统调试方法论 | company-bugfix Step 1 |
-| `gstack` | 浏览器自动化 QA | company-feature Stage 6 前端任务 |
+| `gstack/browse` (submodule, 可选) | 浏览器自动化 QA | company-feature Stage 6 前端任务 |
+| `gstack/canary` (submodule, 可选) | 部署后 canary 监控 | company-feature Stage 6/8 |
+| `gstack/design-review` (submodule, 可选) | 设计师视角视觉审查 | company-feature Stage 6 前端 |
 
 ## Fallback 检测
 
@@ -46,14 +48,27 @@ Skill(<skill-name>) try → 成功 = 继续；失败（not found）= degraded �
 
 ### Strategy C：跳过 + 记高优先级 learnings
 
-对非关键 skill（如 `gstack`）缺失，直接跳过该步骤：
+对非关键 skill（如 `gstack/browse` / `gstack/canary` / `gstack/design-review`，
+来自 gstack submodule）缺失，**逐项独立判断**——某一项缺失只跳过对应步骤，
+不影响其他 gstack/* skill：
 
 ```
-[degraded] gstack skill 不可用
-→ 跳过浏览器自动化 E2E
-→ .harness/learnings/FEATURE_REQUESTS.md 追加 "install gstack for better frontend QA"
+[degraded] gstack/browse 不可用 (gstack submodule 未拉取或该 skill 未链接)
+→ 跳过浏览器自动化 E2E（手工 E2E）
+→ .harness/learnings/FEATURE_REQUESTS.md 追加 "install gstack/browse for frontend E2E"
 → priority: medium
+
+[degraded] gstack/canary 不可用
+→ 跳过 post-deploy canary monitoring（人工盯）
+→ priority: medium
+
+[degraded] gstack/design-review 不可用
+→ 跳过 designer's eye QA（手工对照 DESIGN.md）
+→ priority: low
 ```
+
+注意：4 个 vendored safety skill（`careful` / `guard` / `freeze` / `unfreeze`）
+已在顶层目录，无 degraded 路径。
 
 ## 用户可见的 degraded 提示
 
@@ -93,7 +108,7 @@ degraded_dependencies:
 
 ## Non-degraded 保证
 
-如果 degraded dependency 都装了（java-standards / meituan-java-standards / java-backend-i18n-refactor / costasset-i18n-phase2 / investigate / gstack）：
+如果 degraded dependency 都装了（java-standards / meituan-java-standards / java-backend-i18n-refactor / costasset-i18n-phase2 / investigate / gstack/browse / gstack/canary / gstack/design-review）：
 
 - 所有 overlay 按完整 spec 运行
 - Stage 1 / Stage 3 / Stage 6 全流程

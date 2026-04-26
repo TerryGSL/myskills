@@ -39,8 +39,12 @@ for skill in \
   ln -sf ~/Music/myskills/${skill} ~/.claude/skills/${skill} 2>/dev/null || true
 done
 
-# 链接 gstack 基础 skill
-ln -sf ~/Music/myskills/gstack/skills/* ~/.claude/skills/
+# 可选：链接 gstack 补充 skill（前端 QA、context、codex review 等 39 个）
+# gstack 是可选 submodule，不存在时跳过此步即可。
+# 注意：实际目录布局是 gstack/<skill>/SKILL.md，不是 gstack/skills/*
+for skill_dir in ~/Music/myskills/gstack/*/; do
+  [ -f "${skill_dir}SKILL.md" ] && ln -sf "$skill_dir" ~/.claude/skills/
+done 2>/dev/null || true
 ```
 
 ### Step 2 —— 派生 profile（无 npm 用 bash fallback）

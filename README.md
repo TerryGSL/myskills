@@ -110,13 +110,20 @@ harness doctor             # 验收
 
 > **跨工具 memory 契约**：项目级长期 memory = `docs/memory/*.md`（Layer 1 强约束，任何工具都能读写、git 跟踪）。跨会话 memory 由各工具自带能力（claude-mem / codex resume / cursor history）兜底，可选不强制。详见 `harness-common/contracts/memory.md`。
 
-### Step 1 —— clone 仓库（含 submodule）
+### Step 1 —— clone 仓库（gstack submodule 可选）
 
 ```bash
+# 主仓库（必需）
+git clone git@github.com:TerryGSL/myskills.git ~/myskills
+
+# 可选：拉取 gstack submodule（39 个补充 skill：browse / canary / design-review /
+# context-save / learn / retro / codex / review 等）。harness 工作流不强依赖。
 git clone --recurse-submodules git@github.com:TerryGSL/myskills.git ~/myskills
-# 已克隆但漏 submodule:
+# 或已克隆后再拉:
 cd ~/myskills && git submodule update --init --recursive
 ```
+
+> 4 个 safety skill（careful / guard / freeze / unfreeze）已 vendor 到顶层，无需 submodule。
 
 ### Step 2 —— 装到 user-global
 
@@ -182,7 +189,8 @@ packages/harness-cli/        TypeScript CLI（harness 二进制 + 多命令）
 hooks/context-monitor.sh     Stop Hook，task_type 自适应阈值
 wrappers/                    跨工具 adapter（codex / cursor / aider / copilot）
 harness/                     直接接入文档 + Tier-3 fallback bash + 历史档案
-gstack/                      AI Skills 框架（git submodule）
+gstack/                      AI Skills 框架（git submodule，可选 — 39 个补充 skill）
+careful/ guard/ freeze/ unfreeze/  Safety guardrail skills（已 vendor 自 gstack）
 docs/superpowers/{specs,plans}/  设计文档 + 实施计划
 ```
 
