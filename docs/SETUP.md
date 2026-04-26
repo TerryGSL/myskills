@@ -266,15 +266,74 @@ Stop hook 触发 → context-monitor.sh
 - **Stop hook（心跳）**每次 AI 回应结束触发，按 task-type 自适应阈值监控 context 压力——长任务（feature/refactor）提醒早，避免接近 cap 时还在干重活；小任务（quick）提醒晚，避免过度打扰
 - 三层叠加保证：长 session 也不会失效，复杂代码任务（feature/refactor）有专门的早期警告
 
-### 复杂代码任务的"心跳 + 定时检查"机制
+### 复杂代码任务的三层监控机制
 
-对于长 session、L/XL 级 feature 实施（多 Stage、>2 小时持续工作），harness 提供两层监控：
+对于长 session、L/XL 级 feature 实施（多 Stage、>2 小时持续工作），harness 提供三层监控：
 
-1. **每轮心跳（Stop hook）**：每次 AI 完成回应触发 context-monitor.sh，按 task_type 给阈值化警告。前提是项目有 `.harness-status.json`（跑过 `harness init` / `adopt`）；无该文件时 hook silent exit 0
-2. **task_type 自适应**：feature/refactor 60% 就开始 warn，比 quick 提早 20%，让你有时间在接近 cap 时主动开新 session（split context）
-3. **持久化状态**：所有进展写入 `docs/STATE.json` / `WALKTHROUGH.md` / `docs/memory/cases/*.md`，新开 session 后能续接上下文，不丢工作
+#### 第 1 层：每轮心跳（Stop hook，事件驱动）
 
-> **没有 cron 类的"定时任务检查"** — harness 设计是事件驱动（hook on session lifecycle），不是 wallclock 定时。如果你想要"每 30 分钟检查一次"，那需要外部 cron / launchd job 调 `harness doctor --json` 之类，不在当前接入方案里。
+每次 AI 完成回应触发 `context-monitor.sh`，按 task_type 给阈值化警告：
+
+| task_type | warn / crit |
+|-----------|-------------|
+| quick | 80% / 90%（小任务，晚提醒）|
+| bugfix | 70% / 85% |
+| feature / refactor | 60% / 80%（长任务，早提醒）|
+
+前提：项目有 `.harness-status.json`（跑过 `harness init` / `adopt`）。无该文件时 hook silent exit 0。
+
+#### 第 2 层：CronCreate 实时心跳（wallclock 定时，Claude Code 内置）
+
+L/XL Round 启动时自动创建 cron 任务，周期输出进度表，**用户无需主动询问就能看到当前状态**。完整契约见 [`harness-workflow/references/monitoring.md`](../harness-workflow/references/monitoring.md)。
+
+```
+Round 开始（Stage 2 前）
+    → CronCreate（初始 5 min 频率）
+    → 写 cronJobId 到 .harness-status.json
+        ↓
+进 Stage 3（多 Agent 并行，状态变化快）
+    → CronDelete + CronCreate（2 min）
+        ↓
+离开 Stage 3
+    → CronDelete + CronCreate（5 min）
+        ↓
+Stage 8 收尾
+    → CronDelete（无条件执行，即使 cronJobId 丢失也列所有 cron 删）
+    → 删除 .harness-status.json
+```
+
+每次心跳读 `.harness-status.json` 输出进度表（极简 prompt，~230 token / 次）：
+
+```
+🔄 Round 3 — 弹性层改进 (已运行 8 分钟)
+
+Stage   Agent          状态        耗时
+────────────────────────────────────────
+0       team-pd        completed   90s
+3       senior-dev     running     ...
+4       strict-reviewer pending
+```
+
+**防泄漏保障**：
+1. Stage 8 无条件 CronDelete（即使 cronJobId 丢失也列所有 cron 删）
+2. `.harness-status.json` 在 `.gitignore`（不进 git）
+3. 异常中断（用户手动停止）下次启动检测残留 → 清理旧 cron + 删除文件
+
+> **CronCreate 是 Claude Code 内置工具**，session-only 默认（in-memory，session 结束自动清掉；可选 `durable: true` 持久到 `.claude/scheduled_tasks.json`）。不依赖 OS 级 cron / launchd。
+
+#### 第 3 层：持久化状态（断点续接）
+
+所有进展实时写入：
+- `.harness-status.json` — Round 元数据 + Stage 状态 + cronJobId
+- `docs/STATE.json` — 跨 session 的工作流状态
+- `WALKTHROUGH.md` — 当前 session 决策日志
+- `docs/memory/cases/*.md` — 提取出的可复用 lesson
+
+session 触发 context cap 时，新开 session 后 AI 读这些文件就能续接上下文，**不丢工作**。
+
+---
+
+> **三层联动逻辑**：第 1 层（Stop hook）每轮检查 context 占用 → 接近 cap 时让 AI 主动 split session；第 2 层（CronCreate）周期输出进度让用户看见；第 3 层（持久化）保证 split session 后能续接。
 
 ---
 
