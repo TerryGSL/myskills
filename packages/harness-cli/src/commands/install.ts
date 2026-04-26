@@ -90,8 +90,14 @@ const SKILLS = [
   'team-junior-dev',
   'team-qa',
   'team-security',
+  'team-init',
+  'team-commander',
   'investigate',
   'office-hours',
+  'careful',
+  'freeze',
+  'guard',
+  'unfreeze',
 ];
 
 function atomicWrite(targetPath: string, content: string): void {
