@@ -46,7 +46,7 @@ export interface KnownIssue {
  * `.harness-status.json.knowledgeCheck` by Stage -0.5 retrieval.
  *
  * Source of truth: `resources/schemas/knowledgeCheck.schema.json` (PR A2.1).
- * Field semantics: `harness/harness-common/references/knowledge-retrieval.md`.
+ * Field semantics: `harness-common/contracts/knowledge.md`.
  *
  * The richer Stage -0.5 payload (effective_index_status / snapshot_id /
  * filtered_candidates / advisory_knowledge / knowledge_requirements / etc.)

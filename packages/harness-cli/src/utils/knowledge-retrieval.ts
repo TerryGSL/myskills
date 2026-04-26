@@ -11,7 +11,6 @@ import type { KnowledgeCheck } from '../types/knowledge.js';
  * Source-of-truth references:
  *   - `resources/schemas/knowledgeCheck.schema.json` (PR A2.1)
  *   - `harness-common/contracts/knowledge.md` retrieval section
- *   - `harness/harness-common/references/knowledge-retrieval.md`
  *
  * **Scope guard**: this PR does NOT modify scan.ts. The retrieval output
  * is consumed by `harness route --json` (PR C5) and by Stage 4 late

@@ -75,6 +75,37 @@ Harness 工作流所需的全局配置（每用户一次配好，跨项目共享
 }
 ```
 
+### 可选扩展段（codex 插件 + 桌面提醒 + 状态栏）
+
+如果装了 `codex@openai-codex` 插件并希望开启 Stop / SessionEnd 跨模型审查 gate，以及桌面通知和 ccusage 状态栏，可叠加：
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "node \"~/.claude/plugins/codex/scripts/stop-review-gate-hook.mjs\"", "timeout": 900 }] }
+    ],
+    "SessionEnd": [
+      { "hooks": [{ "type": "command", "command": "node \"~/.claude/plugins/codex/scripts/session-lifecycle-hook.mjs\" SessionEnd", "timeout": 5 }] }
+    ],
+    "Notification": [
+      { "matcher": "", "hooks": [{ "type": "command", "command": "osascript -e 'beep'" }] }
+    ]
+  },
+  "statusLine": { "type": "command", "command": "ccusage statusline" },
+  "enabledPlugins": {
+    "claude-mem@thedotmack": true,
+    "codex@openai-codex": true,
+    "superpowers@claude-plugins-official": true
+  }
+}
+```
+
+注意：
+- `Stop / SessionEnd` 由 codex 插件提供（需先装 codex 插件）
+- `statusLine` 需先安装 `ccusage`（`npm i -g ccusage`）
+- `Notification` 仅 macOS；Linux 替换为 `notify-send "Claude done"`
+
 ---
 
 ## Hook Scripts
