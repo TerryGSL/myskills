@@ -36,7 +36,7 @@
 ├─────────────────────────────────────────────────────────────────┤
 │ Layer 1 — 持久化文件契约（数据层，git 跟踪）                     │
 │   docs/memory/*.md（项目级长期 memory，跨工具共享）              │
-│   docs/harness/knowledge/（5-domain 项目知识）                   │
+│   docs/harness/knowledge/（项目知识，按需 scan 沉淀，不预设 domain）│
 │   .harness-profile（YAML marker，project profile 标记）          │
 │   .harness-status.json（doctor / managed-files 状态快照）        │
 ├─────────────────────────────────────────────────────────────────┤
@@ -179,7 +179,7 @@
 | 7 | `autonomy.md` | 用户介入边界（什么决策必须用户签字）|
 | 8 | `drift.md` | managed file 漂移检测（doctor / maintain）|
 | 9 | `memory.md` | 三层 memory 写入权限（docs/memory 必需、状态文件必需、claude-mem optional）|
-| 10 | `knowledge.md` | Stage -0.5 知识检索 + 5-domain 扫描 |
+| 10 | `knowledge.md` | Stage -0.5 知识检索 + 按需 detector 扫描（不预设 domain）|
 | 11 | `reviewer-gates.md` | 4 硬门：Grounding / Reproduction / Coverage / Knowledge |
 | 12 | `phase-init.md` | init / adopt / maintain 三阶段契约 |
 | 13 | `hooks.md` | Stop Hook 自适应阈值（按 task_type 调整 context 警告点）|
@@ -198,7 +198,7 @@
 | `harness adopt [path]` | 现有项目接入（保留用户改过的文件）| 同上但走 four-state policy |
 | `harness doctor [--json]` | 诊断当前接入状态 | exit 0=健康；1=warn；2=error；JSON 详细输出 |
 | `harness maintain [--upgrade]` | 漂移报告 + 可促升 learnings 提醒 | drift list；`--upgrade` 重应用 templates |
-| `harness scan [--json]` | 5-domain 项目知识扫描入口 | pipeline plan；AI 走 harness-feature Stage -0.5 |
+| `harness scan [--json]` | 项目知识扫描入口（按 detector 探测，无证据 → 0 domain）| pipeline plan；AI 走 harness-feature Stage -0.5 |
 | `harness install [--doctor]` | 用户级 setup（profiles + hook + skill symlinks）| 默认 check + auto-fix |
 | `harness profile-bootstrap <slug>` | 派生 company profile | 写 `~/.claude/profiles/company-<slug>.yml` + repo `.harness-profile` |
 | `harness profile-resolve [--json]` | 解析当前项目 profile（marker → matcher → precedence）| route 决策的第 0 步 |

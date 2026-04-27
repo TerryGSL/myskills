@@ -46,15 +46,28 @@ manifest 超 140 行 → 按 confidence + 影响范围挤掉 low-priority rule�
 
 ## 5-Domain 模型
 
+> **2026-04-28 更新**：spec 1 设计的 5-domain 模型仍是 scanner subagent 的内部
+> 探测维度，但用户反馈"init 别预塞特定 domain placeholder"已落实：
+>   - `harness init` **不再**预创建任何 domain 子目录（仅创建 `_example/` 通用骨架）
+>   - `harness scan --json` 在 detector 无证据时**不再**返回空 domain placeholder
+>   - 用户跑 scan 后 manifest 只含真实有 evidence 的 domain
+>
+> 下面表格描述的是 **scanner subagent 探测时的内部维度**（spec 1 设计），不是
+> init 时预塞的目录列表。后续 spec 1 v2 可能重写为"动态 domain detection"。
+
 | Domain | 触发激活 | 内容 |
 |--------|---------|------|
-| `style-and-structure` | **总是激活** | 命名 / 模块组织 / 文件布局 |
-| `internal-components` | **总是激活** | 内部 wrapper / DI / helper |
+| `style-and-structure` | **总是激活**（探测命名 / 模块）| 命名 / 模块组织 / 文件布局 |
+| `internal-components` | **总是激活**（探测内部 wrapper）| 内部 wrapper / DI / helper |
 | `exception-and-error-contracts` | 探测到异常体系 | 异常类型 / 错误码 / Result wrapper |
 | `integrations-and-sdk-usage` | 探测到 SDK / HTTP client / Feign | timeout / retry / auth pattern |
 | `i18n-and-text-boundaries` | 探测到 resource bundles | 文案外置 / locale 注入 |
 
 固定激活 domain 不经 signal 探测；其余 3 个按 scout 信号决定。
+
+> 注意：spec 1 这套 5-domain（business 维度）与 `packages/harness-cli/src/utils/
+> knowledge-scanner.ts` 的 5 detector（`api / db / business-rules / config /
+> deployment` 工程维度）**是两套不同的 5-domain**，spec 漂移待统一。
 
 ## Manifest / Evidence / Gaps 结构
 
