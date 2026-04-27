@@ -34,16 +34,23 @@ Skill(<skill-name>) try → 成功 = 继续；失败（not found）= degraded �
 例：company-feature Stage 1 希望 invoke `meituan-java-standards`，不存在 → try `java-standards`。
 都不存在 → Strategy B。
 
-### Strategy B：Bundled reference 保底
+### Strategy B：手动启用的本地 manifest 保底
 
-已经投到 target repo 的 `docs/harness/knowledge/style-and-structure/manifest.md`（init 时 from `references/java-rules.md` seed）作为最后手段：
+读 `docs/harness/knowledge/style-and-structure/manifest.md` 作为最后手段。
+
+> **2026-04-28 改动**：init 不再自动 seed `references/java-rules.md` 到该 manifest
+> （用户反馈"init 别 seed 业务规则"）。用户需要本 strategy 时按以下任一路径手动启用：
+>   - 跑 `harness scan` 让 scanner 探测项目 java 模式后自动写入 manifest
+>   - 手动复制 `presets/company-mt/references/java-rules.md` 内容到 manifest（参考它的格式）
+>   - 复制 `_example/manifest.md.example` 重命名为 `style-and-structure/manifest.md` 后填规则
 
 ```
 [degraded] meituan-java-standards + java-standards 都不可用
-→ 读 docs/harness/knowledge/style-and-structure/manifest.md 的 5 条 bundled rules
-→ 按这些 rule 审查（覆盖能力有限）
+→ 检查 docs/harness/knowledge/style-and-structure/manifest.md
+   ├─ 存在（用户已 enable） → 读其中规则审查（覆盖能力有限）
+   └─ 不存在 → 进 Strategy C
 → 在 .harness/learnings/ERRORS.md 追加 entry "company-mt degraded: Java 深度约定不可用"
-→ 显式输出给用户: "company-mt degraded: skipping deep Java convention check"
+→ 显式输出给用户: "company-mt degraded: skipping deep Java convention check（建议手动 enable manifest）"
 ```
 
 ### Strategy C：跳过 + 记高优先级 learnings

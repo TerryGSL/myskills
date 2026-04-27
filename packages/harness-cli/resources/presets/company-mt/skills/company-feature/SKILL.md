@@ -23,8 +23,15 @@ team-architect invoke **之前**，额外调用：
 Skill(java-standards) → 若无 → Skill(meituan-java-standards) → 都无 → degraded Strategy B
 ```
 
-Strategy B：读 `docs/harness/knowledge/style-and-structure/manifest.md`（init 时从
-`../../references/java-rules.md` seed 投放的 5 条基础 rule）作保底。
+Strategy B：读 `docs/harness/knowledge/style-and-structure/manifest.md` 作保底。
+
+> **2026-04-28 改动**：init 不再自动 seed `java-rules.md` 到该 manifest（用户反馈
+> "init 别 seed 业务规则"）。用户需要这条保底时按以下任一路径手动启用：
+>   - 跑 `harness scan` 让 scanner 探测项目 java 模式后自动写入 manifest
+>   - 手动复制 `presets/company-mt/references/java-rules.md` 到 manifest（参考它的格式）
+>   - 复制 `_example/manifest.md.example` 重命名为 `style-and-structure/manifest.md` 后填规则
+>
+> 若文件不存在 → 直接进入 Strategy C / 或要求用户先 enable。
 
 **Degraded 明示**：在回复第一段输出："company-mt degraded: Java 深度约定不可用"。
 
