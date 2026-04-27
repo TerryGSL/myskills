@@ -13,7 +13,7 @@ function tmpProject(): string {
 }
 
 describe('harness scan --json (PR C2 — 5-domain manifest)', () => {
-  it('emits all 5 domains conforming to schema (no init required)', () => {
+  it('empty project → 0 domains（不假塞 placeholder，no init required）', () => {
     const root = tmpProject();
     try {
       const r = runScan({ projectRoot: root, json: true });
@@ -21,7 +21,8 @@ describe('harness scan --json (PR C2 — 5-domain manifest)', () => {
       expect(r.action).toBe('json-manifest');
       expect(r.knowledge).toBeDefined();
       const k = r.knowledge!;
-      expect(k.domains.map((d) => d.domain)).toEqual(KNOWLEDGE_DOMAINS);
+      // 用户反馈"我没说就别塞" — empty project 跑 detector 没证据 → 不 emit domain
+      expect(k.domains).toEqual([]);
       expect(k.project_root).toBe(root);
       expect(typeof k.scanned_at).toBe('string');
       // No scan-request.json should be written in JSON mode
@@ -49,7 +50,7 @@ describe('harness scan --json (PR C2 — 5-domain manifest)', () => {
     }
   });
 
-  it('comma-separated --domain narrows the scan', () => {
+  it('comma-separated --domain narrows scope; 空项目仍 0 domain（不假塞）', () => {
     const root = tmpProject();
     try {
       const r = runScan({
@@ -58,8 +59,8 @@ describe('harness scan --json (PR C2 — 5-domain manifest)', () => {
         domain: 'api,deployment',
       });
       expect(r.exitCode).toBe(0);
-      const names = r.knowledge!.domains.map((d) => d.domain).sort();
-      expect(names).toEqual(['api', 'deployment']);
+      // 空项目即使指定 --domain，detector 找不到证据 → 不 emit
+      expect(r.knowledge!.domains).toEqual([]);
     } finally {
       fs.removeSync(root);
     }
@@ -90,7 +91,9 @@ describe('harness scan --json (PR C2 — 5-domain manifest)', () => {
       const j = runScan({ projectRoot: root, json: true });
       expect(j.exitCode).toBe(0);
       expect(j.action).toBe('json-manifest');
-      expect(j.knowledge!.domains.length).toBe(5);
+      // init 后 docs/memory 等存在但代码层面没 api/db/deployment evidence
+      // → detector 无证据 → 0 domain（不假塞）
+      expect(j.knowledge!.domains.length).toBe(0);
     } finally {
       fs.removeSync(root);
     }

@@ -470,9 +470,12 @@ const SCANNERS: Record<
 
 export function scanKnowledge(
   projectRoot: string,
-  options: { domains?: KnowledgeDomain[] } = {},
+  options: { domains?: KnowledgeDomain[]; includeEmpty?: boolean } = {},
 ): KnowledgeScanResult {
   const list = options.domains?.length ? options.domains : KNOWLEDGE_DOMAINS;
+  // includeEmpty=true 保留空 domain（向后兼容老调用方 / 测试）；
+  // 默认 false：跑过 detector 后没探测到证据的 domain 不进 result（不"假塞"空 placeholder）
+  const includeEmpty = Boolean(options.includeEmpty);
 
   const items: KnowledgeDomainItem[] = [];
   const summary = {} as Record<KnowledgeDomain, string>;
@@ -482,7 +485,10 @@ export function scanKnowledge(
 
   for (const d of list) {
     const r = SCANNERS[d](projectRoot);
-    items.push(r.item);
+    const hasEvidence = r.item.rules.length > 0 || r.item.examples.length > 0;
+    if (includeEmpty || hasEvidence) {
+      items.push(r.item);
+    }
     summary[d] = r.summary;
   }
 

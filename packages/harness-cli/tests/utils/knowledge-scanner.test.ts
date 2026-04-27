@@ -43,19 +43,29 @@ function getDomain(
 }
 
 describe('knowledge-scanner — 5-domain manifest', () => {
-  it('returns all 5 domains in canonical order on an empty project', () => {
+  it('returns 0 domains on empty project (default 不假塞 placeholder)', () => {
     const root = tmpProject();
     try {
       const r = scanKnowledge(root);
-      expect(r.domains.map((d) => d.domain)).toEqual(KNOWLEDGE_DOMAINS);
+      // 用户反馈"我没说就别塞" — empty project 跑 detector 没证据 → 不 emit domain
+      expect(r.domains).toEqual([]);
       expect(typeof r.scanned_at).toBe('string');
       expect(r.project_root).toBe(root);
-      // Each domain item must validate against the schema
+    } finally {
+      fs.removeSync(root);
+    }
+  });
+
+  it('includeEmpty: true 保留 5 domain placeholder（向后兼容）', () => {
+    const root = tmpProject();
+    try {
+      const r = scanKnowledge(root, { includeEmpty: true });
+      expect(r.domains.map((d) => d.domain)).toEqual(KNOWLEDGE_DOMAINS);
+      // schema 校验
       for (const item of r.domains as KnowledgeDomainItem[]) {
         const domainName = item.domain;
         const ok = validate(item);
         if (!ok) {
-          // Surface ajv errors for easier debugging
           throw new Error(
             `schema invalid for ${domainName}: ${JSON.stringify(validate.errors)}`,
           );
@@ -187,12 +197,15 @@ export const policy = { allow: () => true };
     }
   });
 
-  it('respects domain filter (subset)', () => {
+  it('respects domain filter (subset) — empty project 0 domain，includeEmpty 才返回 filter list', () => {
     const root = tmpProject();
     try {
+      // 默认行为：空项目 detector 无证据 → 不 emit
       const r = scanKnowledge(root, { domains: ['api', 'db'] });
-      // Filter only narrows which scanners run; emitted items match.
-      expect(r.domains.map((d) => d.domain).sort()).toEqual(['api', 'db']);
+      expect(r.domains).toEqual([]);
+      // includeEmpty=true 行为：filter 后保留 placeholder
+      const r2 = scanKnowledge(root, { domains: ['api', 'db'], includeEmpty: true });
+      expect(r2.domains.map((d) => d.domain).sort()).toEqual(['api', 'db']);
     } finally {
       fs.removeSync(root);
     }
