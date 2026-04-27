@@ -159,30 +159,54 @@ function planFiles(input: InitInput, info: ReturnType<typeof detectProject>): Te
 }
 
 /**
- * Generic knowledge example scaffold.
+ * Knowledge domain scaffold (5 通用 domain + 1 自定义参考)。
  *
- * 设计原则（用户反馈：「目录可以建，文件可以建，但别先塞具体规则／具体内容；
- * 真规则要走 `harness scan` 扫描仓库后沉淀」）：
- *   - **不再**硬编码 5 个特定 domain（i18n / internal-components / 等）
- *     —— 那些是用户没说要的具体业务 placeholder
- *   - **改为**创建 1 个通用 `_example/` 骨架（manifest / evidence / gaps 三个
- *     `.md.example` 文件），仅含格式注释 + frontmatter 模板，**不含任何具体规则**
- *   - 真规则由 `harness scan` 扫描代码仓库后**自动沉淀**到真实 domain 目录
+ * 设计原则：通用目录骨架在 init 时创建好（domain 名 + 激活条件 + 空 RULES_BLOCK），
+ * 不预塞具体规则内容。真规则由 `harness scan` 扫描代码仓库后填入 RULES_BLOCK。
  *
- * 用户后续配置流程：
- *   1. 跑 `harness scan` 让 scanner 探测真实 domain（按项目代码结构）
- *   2. scanner 自动创建 `docs/harness/knowledge/<real-domain>/{manifest,evidence,gaps}.md`
- *   3. `_example/` 仍保留，作为格式参考（用户手动写 manifest 时对照）
+ * 创建：
+ *   - 5 个通用工程维度 domain（spec 1）：style-and-structure / internal-components /
+ *     exception-and-error-contracts / integrations-and-sdk-usage / i18n-and-text-boundaries
+ *   - 1 个 `_example/` 通用模板，用户加自定义 domain 时复制重命名
+ *
+ * 模板内容：
+ *   - frontmatter（含 status / applies_to / 激活条件）
+ *   - domain 标题 + 激活条件描述（不含具体规则）
+ *   - 空 RULES_BLOCK placeholder 等 scanner 填入
  */
 function knowledgeDomainSpecs(vars: Record<string, string>): TemplateSpec[] {
+  const domains = [
+    'style-and-structure',
+    'internal-components',
+    'exception-and-error-contracts',
+    'integrations-and-sdk-usage',
+    'i18n-and-text-boundaries',
+  ];
   const files = ['manifest', 'evidence', 'gaps'];
-  return files.map((f) => ({
-    sourceRelative: `templates/knowledge/_example/${f}.md.template`,
-    targetRelative: `docs/harness/knowledge/_example/${f}.md.example`,
-    category: 'knowledge',
-    renderVars: vars,
-    asTemplate: true,
-  }));
+  const out: TemplateSpec[] = [];
+  // 5 个通用 domain（init 时创建空骨架）
+  for (const d of domains) {
+    for (const f of files) {
+      out.push({
+        sourceRelative: `templates/knowledge/${d}/${f}.md.template`,
+        targetRelative: `docs/harness/knowledge/${d}/${f}.md`,
+        category: 'knowledge',
+        renderVars: vars,
+        asTemplate: true,
+      });
+    }
+  }
+  // _example 通用模板（用户加自定义 domain 时参考）
+  for (const f of files) {
+    out.push({
+      sourceRelative: `templates/knowledge/_example/${f}.md.template`,
+      targetRelative: `docs/harness/knowledge/_example/${f}.md.example`,
+      category: 'knowledge',
+      renderVars: vars,
+      asTemplate: true,
+    });
+  }
+  return out;
 }
 
 /**

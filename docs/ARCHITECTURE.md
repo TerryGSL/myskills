@@ -36,7 +36,7 @@
 ├─────────────────────────────────────────────────────────────────┤
 │ Layer 1 — 持久化文件契约（数据层，git 跟踪）                     │
 │   docs/memory/*.md（项目级长期 memory，跨工具共享）              │
-│   docs/harness/knowledge/（项目知识，按需 scan 沉淀，不预设 domain）│
+│   docs/harness/knowledge/（5 通用 domain 骨架，scan 沉淀规则内容）  │
 │   .harness-profile（YAML marker，project profile 标记）          │
 │   .harness-status.json（doctor / managed-files 状态快照）        │
 ├─────────────────────────────────────────────────────────────────┤
@@ -179,7 +179,7 @@
 | 7 | `autonomy.md` | 用户介入边界（什么决策必须用户签字）|
 | 8 | `drift.md` | managed file 漂移检测（doctor / maintain）|
 | 9 | `memory.md` | 三层 memory 写入权限（docs/memory 必需、状态文件必需、claude-mem optional）|
-| 10 | `knowledge.md` | Stage -0.5 知识检索 + 按需 detector 扫描（不预设 domain）|
+| 10 | `knowledge.md` | Stage -0.5 知识检索 + 5 通用 domain 骨架 + scan 探测内容 |
 | 11 | `reviewer-gates.md` | 4 硬门：Grounding / Reproduction / Coverage / Knowledge |
 | 12 | `phase-init.md` | init / adopt / maintain 三阶段契约 |
 | 13 | `hooks.md` | Stop Hook 自适应阈值（按 task_type 调整 context 警告点）|

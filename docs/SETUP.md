@@ -490,52 +490,48 @@ done
 - **hook 是强制提醒，不是路由器**：路由真正的逻辑在 `harness route` CLI 或 `profile-entry` markdown，hook 只是把规则刷进 AI 的 context
 - **AGENTS.md 是 Codex 的主要保险**：因为 Codex 不读 home-level AGENTS.md，每个项目的 cwd 都要有 AGENTS.md（symlink 方案 A 最省事）。即使 hook stdout 不注入 model context，AGENTS.md 也保证规则被加载
 
-## 9.8 Round 5 — Init 最小化 + Scanner 不假塞 placeholder（2026-04-28）
+## 9.8 Init / Scanner — 不预塞业务规则（2026-04-28）
 
-用户反馈："`harness init` 在公司项目里塞了一堆奇怪的目录（i18n / internal-components 等），都是我没说的内容。目录可以建、文件骨架可以建，但**别先塞硬规则、具体业务内容**。真规则要走 `harness scan` 扫描后沉淀"。
+用户反馈："`harness init` 在公司项目里塞了 `harness_approval_flow.md` / `harness_i18n_boundaries.md` 这种**具体业务规则**。目录可以建、文件骨架可以建，但**别先塞硬规则**。真规则走 `harness scan` 扫描后沉淀。"
 
-### 改动
+### init 行为
 
-**A. `harness init` 不再 seed 业务规则**（commit `ba3a3f8`）
+- 5 个**通用工程维度** domain 子目录预创建（spec 1 设计）：
+  `style-and-structure / internal-components / exception-and-error-contracts /
+  integrations-and-sdk-usage / i18n-and-text-boundaries`
+- 每个 domain 的 manifest / evidence / gaps **空骨架**：仅含 frontmatter + domain
+  名 + 激活条件描述 + 空 RULES_BLOCK（待 scan 填）
+- 加一个 `_example/` 通用模板，用户加自定义 domain 时复制重命名
+- **不再** seed company-mt 的 4 个业务规则文件（java-rules / approval-flow /
+  enterprise-sdk / i18n.md）。仅 seed 4 个 overlay skill SKILL.md
 
-- `init.ts knowledgeDomainSpecs()`：删 5 个硬编码 domain（i18n-and-text-boundaries / internal-components / etc）。改为 1 个通用 `_example/{manifest,evidence,gaps}.md.example` 骨架。
-- `init.ts companyMtPresetSpecs()`：删 4 个 reference seeds（java-rules → manifest / approval-flow → constraints / 等）。仅保留 4 个 overlay skill SKILL.md（skill 骨架非业务规则）。
-- 模板内容：`_example/*.md.template` 仅含 frontmatter + 注释 + Rules block placeholder，**无具体业务规则**。明示「真规则由 `harness scan` 自动沉淀」。
+### Scanner 行为
 
-**B. `scanKnowledge` 默认不假塞空 placeholder**（commit `6925901`）
-
-- empty project 跑 `harness scan --json` → `domains: []`（之前 5 个空 placeholder）
-- detector 探测无证据 → 不 emit 该 domain
+- `harness scan --json` 在 detector 探测无证据时**不假塞**空 domain placeholder
+- empty project → `domains: []`
 - 加 `includeEmpty: true` 选项保持向后兼容
 
-**C. company-mt preset 文档同步**（commit `2426359`）
+### company-mt preset 文档
 
-- `company-feature/SKILL.md` Strategy B：删"init 时 from java-rules.md seed"假设，改为"按需手动 enable（scan / 复制 / 改名 _example）"
-- `degraded-fallback.md` Strategy B：标题改为"手动启用的本地 manifest 保底"，加分支"manifest 不存在 → 进 Strategy C"
+- `company-feature/SKILL.md` Strategy B：manifest 由 scan 沉淀或用户参考
+  `references/java-rules.md` 格式手写；缺失 → 进 Strategy C
+- `degraded-fallback.md` Strategy B：同上语义，移除"init seed"假设
 
-### 实证
+### 设计哲学
 
-- jest 169/169 PASS（新增 includeEmpty 测试）
-- 实测 `harness init` 仅生成通用骨架（docs/memory/{cases,decisions,constraints,archive}/.gitkeep + INDEX.md / TODO.md / `_example/` + 入口文件）
-- 实测 `harness scan --json` 在空项目 → `{domains: []}`
-
-### Codex 4 round audit 全部闭环
-
-| Q | 验证 |
-|---|------|
-| Q1 init 行为正确 | ✅ |
-| Q2 _example 不被误读 | ✅ status: example + 充分注释 |
-| Q3 company-feature/SKILL.md 同步 | ✅ |
-| Q4 scanner 不假塞 | ✅ default 0 / includeEmpty=true 兼容 |
-| Q5 degraded-fallback.md 同步 | ✅ |
+| 层 | 谁负责 |
+|----|------|
+| 通用目录骨架 | `harness init` 一次创建（5 domain + `_example/`）|
+| 具体规则内容 | `harness scan` 探测代码后沉淀到 RULES_BLOCK |
+| 业务规则参考 | `presets/<preset>/references/*.md`（用户主动读，不自动 seed）|
 
 ### Follow-up（spec 1 重写）
 
-未改 — 待 `docs/superpowers/specs/2026-04-23-project-knowledge-scanner-design.md` 改写"动态 domain detection"语义后再同步：
+待 `docs/superpowers/specs/2026-04-23-project-knowledge-scanner-design.md` 改写
+"动态 domain detection" 语义后系统性同步：
 
-- `harness-feature/prompts/scanner-prompts.md`（subagent prompt 仍按硬编码 5 domain 写）
-- `harness-common/contracts/knowledge.md`（contract 表 L51-55 列 5 个 hardcoded domain 激活条件）
-- `strict-reviewer/SKILL.md` 教学示例（仍引用 style-and-structure / internal-components）
+- `harness-feature/prompts/scanner-prompts.md` subagent prompts
+- `strict-reviewer/SKILL.md` 教学示例
 
 > 这些是 scanner pipeline 内部 prompt + 教学示例，改了会破坏现有 Stage -0.5 subagent 流程，需 spec 1 v2 重写后系统性同步。
 
