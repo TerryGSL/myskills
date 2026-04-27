@@ -1,0 +1,44 @@
+---
+domain: <YOUR_DOMAIN_NAME>
+snapshot_id: "{{snapshot_id}}"
+last_verified: "{{last_verified}}"
+status: example
+---
+
+# <Your Domain Name> — Gaps
+
+> ⚠️ **本文件是格式示例（_example），不是真实 gaps 记录。**
+>
+> 真实 gaps 由 `harness scan` 扫描代码仓库后**自动沉淀** ——
+> scanner 探测到"代码中模式不一致 / 局部违反 manifest 中规则 / 待确认的边界
+> case"时，记录到对应 domain 的 gaps.md，等待人工 review 决策。
+>
+> 你**不应**手写具体内容到本文件。
+
+## Format（每条 gap 的字段）
+
+scanner 写入格式（**仅格式示例，非真实数据**）：
+
+```yaml
+- gap_id: <unique-id>
+  rule_id: <referenced rule id from manifest.md, or null>
+  description: <一句话描述差异 / 不一致点>
+  files: [<file:line list>]
+  scan_round: <round-id>
+  status: pending | resolved | dismissed
+  resolution: <人工填，决策后填入>
+```
+
+## Status 字段语义
+
+- `pending`：新发现，等人决策
+- `resolved`：决策为"补 rule" / "改代码" / "改 evidence"，已处理
+- `dismissed`：决策为"误报 / 不修"，归档
+
+## Gaps Block
+
+<!-- harness scan 注入位置 -->
+
+<!-- GAPS_BLOCK_START -->
+{{gaps_block}}
+<!-- GAPS_BLOCK_END -->

@@ -1,0 +1,61 @@
+---
+domain: <YOUR_DOMAIN_NAME>
+snapshot_id: "{{snapshot_id}}"
+applies_to:
+  paths: []
+last_verified: "{{last_verified}}"
+status: example
+---
+
+# <Your Domain Name> — Rules
+
+> ⚠️ **本文件是格式示例（_example），不是真实 manifest。**
+>
+> 真实 manifest 由 `harness scan` 扫描代码仓库后**自动沉淀**生成 ——
+> scanner 探测项目实际模式（业务模块边界 / 框架使用 / 错误处理风格 / 等）后，
+> 在 `docs/harness/knowledge/<real-domain>/` 下创建对应的 manifest.md。
+>
+> 你**不应**手写具体规则到本文件。本文件存在的目的：
+>   1. 让你知道 manifest 的格式（frontmatter + Rules block + Active 范围）
+>   2. 让你跑 `harness scan` 时 scanner 知道该按什么模板生成
+>
+> **使用方式：**
+> - 真规则 → `harness scan` 自动写入 real domain 目录
+> - 想手动写 → 复制本目录到 `docs/harness/knowledge/<real-domain>/`，
+>   重命名 `.md.example → .md`，改 frontmatter `status: example → active`，
+>   然后填实际规则
+
+## Active 范围（applies_to.paths）
+
+由 scanner 探测的 glob 列表填入，决定该 domain 的规则在哪些文件触发审查。
+
+例如（**仅格式示例，非真实规则**）：
+- 后端项目：`["server/**/*.ts", "api/**/*.py"]`
+- 前端项目：`["src/components/**/*.tsx", "src/hooks/**/*.ts"]`
+- 你的项目：scanner 读完代码后写入
+
+## Rules
+
+仅 `Status: active` 的 rule 进入 Stage -0.5 的 Binding Rules（reviewer 违反则 FAIL）。
+
+<!-- harness scan 会按此格式注入规则，每条 ≤ 3 行：
+
+- rule_id: <unique-id>
+  description: <一句话规则描述>
+  evidence: <file:line refs 列表>
+  status: active   # active | proposed | deprecated | example
+  rationale: <为什么是这条规则，from scan 推断>
+
+-->
+
+<!-- RULES_BLOCK_START -->
+{{rules_block}}
+<!-- RULES_BLOCK_END -->
+
+## 失活（deprecated）规则
+
+scanner 探测到现有规则不再被遵守 / 已被新规则替代时，会移到此区块（保留历史，
+但不再用于审查）。
+
+<!-- DEPRECATED_RULES_BLOCK_START -->
+<!-- DEPRECATED_RULES_BLOCK_END -->

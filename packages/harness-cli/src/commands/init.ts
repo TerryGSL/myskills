@@ -159,80 +159,54 @@ function planFiles(input: InitInput, info: ReturnType<typeof detectProject>): Te
 }
 
 /**
- * 5-domain knowledge scaffolds (per Spec 1 §knowledge structure).
- * 5 domains × 3 files (manifest / evidence / gaps) = 15 specs.
+ * Generic knowledge example scaffold.
+ *
+ * 设计原则（用户反馈：「目录可以建，文件可以建，但别先塞具体规则／具体内容；
+ * 真规则要走 `harness scan` 扫描仓库后沉淀」）：
+ *   - **不再**硬编码 5 个特定 domain（i18n / internal-components / 等）
+ *     —— 那些是用户没说要的具体业务 placeholder
+ *   - **改为**创建 1 个通用 `_example/` 骨架（manifest / evidence / gaps 三个
+ *     `.md.example` 文件），仅含格式注释 + frontmatter 模板，**不含任何具体规则**
+ *   - 真规则由 `harness scan` 扫描代码仓库后**自动沉淀**到真实 domain 目录
+ *
+ * 用户后续配置流程：
+ *   1. 跑 `harness scan` 让 scanner 探测真实 domain（按项目代码结构）
+ *   2. scanner 自动创建 `docs/harness/knowledge/<real-domain>/{manifest,evidence,gaps}.md`
+ *   3. `_example/` 仍保留，作为格式参考（用户手动写 manifest 时对照）
  */
 function knowledgeDomainSpecs(vars: Record<string, string>): TemplateSpec[] {
-  const domains = [
-    'style-and-structure',
-    'internal-components',
-    'exception-and-error-contracts',
-    'integrations-and-sdk-usage',
-    'i18n-and-text-boundaries',
-  ];
   const files = ['manifest', 'evidence', 'gaps'];
-  const out: TemplateSpec[] = [];
-  for (const d of domains) {
-    for (const f of files) {
-      out.push({
-        sourceRelative: `templates/knowledge/${d}/${f}.md.template`,
-        targetRelative: `docs/harness/knowledge/${d}/${f}.md`,
-        category: 'knowledge',
-        renderVars: vars,
-        asTemplate: true,
-      });
-    }
-  }
-  return out;
+  return files.map((f) => ({
+    sourceRelative: `templates/knowledge/_example/${f}.md.template`,
+    targetRelative: `docs/harness/knowledge/_example/${f}.md.example`,
+    category: 'knowledge',
+    renderVars: vars,
+    asTemplate: true,
+  }));
 }
 
 /**
- * company-mt preset specs: 4 overlay skill SKILL.md to .claude/skills/ + 4 reference seeds
- * to docs/harness/knowledge/ + docs/memory/constraints/ per spec §7.2-§7.3.
+ * company-mt preset specs.
+ *
+ * 设计原则（用户反馈：「init 不要 seed 具体业务规则」）：
+ *   - **保留** 4 个 overlay skill SKILL.md（这是 skill 骨架，非业务规则）
+ *   - **不再** seed 4 个 reference 文件到 manifest.md / constraints/
+ *     （java-rules / approval-flow / enterprise-sdk / i18n 都是 company 业务规则，
+ *     用户没说要直接 seed 不该硬塞）
+ *
+ * 用户需要这些规则时的流程：
+ *   1. 读 `presets/company-mt/references/{java-rules,approval-flow,...}.md` 作为参考
+ *   2. 决定是否将其规则迁移到自己的 manifest.md（手动复制 + 改写）
+ *   3. 或者跑 `harness scan` 让 scanner 重新探测真实项目结构后沉淀规则
  */
-function companyMtPresetSpecs(vars: Record<string, string>): TemplateSpec[] {
+function companyMtPresetSpecs(_vars: Record<string, string>): TemplateSpec[] {
   const overlaySkills = ['company-quick', 'company-bugfix', 'company-feature', 'company-refactor'];
-  const specs: TemplateSpec[] = [];
-  for (const s of overlaySkills) {
-    specs.push({
-      sourceRelative: `presets/company-mt/skills/${s}/SKILL.md`,
-      targetRelative: `.claude/skills/${s}/SKILL.md`,
-      category: 'skills',
-      asTemplate: false,
-    });
-  }
-  // Reference seeds → target repo's knowledge/memory trees
-  specs.push(
-    {
-      sourceRelative: 'presets/company-mt/references/java-rules.md',
-      targetRelative: 'docs/harness/knowledge/style-and-structure/manifest.md',
-      category: 'knowledge',
-      renderVars: vars,
-      asTemplate: true,
-    },
-    {
-      sourceRelative: 'presets/company-mt/references/enterprise-sdk.md',
-      targetRelative: 'docs/harness/knowledge/integrations-and-sdk-usage/manifest.md',
-      category: 'knowledge',
-      renderVars: vars,
-      asTemplate: true,
-    },
-    {
-      sourceRelative: 'presets/company-mt/references/approval-flow.md',
-      targetRelative: 'docs/memory/constraints/harness_approval_flow.md',
-      category: 'memory',
-      renderVars: vars,
-      asTemplate: true,
-    },
-    {
-      sourceRelative: 'presets/company-mt/references/i18n.md',
-      targetRelative: 'docs/memory/constraints/harness_i18n_boundaries.md',
-      category: 'memory',
-      renderVars: vars,
-      asTemplate: true,
-    },
-  );
-  return specs;
+  return overlaySkills.map((s) => ({
+    sourceRelative: `presets/company-mt/skills/${s}/SKILL.md`,
+    targetRelative: `.claude/skills/${s}/SKILL.md`,
+    category: 'skills',
+    asTemplate: false,
+  }));
 }
 
 /**

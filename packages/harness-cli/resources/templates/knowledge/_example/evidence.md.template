@@ -1,0 +1,39 @@
+---
+domain: <YOUR_DOMAIN_NAME>
+snapshot_id: "{{snapshot_id}}"
+last_verified: "{{last_verified}}"
+status: example
+---
+
+# <Your Domain Name> — Evidence
+
+> ⚠️ **本文件是格式示例（_example），不是真实 evidence。**
+>
+> 真实 evidence 由 `harness scan` 扫描代码仓库后**自动沉淀** ——
+> scanner 在判定一条 rule（manifest.md 中的）时，把支持该 rule 的代码片段路径 +
+> 行号 + 一段简短引用记录到对应 domain 的 evidence.md。
+>
+> 你**不应**手写具体内容到本文件。
+
+## Format（每条 evidence 的字段）
+
+scanner 写入格式（**仅格式示例，非真实数据**）：
+
+```yaml
+- rule_id: <referenced rule id from manifest.md>
+  evidence_id: <unique-id>
+  file: <path/to/source/file>
+  lines: <start>-<end>
+  excerpt: |
+    <相关代码片段，≤ 5 行>
+  scan_round: <round-id>
+  confidence: high | medium | low
+```
+
+## Evidence Block
+
+<!-- harness scan 注入位置 -->
+
+<!-- EVIDENCE_BLOCK_START -->
+{{evidence_block}}
+<!-- EVIDENCE_BLOCK_END -->
