@@ -17,3 +17,7 @@ yt-search-download
 
 # Hoisted npm workspace deps (from root npm install — packages/* 里的依赖会被 hoist 到这里)
 node_modules/
+
+.harness/managed-files.json
+.harness/current.json
+.harness-context.json

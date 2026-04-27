@@ -1,0 +1,37 @@
+schema_version: "1.0.0"
+
+project:
+  name: "myskills"
+  type: "node"
+  root_fingerprint: "package.json:name=myskills"
+
+owned_paths:
+  - "docs/memory/.harness-memory.yml"
+  - "docs/memory/harness_reviewer_scorecard.yml"
+  - "docs/memory/MEMORY.md"
+  - "docs/memory/ERRORS.md"
+  - "docs/memory/cases/harness_*.md"
+  - "docs/memory/decisions/harness_*.md"
+  - "docs/memory/constraints/harness_*.md"
+  - "docs/memory/archive/harness_*.md"
+
+forbidden_paths:
+  - "docs/memory/private/**"
+  - "docs/memory/team-written/**"
+
+errors_collection:
+  min_criteria: 2
+  criteria:
+    - "diagnosis_over_30m"
+    - "cross_module"
+    - "repeated"
+    - "platform_specific"
+    - "user_visible"
+    - "invalidated_assumption"
+
+archive_policy:
+  hot_index_max_lines: 200
+  archive_after_days_unused: 180
+
+reviewer:
+  scorecard_path: "docs/memory/harness_reviewer_scorecard.yml"
