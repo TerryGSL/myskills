@@ -87,11 +87,16 @@ harness 是一套 profile-driven、四层分层的 AI 工程协作框架：核�
 
 ## 两种使用方式
 
+> **共同前提**：必须 `git clone myskills` 到本地。两种方式都用 symlink 把
+> `~/.claude/skills/<name>` 指向 `<myskills 仓库>/<name>/`（不"复制"内容）。
+> CLI 当前**未发布 npm registry**，必须本地 npm link。详见 [`docs/SETUP.md`](docs/SETUP.md) §0。
+
 ### 方式 A：`harness` npm CLI（工程化路线）
 
 ```bash
+git clone git@github.com:TerryGSL/myskills.git ~/myskills
 cd ~/myskills/packages/harness-cli && npm install && npm run build && npm link
-harness install            # 零问题 user-global setup
+harness install            # 零问题 user-global setup（symlink + profile + hook）
 harness doctor             # 验收
 ```
 

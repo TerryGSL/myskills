@@ -8,17 +8,33 @@
 
 ## 0. 前提
 
+> **必须 git clone myskills 仓库**（含 22+ skill 真实内容）+ **本地 npm link CLI 二进制**。
+> 当前 CLI **未发布到 npm public registry**，且即使发布后纯 `npm install -g` 也不含 skill 内容（symlink 设计决定）—— skill 内容在仓库顶层目录，CLI 用 symlink 透明指向。
+
 ```bash
-# clone 仓库
+# 1. clone 仓库（必需 — 含 22+ skill 真实内容）
 git clone git@github.com:TerryGSL/myskills.git ~/Music/myskills
 
-# 装 npm CLI（推荐）
+# 2. 装 npm CLI（推荐 — 本地 build + link）
 cd ~/Music/myskills/packages/harness-cli
 npm install && npm run build && npm link
 which harness   # → /usr/local/bin/harness
 ```
 
 无 npm 环境？走 [`docs/setup-without-cli.md`](setup-without-cli.md)（Tier-3 fallback，纯 bash）。
+
+### CLI 装的是 symlink，不是 skill 内容副本
+
+```
+~/.claude/skills/harness-feature  →  ~/Music/myskills/harness-feature/
+~/.claude/skills/task-dispatcher  →  ~/Music/myskills/task-dispatcher/
+（22+ 个 skill 全是 symlink，指向 myskills 仓库顶层）
+```
+
+效果：
+- ✅ `git pull myskills` 后 skill 内容自动更新（symlink 透明跟随）
+- ✅ 无需 `harness install` 重新 setup
+- ❌ 不能丢仓库 / 移仓库目录（symlink 会断）—— 移动后跑 `harness install` 重建 symlink
 
 ---
 

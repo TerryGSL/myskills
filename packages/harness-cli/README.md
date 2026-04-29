@@ -8,13 +8,31 @@ Provides deterministic file scaffolding and routing (init / adopt / maintain / d
 
 ## Install
 
-```bash
-# public registry
-npm install -g harness-workflow-cli
+> **当前状态**：CLI 未发布到 npm public registry。**必须 git clone myskills 仓库 + 本地 npm link**。
+>
+> 原因：CLI 用 symlink 把 skill 内容指向 `<myskills 仓库>/<skill-name>/`。仓库本体含 22+ 个 skill 顶层目录（不在 npm 包内）；只装 CLI 二进制不含 skill 内容，symlink 会指向不存在的目录。
 
-# or via npx (no global install)
-npx harness-workflow-cli doctor
+```bash
+# 1. clone myskills 仓库（必需 — 含 skill 真实内容）
+git clone git@github.com:TerryGSL/myskills.git ~/Music/myskills
+
+# 2. 本地 build + npm link CLI 二进制
+cd ~/Music/myskills/packages/harness-cli
+npm install
+npm run build
+npm link    # 把 harness 装到 /usr/local/bin/
+
+# 3. 验证 + 一键 setup（symlink skills + 注册 Stop hook + 写 profile YAML）
+harness doctor
+harness install    # check + auto-fix
 ```
+
+**未来发布到 npm 后**（roadmap）：将提供 `harness install --bootstrap` 自动 `git clone` myskills 到 `~/.harness/repo/` 缓存目录，纯 `npm install -g` 场景就能 work。当前**还没**实现，详见 README "Roadmap"（如有）。
+
+**为什么 CLI 不"自带" skill 内容？** 设计决定：
+- skill 是 markdown 文件，跨工具共享（Claude Code / Codex / Cursor 等）；不应绑死在 npm 包里
+- skill 经常更新，绑 npm publish 周期太重；git pull 即时同步更轻
+- CLI 自身（TypeScript 编译产物）才适合 npm 包发行
 
 ## Commands
 
