@@ -94,6 +94,7 @@ const SKILLS = [
   'team-commander',
   'investigate',
   'office-hours',
+  'judge-agent',
   'careful',
   'freeze',
   'guard',
