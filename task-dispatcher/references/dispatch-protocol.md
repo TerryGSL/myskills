@@ -54,3 +54,45 @@ Sub-agent **没有**本次对话的任何上下文。必须包含：
 2. tsc 结果（通过/失败）
 3. 遇到的任何问题
 ```
+
+---
+
+## 5. 模型选择 — 必须 Opus，不锁版本号
+
+调用 `Agent` 工具派 sub-agent 时，**必须**显式传 `model: "opus"` 参数，覆盖 sub-agent frontmatter 默认。
+
+写 `"opus"` 而不是 `"opus-4-7"` —— 不锁版本号，未来 Opus 5 出来不需要改 skill。
+
+### 为什么默认要覆盖
+
+主线 session 通常是 Opus（用户全局 settings.json 配 `"model": "opus[1m]"`），但 sub-agent 默认行为不一致：
+
+- `codex:codex-rescue` frontmatter 硬编码 `model: sonnet`（OpenAI plugin 默认走便宜模型）
+- `Explore` / `Plan` / `general-purpose` / `doc-writer` 等内置 agent 没声明 model，**默认 Sonnet**
+- 只有 `code-reviewer` 是 `model: inherit` 跟随父级
+
+不传 model 参数 = sub-agent 默认行为会落到 Sonnet，规划/审核质量受影响。
+
+### 好的写法
+
+```
+Agent({
+  description: "Codex review",
+  subagent_type: "codex:codex-rescue",
+  model: "opus",
+  prompt: "..."
+})
+```
+
+### 唯一上位覆盖
+
+用户明确指定其他模型（如"用 sonnet 跑快点""用 haiku 省 token"）。除此之外不留例外。
+
+### 运行时兜底
+
+如果运行时（如 Codex CLI、第三方 agent runtime）不支持 `model` 参数 → 改用平台默认模型，并在派发 prompt 里显式记录原因。
+
+### 辐射规则
+
+- task-dispatcher 派 sub-agent 时也要把 model 透传给每个子任务
+- harness-workflow 内部 invoke profile-entry → 叶子 skill 时如果起 sub-agent，同样

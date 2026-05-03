@@ -45,7 +45,7 @@ description: >
 做以下事情时，读对应的 reference 文件：
 
 - **判断「这个子任务该不该派发 / 派给哪种 agent」** → 读 `references/scale-heuristics.md`（派发规则表 + 规模直觉 + 批次划分原则）
-- **构造派发 prompt / agent briefing** → 读 `references/dispatch-protocol.md`（4 条派发要求 + Agent Prompt 模板）
+- **构造派发 prompt / agent briefing** → 读 `references/dispatch-protocol.md`（5 条派发要求 + Agent Prompt 模板）
 - **多 agent 并发结果汇总 / 验收 / 失败回退** → 读 `references/coordination-rules.md`（协调原则 + 质量保障 + 验收标准 + 回退协议）
 - **拿不准要不要并行 / 是否串行化** → 读 `references/decision-flow.md`（什么时候不并行 + 串行化红旗 + 决策流程图）
 - **看具体派发样例 / 学分解套路** → 读 `references/examples.md`（混合工作负载 / 多文件变更 / 不可并行 三个示例）
