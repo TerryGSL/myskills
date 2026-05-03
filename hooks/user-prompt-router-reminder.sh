@@ -18,17 +18,47 @@ if [[ "${HARNESS_REMINDER:-}" == "off" ]]; then
   exit 0
 fi
 
+IS_CODEX=0
+if [[ -n "${CODEX_THREAD_ID:-}" || -n "${CODEX_SHELL:-}" || -n "${CODEX_INTERNAL_ORIGINATOR_OVERRIDE:-}" ]]; then
+  IS_CODEX=1
+fi
+
+emit_context() {
+  local context="$1"
+
+  if [[ "${IS_CODEX}" -eq 1 ]]; then
+    # Codex UserPromptSubmit expects JSON matching user-prompt-submit.command.output:
+    # {"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"..."}}
+    python3 - "$context" <<'PY'
+import json
+import sys
+
+context = sys.argv[1]
+payload = {
+    "hookSpecificOutput": {
+        "hookEventName": "UserPromptSubmit",
+        "additionalContext": context,
+    }
+}
+print(json.dumps(payload, ensure_ascii=False))
+PY
+  else
+    printf '%s\n' "$context"
+  fi
+}
+
 # 读 stdin（UserPromptSubmit hook 输入：prompt + transcript_path）
 INPUT="$(cat)"
 if [[ -z "${INPUT}" ]]; then
   # 没有 input → fallback 注入完整版（保险）
-  cat <<'EOF'
+  emit_context "$(cat <<'EOF'
 [HARNESS-ROUTER] L0 评估子任务数 → ≥2 先 Skill(task-dispatcher) / 单任务进 L1。
 代码任务先 Skill(harness-workflow)；生命周期 `harness <cmd>`；纯查询直接答。
 PreToolUse 硬拦：Edit/Write 没 Skill(harness-workflow) → 阻；Agent 没 Skill(task-dispatcher) → 阻。
 
 主动用工具：跨 session 找历史 → mem-search；探索代码 → smart_search/smart_outline；多文件调研 → 派 Explore。
 EOF
+)"
   exit 0
 fi
 
@@ -85,7 +115,7 @@ fi
 
 if [[ ${LOOKS_LIKE_CODE_TASK} -eq 1 && ${RECENTLY_ROUTED} -eq 0 ]]; then
   # 完整版（约 200 tokens）— 像是新代码任务且最近没走路由
-  cat <<'EOF'
+  emit_context "$(cat <<'EOF'
 [HARNESS-ROUTER] 这条像代码任务 + 最近未走路由。L0 评估子任务数 → ≥2 先 Skill(task-dispatcher) / 单任务进 L1。
 代码任务先 Skill(harness-workflow)；生命周期 `harness <cmd>`；纯查询直接答。
 PreToolUse 硬拦：Edit/Write 没 Skill(harness-workflow) → 阻；Agent 没 Skill(task-dispatcher) → 阻。
@@ -94,15 +124,18 @@ PreToolUse 硬拦：Edit/Write 没 Skill(harness-workflow) → 阻；Agent 没 S
 扫代码 / 找符号 → 先 smart_search / smart_outline，再考虑 Read 全文。
 多文件调研 / web fetch → 派 Explore / general-purpose agent。
 EOF
+)"
 elif [[ ${LOOKS_LIKE_CODE_TASK} -eq 1 && ${RECENTLY_ROUTED} -eq 1 ]]; then
   # 轻量版（约 60 tokens）— 已在路由内，只提醒工具
-  cat <<'EOF'
+  emit_context "$(cat <<'EOF'
 [HARNESS-ROUTER] 仍在 harness 工作流内。继续主动用工具：mem-search 跨 session 历史 / smart_search 扫代码 / 派 sub-agent 处理独立任务。
 EOF
+)"
 else
   # 精简版（约 80 tokens）— 不像代码任务，只补主动用工具提醒（PreToolUse 不会触发）
-  cat <<'EOF'
+  emit_context "$(cat <<'EOF'
 [HARNESS-ROUTER] 看起来像查询/解释类。直接答即可，不进 L1 路由。
 但若涉及"上次怎么做" / 跨 session 找历史 → 先 mem-search；探索代码 → smart_search；多文件 → 派 Explore agent。
 EOF
+)"
 fi
