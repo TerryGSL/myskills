@@ -78,10 +78,16 @@ Stage -0.5 注入 `.harness-status.json.knowledgeCheck`（8 字段）给下游 S
 
 **6 flags 完整语义 + 5 处执法点 + 优先级表 + 用户 explicit 授权机制** → [`harness-common/contracts/hard-floor-enforcement.md`](../harness-common/contracts/hard-floor-enforcement.md)
 
-## Stage 8 Commit + Push 评估
+## Stage 8 Commit + Learnings + Push 评估
 
-commit 后调用 `harness push-check`；不可用时按 `harness-common/contracts/push-decision.md` 规则手算。
-Tier 3 fallback rules: see harness-init/SKILL.md#第二步
+- **Learnings observation（必做，default-on）**：`.harness/learnings/LEARNINGS.md` 追加一条 LRN（schema 见 `harness-common/contracts/memory.md` Layer C），含 Summary / Why / Related Files / Pattern-Key。
+  **跳过条件**（全部满足才允许跳）：纯 typo / 文档微调 / 用户明确说"不用记"。
+- **State 同步**：`.harness/current.json.updatedAt` 改为本 Round 完成时间 + `currentStage` 改为收尾态；`docs/STATE.json.lastUpdated` + `completedRounds` 追加本 Round 摘要。
+- **Case 升格（条件触发）**：本 Round 若属 incident/bug 升级，满足 `docs/memory/.harness-memory.yml.errors_collection.min_criteria` 阈值才写 `docs/memory/cases/harness_<date>_<slug>.md`；否则**禁止**写 case，只留 LRN。
+- **Commit**：Conventional Commits。commit 后调用 `harness push-check`；不可用时按 `harness-common/contracts/push-decision.md` 规则手算。
+  Tier 3 fallback rules: see harness-init/SKILL.md#第二步
+
+**沉淀 = Stage 8 硬要求**：commit 与 LRN 必须同一会话内完成，跨会话补登记入 escalations。
 
 ## Stage Prompt 模板
 

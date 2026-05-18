@@ -46,9 +46,12 @@ description: >
 2. **Reproduce** — 写失败测试（**硬要求**：必须 FAIL 才进 Step 3）
 3. **Fix** — 最小侵入，只让 Step 2 测试 PASS
 4. **Regression** — 全量测试 + `harness doctor`，都 PASS 才算 fix
-5. **Commit + Case entry + Push 评估**（满足 errors_collection.min_criteria 阈值才写 case）
-   commit 后调用 `harness push-check`；不可用时按 `harness-common/contracts/push-decision.md` 规则手算。
-   Tier 3 fallback rules: see harness-init/SKILL.md#第二步
+5. **Commit + Learnings + Case entry + Push 评估**
+   - **Learnings observation（必做，default-on）**：`.harness/learnings/LEARNINGS.md` 追加一条（schema 见 `harness-common/contracts/memory.md` Layer C），bug 根因 + 修复策略 + Pattern-Key 必填。
+     **跳过条件**（全部满足才允许跳）：纯 typo / 注释微调 / 用户明确说"不用记"。
+   - **Case 升格（条件触发）**：满足 `docs/memory/.harness-memory.yml.errors_collection.min_criteria` 阈值（默认 ≥2 个 criteria，如 `user_visible / invalidated_assumption / cross_module / repeated`）才写 `docs/memory/cases/harness_<date>_<slug>.md`。
+   - **Commit**：Conventional Commits，`fix(<scope>): <一句话>`。commit 后调用 `harness push-check`；不可用时按 `harness-common/contracts/push-decision.md` 规则手算。
+     Tier 3 fallback rules: see harness-init/SKILL.md#第二步
 
 **每步详细契约 + degraded fallback + 升级条件** → [references/five-step-tdd.md](references/five-step-tdd.md)
 

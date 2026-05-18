@@ -47,8 +47,26 @@ description: >
    commit 后调用 `harness push-check`；不可用时按 `harness-common/contracts/push-decision.md` 规则手算。
    Tier 3 fallback rules: see harness-init/SKILL.md#第二步
 
-5. **Learnings observation**（可选）
-   `.harness/learnings/LEARNINGS.md` 追加一条，仅当发现非平凡 insight。
+5. **Learnings observation**（**必做，default-on**）
+   `.harness/learnings/LEARNINGS.md` 追加一条 — 不管是否"非平凡"，本次 quick 任何 user feedback / 纠正 / 偏好都要落盘。3 行模板：
+
+   ```
+   ## [LRN-YYYYMMDD-NNN] <slug>
+   **Logged**: <ISO-8601>  **Status**: resolved
+   ### Summary
+   <一句话规则>
+   ### Why
+   <用户原话或纠正动机>
+   ### Related Files
+   <paths>
+   ```
+
+   **跳过条件**（必须满足**全部**才允许跳过）：
+   - 用户**未**给出任何反馈、纠正、偏好
+   - diff 是纯 typo / 格式化 / 注释微调（无规则可提）
+   - 用户明确说"这次不用记"
+
+   **写入失败不阻塞 commit**，但 Stop hook 会再次提示。
 
 ## Exit conditions（必须退回 feature path 的情况）
 
@@ -63,8 +81,8 @@ description: >
 - 不调 team-pd / team-architect / strict-reviewer（quick 不值得）
 - 不写 ADR
 - 不启动完整 Round
-- 项目级 memory 写入仅限 `.harness/learnings/LEARNINGS.md` append（Step 5 可选，非平凡 insight 才写）；不写 `docs/memory/decisions/` / `cases/`（quick 路径不达阈值）
-- 工具自带 cross-session 加速器（claude-mem observation / codex resume / cursor history）一律不触发（quick 路径不值得）
+- 项目级 memory 写入仅限 `.harness/learnings/LEARNINGS.md` append（Step 5 default-on）；不写 `docs/memory/decisions/` / `cases/`（quick 路径不达阈值）
+- **claude-mem 跨会话记忆 = Layer 0 必读**：本会话首次接到 quick 任务前必跑 `mcp__plugin_claude-mem_mcp-search__search`（query=task 关键词），命中相关历史 observation 时 `get_observations([IDs])` 取详情；codex resume / cursor history 仍为 acceleration 不强制
 - 不修改 `docs/harness/knowledge/*`（只读）
 - 不修改 `docs/memory/*`（只读）
 

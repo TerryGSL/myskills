@@ -8,13 +8,23 @@
 
 harness 管"项目长期记忆"（跟随 repo / git 追踪 / 团队共享）；其它两类由各工具 wrapper 自行处理：
 
-| 记忆类型 | 范围 | 跟随什么 |
-|---------|------|---------|
-| **`docs/memory/*`（本契约）** | 项目级 | repo（git tracked）|
-| 工具自带 cross-session memory | 用户级 | 工具账户 |
-| 用户偏好 / 工作流规则 | 用户级 | 工具账户 |
+| 记忆类型 | 范围 | 跟随什么 | 角色 |
+|---------|------|---------|------|
+| **工具自带 cross-session memory（claude-mem / codex resume / cursor history）** | 用户级 | 工具账户 | **Layer 0：本会话首次接活前必读** |
+| **`docs/memory/*`（本契约）** | 项目级 | repo（git tracked）| Layer 1：跨工具共享真相源 |
+| 用户偏好 / 工作流规则 | 用户级 | 工具账户 | Layer 0.5：长期偏好 |
 
-工具自带的 cross-session 能力（claude-mem / codex resume / cursor history 等）是**可选 acceleration layer**——只能在各自工具内做检索加速，**不跨工具可见**，所以不可作为 cross-tool 真相源；本契约不依赖任何工具自带能力。**项目级记忆 = `docs/memory/*.md` 是 Layer 1 强约束**（任何工具都能读写、git 跟踪、跨会话/跨工具持久），跨工具协作时所有"上次决定 / 上次踩坑"必须落盘到这里才算共享知识。
+### Layer 0 强制（claude-mem 本会话必读）
+
+`docs/memory/*` 是 git 跟踪的**长期**真相源；但**短期 / 单工具 / 跨会话**的实际决策、踩坑、用户纠正 90% 沉淀在 claude-mem observation 数据库（用户级、跨会话、向量检索）。**任何叶子 skill（quick / bugfix / feature / refactor）在本会话首次接活前必须**：
+
+1. `mcp__plugin_claude-mem_mcp-search__search(query=<task 关键词>, project=<本仓库名>, limit=20)` — 拿索引
+2. 命中 ≥1 条相关 observation → `get_observations([IDs])` 取详情
+3. 在 task 实施前输出一行 `Mem-check: hits=<n>, ids=[...]`（无命中输出 `Mem-check: 0 hits`）
+
+**违反 → strict-reviewer FAIL**（grounded by "skipped Layer 0 cross-session memory"）。
+
+不跨工具可见的事实保留：claude-mem 数据库不进 git、Codex/Cursor 看不见；所以**Layer 0 命中后若是项目长期共享知识**，必须升格到 Layer 1（`docs/memory/cases/` 或 `docs/memory/decisions/`），否则下次换工具协作仍然失忆。
 
 ## 三层结构概览
 

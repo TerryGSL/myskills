@@ -71,7 +71,8 @@ description: >
 1. 做 diff
 2. 跑全量测试 → 必须 PASS
 3. 对比 baseline fixture → 输入输出一致
-4. commit（`refactor: <描述>`）+ Push 评估
+4. **Learnings observation（必做，default-on）**：`.harness/learnings/LEARNINGS.md` 追加一条 LRN（schema 见 `harness-common/contracts/memory.md` Layer C）；重构常含"用户纠正命名/层级/复用现有 enum 等"的反馈，**这类纠正必落盘**，跳过条件同 quick（纯 typo / 用户明确说"不用记"）。
+5. commit（`refactor: <描述>`）+ Push 评估
    commit 后调用 `harness push-check`；不可用时按 `harness-common/contracts/push-decision.md` 规则手算。
    Tier 3 fallback rules: see harness-init/SKILL.md#第二步
 
